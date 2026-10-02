@@ -23,6 +23,7 @@ import com.example.optoapp.util.DispensacionStockHelper
 import dagger.Lazy
 import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
@@ -85,7 +86,15 @@ class DiscardLosingClaimUseCaseTest {
         repo, db.pagoDao(), db.monturaMovimientoDao(), repository.monturaCoordinator, stockHelper, tracker,
     )
 
-    private suspend fun seedClaimedOriginal(frameStock: Int = 3, unsyncedCredit: Boolean = false): String {
+    private val syncedCredits = listOf(Triple("a1", 120.0, "Efectivo"), Triple("a2", 80.0, "Tarjeta"))
+
+    private suspend fun seedClaimedOriginal(
+        frameStock: Int = 3,
+        unsyncedCredit: Boolean = false,
+        lateSyncedCredit: Boolean = false,
+        legacyReembolso: Boolean = false,
+        losing: Boolean = true,
+    ): String {
         db.pacienteDao().insertPaciente(
             Paciente(id = "pac", nombreCompleto = "Paciente", edad = 30, telefono = "1", fechaCreacion = today, opticaId = opticaId),
         )
@@ -99,7 +108,7 @@ class DiscardLosingClaimUseCaseTest {
         db.dispensacionItemDao().insertItem(
             DispensacionItem(id = "i1", dispensacionId = origId, monturaId = "M1", origenMontura = "Tienda", opticaId = opticaId),
         )
-        listOf(Triple("a1", 120.0, "Efectivo"), Triple("a2", 80.0, "Tarjeta")).forEach { (id, monto, metodo) ->
+        syncedCredits.forEach { (id, monto, metodo) ->
             db.pagoDao().insertPago(
                 Pago(id = id, dispensacionId = origId, fecha = today.minusDays(35), tipo = "Abono", monto = monto, metodoPago = metodo, opticaId = opticaId),
             )
@@ -110,11 +119,40 @@ class DiscardLosingClaimUseCaseTest {
                 Pago(id = "a3", dispensacionId = origId, fecha = today.minusDays(2), tipo = "Abono", monto = 50.0, metodoPago = "Efectivo", opticaId = opticaId),
             )
         }
-        val created = ReclamarDispensacionUseCase(
-            repository, db.pagoDao(), stockHelper, mockk(relaxed = true), CalcularMontoPagadoUseCase(db.pagoDao()),
-        )(origId, opticaId, "Lente rayado", 150.0, "Tarjeta") as ReclamoOutcome.Created
-        tracker.markError(opticaId, "dispensacion", created.replacementId, "quarantine:reclamo_duplicate:$origId")
-        return created.replacementId
+        if (lateSyncedCredit) {
+            db.pagoDao().insertPago(
+                Pago(id = "a4", dispensacionId = origId, fecha = today.minusDays(3), tipo = "Abono", monto = 30.0, metodoPago = "Tarjeta", opticaId = opticaId),
+            )
+            tracker.markSynced(opticaId, "pago", "a4")
+        }
+        if (legacyReembolso) {
+            db.pagoDao().insertPago(
+                Pago(id = "rb1", dispensacionId = origId, fecha = today.minusDays(33), tipo = "Reembolso", monto = 20.0, metodoPago = "Efectivo", opticaId = opticaId),
+            )
+            tracker.markSynced(opticaId, "pago", "rb1")
+        }
+        val created = claim(origId, "Lente rayado", 150.0, "Tarjeta")
+        if (losing) tracker.markError(opticaId, "dispensacion", created, "quarantine:reclamo_duplicate:$origId")
+        return created
+    }
+
+    private suspend fun claim(originalId: String, motivo: String, nuevoMontoTotal: Double, metodo: String): String =
+        (
+            ReclamarDispensacionUseCase(
+                repository, db.pagoDao(), stockHelper, mockk(relaxed = true), CalcularMontoPagadoUseCase(db.pagoDao()),
+            )(originalId, opticaId, motivo, nuevoMontoTotal, metodo) as ReclamoOutcome.Created
+            ).replacementId
+
+    private suspend fun seedSecondLosingClaim(): String {
+        db.dispensacionDao().insertDispensacion(
+            DispensacionOptica(
+                id = "d2", ot = "2026-0043", pacienteId = "pac", fecha = today.minusDays(20), opticaId = opticaId,
+                estadoEntrega = "Entregado", fechaEntrega = today.minusDays(10),
+            ),
+        )
+        val replacementId = claim("d2", "Armazón roto", 0.0, "")
+        tracker.markError(opticaId, "dispensacion", replacementId, "quarantine:reclamo_duplicate:d2")
+        return replacementId
     }
 
     private suspend fun pagosOf(parentId: String) = db.pagoDao().getPagosByParent(parentId, opticaId)
@@ -147,8 +185,9 @@ class DiscardLosingClaimUseCaseTest {
 
         discarder()(opticaId)
 
-        val awaiting = db.syncEntityStateDao().getByStatus(opticaId, "awaiting_remote").single()
-        assertEquals("dispensacion" to origId, awaiting.entityType to awaiting.entityId)
+        val awaiting = db.syncEntityStateDao().getByStatus(opticaId, "awaiting_remote")
+            .map { it.entityType to it.entityId }.toSet()
+        assertEquals(setOf("dispensacion" to origId, "reclamo_credito" to origId), awaiting)
         val notice = db.syncEntityStateDao().getByStatus(opticaId, "error").single()
         assertEquals("reclamo_descartado" to replId, notice.entityType to notice.entityId)
         assertEquals(
@@ -192,10 +231,10 @@ class DiscardLosingClaimUseCaseTest {
         val failing = spyk(repository)
         coEvery { failing.deleteDispensacionById(replId, opticaId) } throws IllegalStateException("delete failed")
 
-        val error = runCatching { discarder(failing)(opticaId) }.exceptionOrNull()
+        assertEquals(0, discarder(failing)(opticaId))
 
-        assertEquals("delete failed", error?.message)
         assertNotNull(db.dispensacionDao().getDispensacionById(replId, opticaId))
+        assertTrue(tracker.awaitingRemoteIds(opticaId, "dispensacion").isEmpty())
         assertEquals(2, pagosOf(origId).count { it.tipo == "Reverso" })
         assertEquals(2, stock())
         assertEquals(1, movimientos().size)
@@ -223,25 +262,142 @@ class DiscardLosingClaimUseCaseTest {
 
     private val winnerId = "w1"
 
-    /** What the download brings: the winner's replacement, its transfers and the Reversos of synced credits. */
-    private suspend fun downloadWinner() {
+    /**
+     * What the download brings: the winner's replacement, its transfers and the Reversos of the credits
+     * the winner knew. [remoteOriginalId] differs from the local id when the original adopted a remote id by OT.
+     */
+    private suspend fun downloadWinner(remoteOriginalId: String = origId) {
+        if (remoteOriginalId != origId) {
+            db.dispensacionDao().insertDispensacion(
+                DispensacionOptica(
+                    id = remoteOriginalId, ot = "2026-0042", pacienteId = "pac", fecha = today.minusDays(40), opticaId = opticaId,
+                    montoTotal = 200.0, estadoEntrega = "Reclamada", fechaEntrega = today.minusDays(30),
+                    motivoAnulacion = "Armazón roto", fechaAnulacion = today,
+                ),
+            )
+            syncedCredits.forEach { (id, monto, metodo) ->
+                db.pagoDao().insertPago(
+                    Pago(id = id, dispensacionId = remoteOriginalId, fecha = today.minusDays(35), tipo = "Abono", monto = monto, metodoPago = metodo, opticaId = opticaId),
+                )
+            }
+        }
         db.dispensacionDao().insertDispensacion(
             DispensacionOptica(
                 id = winnerId, ot = "2026-0042-R1", pacienteId = "pac", fecha = today, opticaId = opticaId,
-                montoTotal = 150.0, montoPagado = 200.0, estadoEntrega = "Pendiente", reclamoOrigenId = origId,
+                montoTotal = 150.0, montoPagado = 200.0, estadoEntrega = "Pendiente", reclamoOrigenId = remoteOriginalId,
             ),
         )
         tracker.markSynced(opticaId, "dispensacion", winnerId)
-        listOf(Triple("a1", 120.0, "Efectivo"), Triple("a2", 80.0, "Tarjeta")).forEach { (creditId, monto, metodo) ->
+        syncedCredits.forEach { (creditId, monto, metodo) ->
             db.pagoDao().insertPago(
-                Pago(id = "wrv-$creditId", dispensacionId = origId, fecha = today, tipo = "Reverso", monto = monto, metodoPago = metodo, opticaId = opticaId, reversaPagoId = creditId),
+                Pago(id = "wrv-$creditId", dispensacionId = remoteOriginalId, fecha = today, tipo = "Reverso", monto = monto, metodoPago = metodo, opticaId = opticaId, reversaPagoId = creditId),
             )
             db.pagoDao().insertPago(
                 Pago(id = "wtr-$creditId", dispensacionId = winnerId, fecha = today, tipo = "Abono", monto = monto, metodoPago = metodo, opticaId = opticaId),
             )
             listOf("wrv-$creditId", "wtr-$creditId").forEach { tracker.markSynced(opticaId, "pago", it) }
         }
-        tracker.markSynced(opticaId, "dispensacion", origId)
+        tracker.markSynced(opticaId, "dispensacion", remoteOriginalId)
+        tracker.markSynced(opticaId, "download_pago", "batch")
+    }
+
+    @Test
+    fun remappedOriginal_isFoldedIntoTheDownloadedOriginalAndItsHoldReleased() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        assertEquals(setOf(origId), tracker.awaitingRemoteIds(opticaId, "dispensacion"))
+        downloadWinner(remoteOriginalId = "r1")
+
+        val transferred = discarder().transferResidualCredit(opticaId)
+
+        assertEquals(1, transferred)
+        assertNull(db.dispensacionDao().getDispensacionById(origId, opticaId))
+        assertTrue(tracker.awaitingRemoteIds(opticaId, "dispensacion").isEmpty())
+        assertTrue(pagosOf(origId).isEmpty())
+        assertEquals(1, pagosOf("r1").count { it.tipo == "Reverso" && it.reversaPagoId == "a3" })
+        assertEquals(0.0, db.pagoDao().sumMontoByDispensacion("r1", opticaId), 0.001)
+        assertEquals(250.0, db.pagoDao().sumMontoByDispensacion(winnerId, opticaId), 0.001)
+        assertEquals(listOf("r1"), db.dispensacionItemDao().getItemsListByDispensacion("r1", opticaId).map { it.dispensacionId })
+    }
+
+    @Test
+    fun syncedCreditTheWinnerNeverReversed_isTransferredToTheWinner() = runTest {
+        seedClaimedOriginal(lateSyncedCredit = true)
+        discarder()(opticaId)
+        downloadWinner()
+
+        val transferred = discarder().transferResidualCredit(opticaId)
+
+        assertEquals(1, transferred)
+        assertEquals(1, pagosOf(origId).count { it.tipo == "Reverso" && it.reversaPagoId == "a4" })
+        assertEquals(0.0, db.pagoDao().sumMontoByDispensacion(origId, opticaId), 0.001)
+        assertEquals(230.0, db.pagoDao().sumMontoByDispensacion(winnerId, opticaId), 0.001)
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+    }
+
+    @Test
+    fun residualTransfer_waitsForASuccessfulPagosDownload() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        downloadWinner()
+        tracker.markError(opticaId, "download_pago", "batch", "timeout")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+        assertTrue(pagosOf(origId).none { it.reversaPagoId == "a3" })
+
+        tracker.markSynced(opticaId, "download_pago", "batch")
+        assertEquals(1, discarder().transferResidualCredit(opticaId))
+    }
+
+    @Test
+    fun ownConfirmedClaim_keepsItsUnsyncedCompensationAbonoOnTheOriginal() = runTest {
+        val replId = seedClaimedOriginal(legacyReembolso = true, losing = false)
+        listOf(replId, origId).forEach { tracker.markSynced(opticaId, "dispensacion", it) }
+        tracker.markSynced(opticaId, "download_pago", "batch")
+        val originalLedger = pagosOf(origId).toSet()
+        val replacementLedger = pagosOf(replId).toSet()
+        assertTrue(originalLedger.any { it.tipo == "Abono" && it.nota.startsWith(NOTA_COMPENSACION_PREFIX) })
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertEquals(originalLedger, pagosOf(origId).toSet())
+        assertEquals(replacementLedger, pagosOf(replId).toSet())
+    }
+
+    // ── Per-claim isolation ───────
+
+    @Test
+    fun failingClaim_doesNotBlockTheOthersAndIsNotRetriedEverySync() = runTest {
+        val failingId = seedClaimedOriginal()
+        val otherId = seedSecondLosingClaim()
+        val failing = spyk(repository)
+        coEvery { failing.deleteDispensacionById(failingId, opticaId) } throws IllegalStateException("delete failed")
+
+        assertEquals(1, discarder(failing)(opticaId))
+
+        assertNull(db.dispensacionDao().getDispensacionById(otherId, opticaId))
+        assertNotNull(db.dispensacionDao().getDispensacionById(failingId, opticaId))
+        val notice = tracker.quarantineReasons(opticaId, "reclamo_descartado")[failingId]
+        assertEquals(
+            "quarantine:reclamo_descarte_fallido: No se pudo descartar el reclamo local de la OT 2026-0042 (delete failed).",
+            notice,
+        )
+
+        tracker.markError(opticaId, "dispensacion", failingId, "quarantine:reclamo_duplicate:$origId")
+        assertEquals(0, discarder(failing)(opticaId))
+        coVerify(exactly = 1) { failing.deleteDispensacionById(failingId, opticaId) }
+    }
+
+    @Test
+    fun claimWhoseMonturaWasDeleted_isDiscardedWithNothingToRestock() = runTest {
+        val replId = seedClaimedOriginal()
+        db.monturaDao().deleteMontura("M1", opticaId)
+        assertTrue(movimientos().isEmpty())
+
+        assertEquals(1, discarder()(opticaId))
+
+        assertNull(db.dispensacionDao().getDispensacionById(replId, opticaId))
+        assertTrue(movimientos().isEmpty())
     }
 
     @Test

@@ -79,12 +79,13 @@ class DownloadSyncCoordinatorTest {
     private val repository = mockk<OptoRepository>(relaxed = true)
     private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
     private val deletionSyncHelper = mockk<DeletionSyncHelper>(relaxed = true)
+    private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
     private val coordinator = DownloadSyncCoordinator(
         repository = repository,
         supabase = mockk<SupabaseClient>(relaxed = true),
         syncStateTracker = syncStateTracker,
         deletionSyncHelper = deletionSyncHelper,
-        networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true),
+        networkRetryHelper = networkRetryHelper,
         resumenDiarioDao = mockk<ResumenDiarioDao>(relaxed = true),
         configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
         costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
@@ -197,6 +198,26 @@ class DownloadSyncCoordinatorTest {
 
         assertEquals(1, persisted)
         coVerify { repository.upsertServicioFromRemote(match { it.id == "s1" && it.estado == "Anulado" }) }
+    }
+
+    @Test
+    fun successfulPagosFetch_marksTheDownloadBatchSynced() = runTest {
+        stubSyncInfra()
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerify { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun failedPagosFetch_leavesTheDownloadBatchInError() = runTest {
+        stubSyncInfra()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } throws java.io.IOException("timeout")
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerify { syncStateTracker.markError(opticaId, "download_pago", "batch", "timeout") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
     }
 
     @Test

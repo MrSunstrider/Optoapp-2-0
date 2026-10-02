@@ -78,6 +78,7 @@ class DownloadSyncCoordinator @Inject constructor(
                 .select { filter { eq("optica_id", opticaId) } }
                 .decodeList<T>()
         }
+        syncStateTracker.markSynced(opticaId, "download_$entityType", "batch")
         result
     } catch (e: CancellationException) {
         throw e

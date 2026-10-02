@@ -41,7 +41,6 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val UPSERT_BATCH_SIZE = 80
-        private const val TIPO_REVERSO = "Reverso"
     }
 
     class UploadPreCheckFailedException(

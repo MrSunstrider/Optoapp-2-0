@@ -16,7 +16,7 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 private val CREDIT_TIPOS = setOf("Abono", "Pago completo")
-private const val TIPO_REVERSO = "Reverso"
+internal const val TIPO_REVERSO = "Reverso"
 private const val TIPO_REEMBOLSO = "Reembolso"
 internal const val NOTA_COMPENSACION_PREFIX = "Compensación de "
 
