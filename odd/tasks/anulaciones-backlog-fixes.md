@@ -32,7 +32,7 @@ The read-only audit of `feat/anulaciones-wu6c-verify-fixes` (8d5b4021) found:
 ## Tasks
 
 - [x] T1 Make restock idempotent on its own: `restockOnce` atomic (no double stock adjustment even outside a caller transaction) and movimiento inserts no longer silently `REPLACE` on the restock path. Real-Room overlap test for `CancelServicioExtraUseCase`. Route: delegated writer.
-- [ ] T2 Surface lifecycle outcomes: `confirmAnular` and `anularDispensacion` report `AlreadyTerminal` to the user; replace the "silent no-op" test. Route: delegated writer.
+- [x] T2 Surface lifecycle outcomes: `confirmAnular` and `anularDispensacion` report `AlreadyTerminal` to the user; replace the "silent no-op" test. Route: delegated writer.
 - [ ] T3 Prove hard-delete sync: repository test that `deleteDispensacion` records the tombstone and schedules sync. Route: delegated writer.
 - [ ] T4 Validate the claim refund method in the use case, and align `reclamoPreview` / `canConfirmReclamo` with the use case (finite total, `MONEY_EPSILON`, non-blank method when a refund is shown). Route: delegated writer.
 - [ ] T5 Verify: full unit suite, GGA, native RDD on the commits, and a read-only re-audit of the four items. Route: parent.
@@ -52,12 +52,18 @@ One work-unit commit per task on `feat/anulaciones-wu7-backlog-fixes`. The chain
 ## Progress
 
 - Branch created at 8d5b4021.
-- T1 done (commit: see `git log`, subject `fix(inventario): make montura restock atomic and idempotent`).
+- T1 done in `5874e3f8` (`fix(inventario): make montura restock atomic and idempotent`).
   - Approach: `restockOnce` runs in its own transaction through an injected `DatabaseTransactionRunner` (joins a caller transaction when present), claims the AJUSTE movimiento first with a new `insertMovimientoIfAbsent` (`IGNORE` on the unique `(referenciaId, tipo, monturaId)` index) and adjusts stock only when the claim wins. A failed adjustment after a won claim throws so the claim rolls back. The shared `insertMovimiento` keeps `REPLACE` because sync download relies on it (`MonturaMovimientoDaoTest.insertMovimiento_duplicateSecondaryUniqueKey_replacesRowWithoutThrowing`). The now-unused `hasMovimiento` / `countByKey` were removed.
   - RED: `DispensacionStockHelperRoomTest.duplicateRestockArrivingMidRestock_adjustsStockOnceAndKeepsFirstMovimiento` failed with `expected:<[Success(true), Success(false)]> but was:<[Success(true)]>` (both the outer and the interleaved duplicate restocked).
   - GREEN: `DispensacionStockHelperRoomTest` (3), `DispensacionStockHelperTest` (15), `CancelServicioExtraTransactionTest` (1), `AnularDispensacionTransactionTest` (16), `ReclamoTransactionTest` (18), `MonturaMovimientoDaoTest` (10), `CancelLedgerUseCasesTest` (12): all passing.
   - `CancelServicioExtraTransactionTest.overlappingInvocations_applyExactlyOnce` passed on first run (characterization: the estado check already serializes overlapping cancels; RED not applicable).
 
+- T2 done (`fix(anulaciones): report already-terminal outcomes to the user`; hash recorded with T3).
+  - `ServiciosViewModel` exposes `infoMessage` / `clearInfoMessage`. On `AlreadyTerminal` it closes the dialog, shows "Este servicio ya fue anulado", skips `onComplete` (so `NuevoServicioScreen` no longer pops back before the snackbar shows) and reloads the open form when it is that servicio, so the screen turns read-only. Both `ServiciosExtraScreen` and `NuevoServicioScreen` show the message in their snackbar.
+  - `DispensacionViewModel.anularDispensacion` sets `infoMessage = "Esta orden ya fue anulada"` on `AlreadyTerminal("Anulado")` and still completes (closes the dialog and reloads the order); `NuevaDispensacionScreen` already renders `infoMessage`. `Reclamada` keeps its error.
+  - RED: `ServiciosViewModelDeleteTest` "informs the user and stays on screen" (`expected:<Este servicio ya fue anulado> but was:<null>`), "reloads the open form so it turns read-only" (`expected:<[Anulado]> but was:<[Pendiente]>`); `DispensacionViewModelAnulacionTest` "informs the user and completes to refresh the order" (`expected:<Esta orden ya fue anulada> but was:<null>`).
+  - GREEN: all `ServiciosViewModel*` and `DispensacionViewModel*` suites passing (ServiciosViewModelDeleteTest 13, DispensacionViewModelAnulacionTest 6).
+
 ## Next step
 
-T2.
+T3.

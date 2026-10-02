@@ -705,14 +705,16 @@ class DispensacionViewModel @Inject constructor(
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "anular dispensación")
                 val opticaId = sessionManager.opticaId.first()
-                val outcome = anularDispensacionUseCase(dispensacionId, opticaId, motivo)
-                val rejectedReclamada = outcome is LifecycleOutcome.AlreadyTerminal &&
-                    outcome.estado == OrderStatusPolicy.RECLAMADA
-                if (rejectedReclamada) {
-                    _uiState.update { it.copy(isLoading = false, error = "No se puede anular una orden reclamada") }
-                    return@launch
+                when (val outcome = anularDispensacionUseCase(dispensacionId, opticaId, motivo)) {
+                    LifecycleOutcome.Applied -> _uiState.update { it.copy(isLoading = false) }
+                    is LifecycleOutcome.AlreadyTerminal -> {
+                        if (outcome.estado == OrderStatusPolicy.RECLAMADA) {
+                            _uiState.update { it.copy(isLoading = false, error = "No se puede anular una orden reclamada") }
+                            return@launch
+                        }
+                        _uiState.update { it.copy(isLoading = false, infoMessage = "Esta orden ya fue anulada") }
+                    }
                 }
-                _uiState.update { it.copy(isLoading = false) }
                 onComplete()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 _uiState.update { it.copy(isLoading = false) }

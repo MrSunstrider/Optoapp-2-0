@@ -47,6 +47,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val servicioToDelete by viewModel.servicioToDelete.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
+    val infoMessage by viewModel.infoMessage.collectAsState()
     val anulando by viewModel.anulando.collectAsState()
 
     val filteredServicios = servicios.filter { servicio ->
@@ -79,6 +80,13 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         deleteError?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearDeleteError()
+        }
+    }
+
+    LaunchedEffect(infoMessage) {
+        infoMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearInfoMessage()
         }
     }
 
