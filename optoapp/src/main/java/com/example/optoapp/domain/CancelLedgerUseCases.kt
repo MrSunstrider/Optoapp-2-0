@@ -296,7 +296,8 @@ sealed interface ReclamoOutcome {
 class ReclamoStockInsuficienteException(val monturaId: String, val montura: String) :
     IllegalStateException("Sin stock de la montura $montura para el reemplazo. No se registró el reclamo.")
 
-private const val MONEY_EPSILON = 0.005
+/** Ledger amounts at or below this are treated as zero; the claim preview must use the same threshold. */
+internal const val MONEY_EPSILON = 0.005
 
 fun lastCreditMetodo(pagos: List<Pago>): String? = pagos
     .filter { PagoEffect.signedAmount(it.tipo, it.monto) > 0.0 && it.metodoPago.isNotBlank() }
@@ -336,9 +337,11 @@ class ReclamarDispensacionUseCase @Inject constructor(
             }
             val snapshot = ledgerSnapshot(pagoDao.getPagosByParent(originalId, opticaId))
             requireTransferable(snapshot, calcularMontoPagado(originalId, opticaId))
+            val reembolso = (snapshot.netPaid - nuevoMontoTotal).takeIf { it > MONEY_EPSILON }
+            require(reembolso == null || metodoReembolso.isNotBlank()) { "Selecciona el método de reembolso." }
             val replacement = insertReplacement(original, nuevoMontoTotal)
             reverseLedgerFully(repository, pagoDao, originalId, opticaId, forDispensacion = true, contexto = "reclamo")
-            transferCredit(snapshot, replacement, original.ot, nuevoMontoTotal, metodoReembolso)
+            transferCredit(snapshot, replacement, original.ot, reembolso, metodoReembolso.trim())
             repository.updateDispensacion(
                 original.copy(
                     estadoEntrega = OrderStatusPolicy.RECLAMADA,
@@ -406,7 +409,7 @@ class ReclamarDispensacionUseCase @Inject constructor(
         snapshot: LedgerSnapshot,
         replacement: DispensacionOptica,
         originalOt: String,
-        nuevoMontoTotal: Double,
+        reembolso: Double?,
         metodoReembolso: String,
     ) {
         snapshot.netByMetodo.filterValues { it > MONEY_EPSILON }.forEach { (metodo, monto) ->
@@ -415,9 +418,8 @@ class ReclamarDispensacionUseCase @Inject constructor(
         snapshot.netByMetodo.filterValues { it < -MONEY_EPSILON }.forEach { (metodo, monto) ->
             repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, -monto, metodo, "Ajuste de crédito por reclamo de OT $originalOt"))
         }
-        val excess = snapshot.netPaid - nuevoMontoTotal
-        if (excess > MONEY_EPSILON) {
-            repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, excess, metodoReembolso, "Reembolso por reclamo de OT $originalOt"))
+        if (reembolso != null) {
+            repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, reembolso, metodoReembolso, "Reembolso por reclamo de OT $originalOt"))
         }
     }
 

@@ -34,7 +34,7 @@ The read-only audit of `feat/anulaciones-wu6c-verify-fixes` (8d5b4021) found:
 - [x] T1 Make restock idempotent on its own: `restockOnce` atomic (no double stock adjustment even outside a caller transaction) and movimiento inserts no longer silently `REPLACE` on the restock path. Real-Room overlap test for `CancelServicioExtraUseCase`. Route: delegated writer.
 - [x] T2 Surface lifecycle outcomes: `confirmAnular` and `anularDispensacion` report `AlreadyTerminal` to the user; replace the "silent no-op" test. Route: delegated writer.
 - [x] T3 Prove hard-delete sync: repository test that `deleteDispensacion` records the tombstone and schedules sync. Route: delegated writer.
-- [ ] T4 Validate the claim refund method in the use case, and align `reclamoPreview` / `canConfirmReclamo` with the use case (finite total, `MONEY_EPSILON`, non-blank method when a refund is shown). Route: delegated writer.
+- [x] T4 Validate the claim refund method in the use case, and align `reclamoPreview` / `canConfirmReclamo` with the use case (finite total, `MONEY_EPSILON`, non-blank method when a refund is shown). Route: delegated writer.
 - [ ] T5 Verify: full unit suite, GGA, native RDD on the commits, and a read-only re-audit of the four items. Route: parent.
 
 Route evidence: 4+ files across use cases, DAO, ViewModels, UI and tests, so the writer trigger fires; one delegated writer.
@@ -64,12 +64,18 @@ One work-unit commit per task on `feat/anulaciones-wu7-backlog-fixes`. The chain
   - RED: `ServiciosViewModelDeleteTest` "informs the user and stays on screen" (`expected:<Este servicio ya fue anulado> but was:<null>`), "reloads the open form so it turns read-only" (`expected:<[Anulado]> but was:<[Pendiente]>`); `DispensacionViewModelAnulacionTest` "informs the user and completes to refresh the order" (`expected:<Esta orden ya fue anulada> but was:<null>`).
   - GREEN: all `ServiciosViewModel*` and `DispensacionViewModel*` suites passing (ServiciosViewModelDeleteTest 13, DispensacionViewModelAnulacionTest 6).
 
-- T3 done (`test(sync): cover dispensacion hard-delete tombstone and sync`; hash recorded with T4).
+- T3 done in `36ad0e86` (`test(sync): cover dispensacion hard-delete tombstone and sync`).
   - `OptoRepositoryFinanzasTest.deleteDispensacion_removesRowRecordsTombstoneAndSchedulesFinanzasSync` and `deleteDispensacion_tombstoneFailure_rollsBackDeleteAndSkipsSync` (real Room).
   - RED not applicable: both passed on first run because the behavior already exists (characterization tests). No code was broken to fake RED.
   - GREEN: `OptoRepositoryFinanzasTest` 10/10 passing.
   - GGA first rejected the file for pre-existing issues, all fixed in this commit: an `assertNotNull(value) { msg }` that could never fail (now `assertNotNull(msg, value)`), `runBlocking` replaced by `runTest`, a stale "RED phase" class comment, and a WHAT comment (ordering moved into the test name `getGastosOperativos_returnsNewestFechaFirst`).
 
+- T4 done (`fix(reclamos): require refund method and align claim preview with ledger`; hash in `git log`).
+  - `ReclamarDispensacionUseCase` computes the refund once, right after the ledger snapshot and before any write, and rejects a blank `metodoReembolso` with `IllegalArgumentException("Selecciona el método de reembolso.")` when a refund exists; `transferCredit` receives that same value (no second computation) and a trimmed method.
+  - `MONEY_EPSILON` is now `internal` in the domain and reused by `reclamoPreview` (no duplicated literal). The preview rejects non-finite totals (`Infinity`, `1e309`, `NaN`), shows the refund row and method picker only above `MONEY_EPSILON`, and `canConfirmReclamo` takes the method and requires it whenever a refund is shown. The method field is marked as required/error when blank.
+  - RED: `ReclamarDispensacionUseCaseTest.blankRefundMethodWithExcess_isRejectedBeforeAnyWrite` (no exception thrown, writes happened); `ReclamoPreviewTest` "non finite new total" (`Infinity expected null, but was:<Infinity>`), "excess within the ledger epsilon" (`expected:<0.0> but was:<0.0029999…>`), "claim with a shown refund requires a refund method" (confirm allowed with blank method).
+  - GREEN: `ReclamarDispensacionUseCaseTest` 7, `ReclamoPreviewTest` 12, `ReclamoTransactionTest` 18, `DispensacionViewModelReclamoTest` 14: all passing.
+
 ## Next step
 
-T4.
+T5 (parent): full suite, GGA, native RDD on the commits, read-only re-audit.
