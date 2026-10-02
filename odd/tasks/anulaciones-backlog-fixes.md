@@ -77,13 +77,18 @@ One work-unit commit per task on `feat/anulaciones-wu7-backlog-fixes`. The chain
   - RED: `ReclamarDispensacionUseCaseTest.blankRefundMethodWithExcess_isRejectedBeforeAnyWrite` (no exception thrown, writes happened); `ReclamoPreviewTest` "non finite new total" (`Infinity expected null, but was:<Infinity>`), "excess within the ledger epsilon" (`expected:<0.0> but was:<0.0029999…>`), "claim with a shown refund requires a refund method" (confirm allowed with blank method).
   - GREEN: `ReclamarDispensacionUseCaseTest` 7, `ReclamoPreviewTest` 12, `ReclamoTransactionTest` 18, `DispensacionViewModelReclamoTest` 14: all passing.
 
-- T6 restock contract done (`fix(inventario): propagate nested restock failures and verify ignored claims`).
+- T6 restock contract done in `98644780` (`fix(inventario): propagate nested restock failures and verify ignored claims`).
   - `DatabaseTransactionRunner.isInTransaction()` (Room `inTransaction()`). `restockOnce` reads it before entering; a write failure after the claim (failed adjustment, or an `IGNORE`d claim with no row found by the new `MonturaMovimientoDao.findByKey` / `MonturaInventoryCoordinator.findMovimientoByKey`) throws inside the transaction so the claim rolls back, is rethrown when nested and returned as `Result.failure` when standalone. Pre-claim validation failures stay `Result.failure` values (nothing written, no nested failure).
   - Caller audit: the only production caller is `restockOrThrow` (`CancelLedgerUseCases.kt`, used by `CancelServicioExtraUseCase` and `AnularDispensacionUseCase` inside `repository.withTransaction`); it already threw on failure, so the propagated `IllegalStateException` keeps its semantics and now fails the caller instead of a silent rollback.
   - Finding 6 done: `insertMonturaMovimientoIfAbsent` no longer schedules and the restock uses the new `adjustMonturaStockLocal`; `restockOnce` schedules inventory sync once, after its transaction returns `success(true)`. When nested this is still before the caller's commit; the callers already schedule after their own commit.
   - RED: `DispensacionStockHelperRoomTest.adjustFailureInsideCallerTransaction_failsTheCallerAndRollsBackItsWrites` (`caller transaction must fail loudly, got null`); `DispensacionStockHelperTest.restockOnce_ignoredClaimWithoutExistingRow_failsInsteadOfReportingAlreadyRestocked` (`expected:<No se pudo registrar el movimiento de reposición> but was:<null>`).
   - Characterization (passed on first run, no code broken to fake RED): `adjustFailureAfterClaim_standalone_returnsFailureAndRollsBackClaim`, `concurrentRestocksForSameKey_adjustStockExactlyOnce` (two `async(Dispatchers.IO)` restocks, outcomes `{true, false}`, stock +1, one movimiento), `MonturaMovimientoDaoTest.findByKey_matchesOnlyExactReferenciaTipoAndMontura` (query scaffold added before the test). Scheduling and nested-rethrow mock assertions were added after the fix as regression coverage.
   - GREEN: `DispensacionStockHelperRoomTest` 6, `DispensacionStockHelperTest` 17, `MonturaMovimientoDaoTest` 11, `AnularDispensacionTransactionTest` 16, `ReclamoTransactionTest` 18, `CancelServicioExtraTransactionTest` 1, `CancelLedgerUseCasesTest` 12, `MonturaInventoryCoordinator*` 8: all passing.
+
+- T6 tombstone tests done (`test(sync): persist hard-delete tombstone with real tracker`).
+  - `OptoRepositoryFinanzasTest` now uses `spyk(SyncStateTracker(db.syncEntityStateDao(), db))` on the same in-memory database. The success test asserts the `deleted` row for `("dispensacion", id)` via `getPendingDeletions`; the rollback test lets the real `markDeleted` write the tombstone and then throws, and asserts both the dispensacion and the absence of the tombstone (the write rolled back with the delete), plus no sync scheduled.
+  - Characterization: passed on first run (production already writes the tombstone inside the delete transaction); RED not applicable.
+  - GREEN: `OptoRepositoryFinanzasTest` 10/10.
 
 ## Next step
 

@@ -13,6 +13,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.spyk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -61,7 +62,7 @@ class OptoRepositoryFinanzasTest {
         schedulerLazy = mockk()
         every { schedulerLazy.get() } returns scheduler
 
-        syncStateTracker = mockk(relaxed = true)
+        syncStateTracker = spyk(SyncStateTracker(db.syncEntityStateDao(), db))
         val pacienteDao = db.pacienteDao()
         val evaluacionDao = db.evaluacionDao()
         val dispensacionDao = db.dispensacionDao()
@@ -269,21 +270,28 @@ class OptoRepositoryFinanzasTest {
         repo.deleteDispensacion(disp)
 
         assertNull(db.dispensacionDao().getDispensacionById(disp.id, opticaId))
-        coVerify(exactly = 1) { syncStateTracker.markDeleted(opticaId, "dispensacion", disp.id) }
+        assertEquals(listOf("dispensacion" to disp.id), pendingDeletions())
         coVerify(exactly = 1) { scheduler.scheduleFinanzasSync(opticaId) }
     }
 
     @Test
-    fun deleteDispensacion_tombstoneFailure_rollsBackDeleteAndSkipsSync() = runTest {
+    fun deleteDispensacion_failureAfterTombstoneWrite_rollsBackDeleteAndTombstoneAndSkipsSync() = runTest {
         val disp = seedDispensacion()
-        coEvery { syncStateTracker.markDeleted(opticaId, "dispensacion", disp.id) } throws IllegalStateException("tombstone failed")
+        coEvery { syncStateTracker.markDeleted(opticaId, "dispensacion", disp.id) } coAnswers {
+            callOriginal()
+            throw IllegalStateException("tombstone failed")
+        }
 
         val error = runCatching { repo.deleteDispensacion(disp) }.exceptionOrNull()
 
         assertEquals("tombstone failed", error?.message)
         assertNotNull(db.dispensacionDao().getDispensacionById(disp.id, opticaId))
+        assertEquals(emptyList<Pair<String, String>>(), pendingDeletions())
         coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
     }
+
+    private suspend fun pendingDeletions(): List<Pair<String, String>> =
+        db.syncEntityStateDao().getPendingDeletions(opticaId).map { it.entityType to it.entityId }
 
     @Test
     fun getGastosOperativos_returnsNewestFechaFirst() = runTest {
