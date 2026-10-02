@@ -27,7 +27,6 @@ open class SyncFinanzasUseCase @Inject constructor(
     private val deletionSyncHelper: DeletionSyncHelper,
     private val uploadSyncCoordinator: UploadSyncCoordinator,
     private val downloadSyncCoordinator: DownloadSyncCoordinator,
-    private val networkRetryHelper: NetworkRetryHelper,
     private val discardLosingClaim: DiscardLosingClaimUseCase,
 ) {
     companion object {

@@ -108,8 +108,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
@@ -128,7 +126,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -145,8 +142,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
@@ -165,7 +160,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -179,8 +173,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
@@ -205,7 +197,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -219,8 +210,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>(relaxed = true)
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
@@ -236,7 +225,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -255,8 +243,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
@@ -283,7 +269,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -305,15 +290,12 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } throws IOException("Network failure")
 
         val useCase = SyncFinanzasUseCase(
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -330,8 +312,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } throws
             RuntimeException("Unexpected deletion error")
 
@@ -339,7 +319,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -357,8 +336,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws
             UploadPartialException(5, IOException("Partial"))
@@ -385,7 +362,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -407,8 +383,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>()
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws IOException("Network failure")
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } throws IOException("Network failure")
@@ -435,7 +409,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -450,8 +423,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws UploadPartialException(5, IOException("Partial"))
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 3
@@ -477,7 +448,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -495,8 +465,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         val mockResponse = mockk<HttpResponse>(relaxed = true)
         every { mockResponse.status } returns HttpStatusCode(401, "Unauthorized")
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
@@ -507,7 +475,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -520,8 +487,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         val mockResponse500 = mockk<HttpResponse>(relaxed = true)
         every { mockResponse500.status } returns HttpStatusCode(500, "Server Error")
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
@@ -544,7 +509,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -557,8 +521,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } throws RuntimeException("Unexpected error")
         // Mock downloads so the test only passes if generic Exception propagates from safeUpload
@@ -578,7 +540,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -593,8 +554,6 @@ class SyncFinanzasUseCaseKtTest {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>()
         val deletionSyncHelper = mockk<DeletionSyncHelper>()
-        val networkRetryHelper = mockk<NetworkRetryHelper>()
-
         coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
         coEvery { uploadCoordinator.uploadPagos(any()) } throws
             IOException("Pagos upload failed")
@@ -610,7 +569,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = networkRetryHelper,
             discardLosingClaim = mockk(relaxed = true),
         )
 
@@ -632,7 +590,6 @@ class SyncFinanzasUseCaseKtTest {
             deletionSyncHelper = deletionSyncHelper,
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
-            networkRetryHelper = mockk(relaxed = true),
             discardLosingClaim = discard,
         )
         return Triple(useCase, uploadCoordinator, downloadCoordinator)
