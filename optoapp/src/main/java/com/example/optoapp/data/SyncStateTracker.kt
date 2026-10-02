@@ -61,6 +61,36 @@ class SyncStateTracker @Inject constructor(
         )
     }
 
+    /**
+     * Holds a local row back from upload until the next download overwrites it: the remote copy is
+     * authoritative and the local one is known stale. A downloaded row's markSynced releases it.
+     */
+    suspend fun markAwaitingRemote(opticaId: String, entityType: String, entityId: String) {
+        dao.upsert(
+            SyncEntityState(
+                opticaId = opticaId,
+                entityType = entityType,
+                entityId = entityId,
+                status = STATUS_AWAITING_REMOTE,
+                lastError = "",
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    suspend fun awaitingRemoteIds(opticaId: String, entityType: String): Set<String> =
+        dao.getByStatus(opticaId, STATUS_AWAITING_REMOTE)
+            .asSequence()
+            .filter { it.entityType == entityType }
+            .map { it.entityId }
+            .toSet()
+
+    suspend fun isSynced(opticaId: String, entityType: String, entityId: String): Boolean =
+        dao.getState(opticaId, entityType, entityId)?.status == "synced"
+
+    suspend fun clear(opticaId: String, entityType: String, entityId: String) =
+        dao.clearEntityState(opticaId, entityType, entityId)
+
     suspend fun getConflictedCount(opticaId: String): Int = dao.countByStatus(opticaId, "conflicted")
 
     suspend fun getErrorsCount(opticaId: String): Int = dao.countByStatus(opticaId, "error")
@@ -84,5 +114,9 @@ class SyncStateTracker @Inject constructor(
             block()
             markSynced(opticaId, entityType, entityId)
         }
+    }
+
+    private companion object {
+        const val STATUS_AWAITING_REMOTE = "awaiting_remote"
     }
 }

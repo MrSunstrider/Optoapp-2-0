@@ -43,6 +43,7 @@ class UploadSyncCoordinatorTest {
         mockkStatic("android.util.Log")
         coEvery { syncStateTracker.quarantinedEntityIds(any(), any()) } returns emptySet()
         coEvery { syncStateTracker.quarantineReasons(any(), any()) } returns emptyMap()
+        coEvery { syncStateTracker.awaitingRemoteIds(any(), any()) } returns emptySet()
         // WHY: Room's withTransaction is an extension function MockK cannot stub.
         coordinator = object : UploadSyncCoordinator(
             repository = repository,
@@ -987,6 +988,27 @@ class UploadSyncCoordinatorTest {
         }
         coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "local-repl") }
         coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "local-orig") }
+    }
+
+    @Test
+    fun `original held for the winner after a discarded claim is not uploaded`() = runTest {
+        val opticaId = "optica-test"
+        val (original, _) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { syncStateTracker.awaitingRemoteIds(opticaId, "dispensacion") } returns setOf("local-orig")
+        stubRetryPassThrough()
+        val captured = mutableListOf<DispensacionRemota>()
+
+        createDispensacionCaptureCoordinator(
+            remotos = listOf(
+                DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042"),
+                DispensacionRemotaLookup(id = "winner-repl", ot = "2026-0042-R1", reclamoOrigenId = "local-orig"),
+            ),
+            captured = captured,
+        ).uploadDispensaciones(opticaId)
+
+        assertTrue("the stale original must wait for the download", captured.isEmpty())
     }
 
     @Test

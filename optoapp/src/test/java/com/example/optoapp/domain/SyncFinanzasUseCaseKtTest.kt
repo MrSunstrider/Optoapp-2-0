@@ -129,6 +129,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -165,6 +166,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -204,6 +206,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -234,6 +237,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -280,6 +284,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -311,6 +316,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -336,6 +342,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -381,6 +388,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -430,6 +438,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -471,6 +480,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -500,6 +510,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -536,6 +547,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -569,6 +581,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -600,6 +613,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             networkRetryHelper = networkRetryHelper,
+            discardLosingClaim = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -610,5 +624,49 @@ class SyncFinanzasUseCaseKtTest {
         val ioErr2 = result as com.example.optoapp.data.Resource.Error
         assertEquals("Error de red al sincronizar finanzas. Intenta de nuevo.", ioErr2.message)
         assertFalse(ioErr2.message!!.contains("Pagos upload failed"))
+    }
+
+    private fun relaxedSync(discard: DiscardLosingClaimUseCase): Triple<SyncFinanzasUseCase, UploadSyncCoordinator, DownloadSyncCoordinator> {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>(relaxed = true)
+        val deletionSyncHelper = mockk<DeletionSyncHelper>(relaxed = true)
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            networkRetryHelper = mockk(relaxed = true),
+            discardLosingClaim = discard,
+        )
+        return Triple(useCase, uploadCoordinator, downloadCoordinator)
+    }
+
+    @Test
+    fun syncFinanzas_discardsLosingClaimsAfterDispensacionUploadAndBeforeChildUploads() = runBlocking {
+        val discard = mockk<DiscardLosingClaimUseCase>()
+        coEvery { discard("optica-test") } returns 1
+        val (useCase, uploadCoordinator, downloadCoordinator) = relaxedSync(discard)
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            uploadCoordinator.uploadDispensaciones("optica-test")
+            discard("optica-test")
+            uploadCoordinator.uploadDispensacionItems("optica-test")
+            uploadCoordinator.uploadPagos("optica-test")
+            downloadCoordinator.downloadDispensaciones("optica-test")
+        }
+    }
+
+    @Test
+    fun syncFinanzas_discardFailureMarksPartialButStillDownloads() = runBlocking {
+        val discard = mockk<DiscardLosingClaimUseCase>()
+        coEvery { discard(any()) } throws IllegalStateException("boom")
+        val (useCase, _, downloadCoordinator) = relaxedSync(discard)
+
+        val result = useCase("optica-test")
+
+        coVerify { downloadCoordinator.downloadDispensaciones("optica-test") }
+        coVerify { downloadCoordinator.downloadPagos("optica-test") }
+        assertTrue(result is com.example.optoapp.data.Resource.Error)
     }
 }

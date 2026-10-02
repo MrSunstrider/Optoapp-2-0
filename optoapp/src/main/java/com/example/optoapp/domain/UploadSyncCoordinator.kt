@@ -133,7 +133,8 @@ open class UploadSyncCoordinator @Inject constructor(
         // WHY: while a claim conflict is unresolved the local original carries this device's claim
         // (estado/motivo/fecha); uploading it would overwrite the winner's original.
         val skippedLocalIds = claimConflicts.keys +
-            claimConflicts.keys.mapNotNull { localById[it]?.reclamoOrigenId }
+            claimConflicts.keys.mapNotNull { localById[it]?.reclamoOrigenId } +
+            syncStateTracker.awaitingRemoteIds(opticaId, "dispensacion")
         val deferredMerges = mutableListOf<Pair<DispensacionOptica, DispensacionOptica>>()
         val uniqueRows = LinkedHashMap<String, Pair<String, DispensacionRemota>>()
         dispensaciones.forEach { dispensacion ->
