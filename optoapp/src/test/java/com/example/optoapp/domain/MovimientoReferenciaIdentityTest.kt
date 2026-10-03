@@ -52,4 +52,35 @@ class MovimientoReferenciaIdentityTest {
         val b = movimientoReferenciaForManual("mov-b")
         assertNotEquals(a, b)
     }
+
+    @Test
+    fun cancelReferenciasFollowAnulacionShapes() {
+        assertEquals("d1:anul:i1", movimientoReferenciaForDispensacionItemAnulacion("d1", "i1"))
+        assertEquals("d1:anul:h:m1", movimientoReferenciaForDispensacionHeaderAnulacion("d1", "m1"))
+        assertEquals("r1:anul", movimientoReferenciaForRegaloAnulacion("r1"))
+        assertEquals("si1:anul", movimientoReferenciaForServicioItemAnulacion("si1"))
+    }
+
+    @Test
+    fun cancelReferenciasNeverCollideWithSaleOrEditReferencias() {
+        val saleOrEdit = setOf(
+            "d1",
+            movimientoReferenciaForRegalo("r1"),
+            "si1",
+            movimientoReferenciaForServicioExtraReverso("s1", "m1"),
+        )
+        val cancel = listOf(
+            movimientoReferenciaForDispensacionItemAnulacion("d1", "i1"),
+            movimientoReferenciaForDispensacionHeaderAnulacion("d1", "m1"),
+            movimientoReferenciaForRegaloAnulacion("r1"),
+            movimientoReferenciaForServicioItemAnulacion("si1"),
+        )
+        assertEquals(4, cancel.toSet().size)
+        cancel.forEach { assertTrue("$it collides with a sale/edit referencia", it !in saleOrEdit) }
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun cancelReferenciaRejectsBlankParent() {
+        movimientoReferenciaForDispensacionItemAnulacion(" ", "i1")
+    }
 }

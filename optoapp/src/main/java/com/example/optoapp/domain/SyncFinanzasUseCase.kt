@@ -27,7 +27,7 @@ open class SyncFinanzasUseCase @Inject constructor(
     private val deletionSyncHelper: DeletionSyncHelper,
     private val uploadSyncCoordinator: UploadSyncCoordinator,
     private val downloadSyncCoordinator: DownloadSyncCoordinator,
-    private val networkRetryHelper: NetworkRetryHelper,
+    private val discardLosingClaim: DiscardLosingClaimUseCase,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -56,6 +56,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r1 = safeUpload("dispensaciones") { uploadSyncCoordinator.uploadDispensaciones(opticaId) }
             dispUp = r1.count; hadPartialUpload = hadPartialUpload || r1.partial
             AppLogger.d(TAG, "Finanzas: upload dispensaciones=$dispUp")
+            hadPartialUpload = !discardLosingClaims(opticaId) || hadPartialUpload
             val r2 = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
             itemsUp = r2.count; hadPartialUpload = hadPartialUpload || r2.partial
             AppLogger.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
@@ -118,6 +119,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download regalos=$regalosDown")
             gastosDown = safeDownload("gastos_operativos") { downloadSyncCoordinator.downloadGastosOperativos(opticaId) }
             AppLogger.d(TAG, "Finanzas: download gastos_operativos=$gastosDown")
+            hadPartialUpload = !transferResidualClaimCredit(opticaId) || hadPartialUpload
         } else {
             dispDown = 0
             itemsDown = 0
@@ -165,6 +167,36 @@ open class SyncFinanzasUseCase @Inject constructor(
     } catch (e: Exception) {
         AppLogger.e(TAG, "Error inesperado sincronizando finanzas: ${e.message}", e)
         Resource.Error("Error sincronizando finanzas. Intenta de nuevo.")
+    }
+
+    /**
+     * Runs before child uploads so a losing claim's pagos/items never reach the server, and before
+     * download so the winner replaces it in the same sync. Returns false when the discard failed.
+     */
+    private suspend fun discardLosingClaims(opticaId: String): Boolean = try {
+        val discarded = discardLosingClaim(opticaId)
+        if (discarded > 0) AppLogger.w(TAG, "Finanzas: reclamos locales descartados=$discarded")
+        true
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Discard of losing claims failed", e)
+        false
+    }
+
+    /**
+     * Runs after download because only then is the winner's replacement local and the original's
+     * `awaiting_remote` hold released. Returns false when the transfer failed.
+     */
+    private suspend fun transferResidualClaimCredit(opticaId: String): Boolean = try {
+        val transferred = discardLosingClaim.transferResidualCredit(opticaId)
+        if (transferred > 0) AppLogger.w(TAG, "Finanzas: créditos locales transferidos al reclamo ganador=$transferred")
+        true
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Residual claim credit transfer failed", e)
+        false
     }
 
     // Isolated try-catch so one entity's failure doesn't block other downloads

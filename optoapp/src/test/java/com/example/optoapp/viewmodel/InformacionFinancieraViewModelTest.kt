@@ -20,7 +20,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -275,6 +274,152 @@ class InformacionFinancieraViewModelTest {
         vm.save {}
 
         assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save persists a zero total for a claim replacement`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns
+            Resource.Success(testDispensacion.copy(montoTotal = 0.0, reclamoOrigenId = "disp-origen"))
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.updateMontoTotal("0")
+
+        var completed = false
+        vm.save { completed = true }
+
+        coVerify { repository.actualizarMontoTotal(dispId, 0.0, "optica-test") }
+        assertEquals(true, completed)
+        assertEquals(null, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save rejects a zero total for an ordinary dispensacion and writes nothing`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.updateMontoTotal("0")
+
+        var completed = false
+        vm.save { completed = true }
+
+        coVerify(exactly = 0) { repository.actualizarMontoTotal(any(), any(), any()) }
+        assertEquals(false, completed)
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save rejects a negative total for a claim replacement`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns
+            Resource.Success(testDispensacion.copy(reclamoOrigenId = "disp-origen"))
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.updateMontoTotal("-1")
+
+        vm.save {}
+
+        coVerify(exactly = 0) { repository.actualizarMontoTotal(any(), any(), any()) }
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save on an order cancelled after loading writes nothing and emits error`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns
+            Resource.Success(testDispensacion.copy(estadoEntrega = "Anulado"))
+        vm.addPago(testPagos[0])
+
+        var completed = false
+        vm.save { completed = true }
+
+        coVerify(exactly = 0) { repository.agregarPago(any()) }
+        coVerify(exactly = 0) { repository.actualizarMontoTotal(any(), any(), any()) }
+        coVerify(exactly = 0) { repository.actualizarEstado(any(), any(), any(), any()) }
+        coVerify(exactly = 0) { repository.actualizarMontoPagado(any(), any(), any()) }
+        coVerify(exactly = 0) { postSaveSyncScheduler.scheduleFinanzasSync(any()) }
+        assertEquals(false, completed)
+        assertEquals("Error al guardar: La orden está anulada y no se puede modificar la información financiera.", vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save on Reclamada order cannot revert estado to Pendiente`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns
+            Resource.Success(testDispensacion.copy(estadoEntrega = "Reclamada"))
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        vm.updateEstado("Pendiente")
+        vm.save {}
+
+        assertEquals("Reclamada", vm.uiState.value.estadoEntrega)
+        coVerify(exactly = 0) { repository.actualizarEstado(any(), any(), any(), any()) }
+        assertEquals("Error al guardar: La orden está reclamada y no se puede modificar la información financiera.", vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save on Entregado order persists the added pago`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns
+            Resource.Success(testDispensacion.copy(estadoEntrega = "Entregado"))
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.addPago(testPagos[0])
+
+        var completed = false
+        vm.save { completed = true }
+
+        coVerify { repository.agregarPago(match { it.id == "p-1" && it.ventaId == "v_disp_$dispId" }) }
+        assertEquals(true, completed)
+        assertEquals(null, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `updateEstado ignores terminal targets on an active order`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        vm.updateEstado("Anulado")
+        vm.updateEstado("Reclamada")
+
+        assertEquals("Pendiente", vm.uiState.value.estadoEntrega)
+        assertEquals(null, vm.uiState.value.fechaEntrega)
+    }
+
+    @Test
+    fun `updateEstado ignores any change on an Anulado order`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns
+            Resource.Success(testDispensacion.copy(estadoEntrega = "Anulado"))
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        vm.updateEstado("Entregado")
+
+        assertEquals("Anulado", vm.uiState.value.estadoEntrega)
+        assertEquals(null, vm.uiState.value.fechaEntrega)
+    }
+
+    @Test
+    fun `loading an Anulado order exposes it as read-only with its reason and date`() = runTest {
+        coEvery { repository.obtenerDispensacion(dispId, any()) } returns Resource.Success(
+            testDispensacion.copy(estadoEntrega = "Anulado", motivoAnulacion = "Cliente desistió", fechaAnulacion = testDate),
+        )
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        val state = vm.uiState.value
+        assertEquals(true, state.isReadOnly)
+        assertEquals("Cliente desistió", state.motivoAnulacion)
+        assertEquals(testDate, state.fechaAnulacion)
+        assertEquals(listOf("Anulado"), state.selectableEstados)
+    }
+
+    @Test
+    fun `an active order stays editable and offers only manual estados`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+
+        val state = vm.uiState.value
+        assertEquals(false, state.isReadOnly)
+        assertEquals(null, state.motivoAnulacion)
+        assertEquals(listOf("Pendiente", "Entregado"), state.selectableEstados)
     }
 
     @Test

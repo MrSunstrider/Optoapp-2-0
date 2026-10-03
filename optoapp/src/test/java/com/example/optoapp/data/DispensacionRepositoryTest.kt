@@ -4,8 +4,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -69,7 +70,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun getDispensacionById_withExistingId_returnsSuccess() = runBlocking {
+    fun getDispensacionById_withExistingId_returnsSuccess() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -88,14 +89,14 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun getDispensacionById_withUnknownId_returnsError() = runBlocking {
+    fun getDispensacionById_withUnknownId_returnsError() = runTest {
         val result = repo.getDispensacionById("nonexistent", "o1")
 
         assertTrue(result is Resource.Error)
     }
 
     @Test
-    fun getDispensacionById_returnsNull_forForeignOptica() = runBlocking {
+    fun getDispensacionById_returnsNull_forForeignOptica() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -111,7 +112,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun insertDispensacion_persistsRecord() = runBlocking {
+    fun insertDispensacion_persistsRecord() = runTest {
         insertDummyPaciente()
         val disp = DispensacionOptica(
             id = "d_new",
@@ -129,7 +130,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun updateDispensacion_modifiesExistingRecord() = runBlocking {
+    fun updateDispensacion_modifiesExistingRecord() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -158,7 +159,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun deleteDispensacionById_removesRecord() = runBlocking {
+    fun deleteDispensacionById_removesRecord() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -176,7 +177,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun suggestNextOt_returnsNextSequence() = runBlocking {
+    fun suggestNextOt_returnsNextSequence() = runTest {
         insertDummyPaciente()
         val year = 2026
         dispensacionDao.insertDispensacion(
@@ -204,7 +205,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun insertPago_and_getByDispensacion_returnsPago() = runBlocking {
+    fun insertPago_and_getByDispensacion_returnsPago() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -232,7 +233,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_createsReversal() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_createsReversal() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -255,18 +256,49 @@ class DispensacionRepositoryTest {
 
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        // Original kept; linked Reverso inserted
         assertEquals(pago.id, pagoDao.getPagoByIdForOptica("p1", "o1")!!.id)
         val allPagos = pagoDao.getPagosListByOptica("o1")
         assertEquals(2, allPagos.size)
         val reversal = allPagos.first { it.tipo == "Reverso" }
         assertEquals(100.0, reversal.monto, 0.001)
         assertEquals("p1", reversal.reversaPagoId)
-        assertEquals(LocalDate.parse("2026-01-15"), reversal.fecha)
+        assertTrue(reversal.nota.contains(DateUtils.formatLocalized(LocalDate.parse("2026-01-15"))))
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_zeroMontoSkipsReversal() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_oldAbono_reversoIsDatedToday() = runTest {
+        insertDummyPaciente()
+        dispensacionDao.insertDispensacion(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p_dummy",
+                fecha = LocalDate.parse("2026-01-15"),
+                opticaId = "o1",
+            ),
+        )
+        val tenDaysAgo = DateUtils.today().minusDays(10)
+        val abono = Pago(
+            id = "p-old",
+            dispensacionId = "d1",
+            fecha = tenDaysAgo,
+            tipo = "Abono",
+            monto = 80.0,
+            metodoPago = "Efectivo",
+            opticaId = "o1",
+        )
+        pagoDao.insertPago(abono)
+
+        val todayBefore = DateUtils.today()
+        repo.deletePagoRegistrandoAnulacionEnCaja(abono, "o1")
+        val todayAfter = DateUtils.today()
+
+        val reverso = pagoDao.getReversoByOriginalId("p-old", "o1")!!
+        assertTrue(reverso.fecha in todayBefore..todayAfter)
+        assertEquals(tenDaysAgo, pagoDao.getPagoByIdForOptica("p-old", "o1")!!.fecha)
+    }
+
+    @Test
+    fun deletePagoRegistrandoAnulacionEnCaja_zeroMontoSkipsReversal() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -289,13 +321,12 @@ class DispensacionRepositoryTest {
 
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        // Zero monto: keep original, no Reverso
         assertEquals("p_zero", pagoDao.getPagoByIdForOptica("p_zero", "o1")!!.id)
         assertEquals(1, pagoDao.getPagosListByOptica("o1").size)
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_nonExistentPagoDoesNotCrash() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_nonExistentPagoDoesNotCrash() = runTest {
         val pago = Pago(
             id = "p_ghost",
             dispensacionId = "d1",
@@ -305,7 +336,6 @@ class DispensacionRepositoryTest {
             metodoPago = "EFECTIVO",
             opticaId = "o1",
         )
-        // pago not inserted — should not throw and should not insert reversal
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
         val allPagos = pagoDao.getPagosListByOptica("o1")
@@ -313,7 +343,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun insertServicio_and_getAll_returnsServicio() = runBlocking {
+    fun insertServicio_and_getAll_returnsServicio() = runTest {
         val servicio = ServicioExtra(
             id = "se1",
             descripcion = "Lentes de contacto",
@@ -332,8 +362,60 @@ class DispensacionRepositoryTest {
         assertEquals("Lentes de contacto", all[0].descripcion)
     }
 
+    private fun servicio(
+        motivoAnulacion: String? = null,
+        fechaAnulacion: LocalDate? = null,
+        estado: String = "Pendiente",
+        descripcion: String = "Reparación",
+    ) = ServicioExtra(
+        id = "se_cancel",
+        descripcion = descripcion,
+        montoTotal = 80.0,
+        estado = estado,
+        fecha = LocalDate.parse("2026-09-01"),
+        opticaId = "o1",
+        motivoAnulacion = motivoAnulacion,
+        fechaAnulacion = fechaAnulacion,
+    )
+
     @Test
-    fun getDispensacionesSnapshotForOptica_returnsAllForOptica() = runBlocking {
+    fun updateServicio_persistsCancellationMetadata() = runTest {
+        repo.insertServicio(servicio())
+
+        repo.updateServicio(
+            servicio(
+                estado = "Anulado",
+                motivoAnulacion = "Pieza no disponible",
+                fechaAnulacion = LocalDate.parse("2026-09-30"),
+            ),
+        )
+
+        val stored = servicioExtraDao.getServicioById("se_cancel", "o1")!!
+        assertEquals("Anulado", stored.estado)
+        assertEquals("Pieza no disponible", stored.motivoAnulacion)
+        assertEquals(LocalDate.parse("2026-09-30"), stored.fechaAnulacion)
+    }
+
+    @Test
+    fun updateServicio_nonCancelSaveWithoutMetadata_keepsStoredMetadata() = runTest {
+        repo.insertServicio(
+            servicio(
+                estado = "Anulado",
+                motivoAnulacion = "Pieza no disponible",
+                fechaAnulacion = LocalDate.parse("2026-09-30"),
+            ),
+        )
+
+        repo.updateServicio(servicio(estado = "Anulado", descripcion = "Reparación de bisagra"))
+
+        val stored = servicioExtraDao.getServicioById("se_cancel", "o1")!!
+        assertEquals("Reparación de bisagra", stored.descripcion)
+        assertEquals("Pieza no disponible", stored.motivoAnulacion)
+        assertEquals(LocalDate.parse("2026-09-30"), stored.fechaAnulacion)
+    }
+
+    @Test
+    fun getDispensacionesSnapshotForOptica_returnsAllForOptica() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
