@@ -67,6 +67,9 @@ data class DispensacionOptica(
     val updatedAt: String? = null,
     @SerialName("updatedBy")
     val updatedBy: String? = null,
+    val motivoAnulacion: String? = null,
+    @Serializable(with = LocalDateSerializer::class)
+    val fechaAnulacion: LocalDate? = null,
 )
 
 @Entity(
@@ -161,6 +164,9 @@ data class ServicioExtra(
     val updatedAt: String? = null,
     @SerialName("updatedBy")
     val updatedBy: String? = null,
+    val motivoAnulacion: String? = null,
+    @Serializable(with = LocalDateSerializer::class)
+    val fechaAnulacion: LocalDate? = null,
 )
 
 @Entity(

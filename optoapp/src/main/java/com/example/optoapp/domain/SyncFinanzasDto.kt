@@ -5,6 +5,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.data.baseOtForReclamo
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
@@ -47,6 +48,9 @@ data class DispensacionRemota(
     @SerialName("evaluacion_id") val evaluacionId: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("reclamo_origen_id") val reclamoOrigenId: String? = null,
+    @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
+    @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
 ) {
     fun toEntity() = DispensacionOptica(
         id = id, ot = ot ?: "", monturaId = monturaId ?: "", pacienteId = pacienteId,
@@ -68,6 +72,9 @@ data class DispensacionRemota(
         evaluacionId = evaluacionId,
         updatedAt = updatedAt,
         updatedBy = updatedBy,
+        reclamoOrigenId = reclamoOrigenId.normalizeOptionalFk(),
+        motivoAnulacion = motivoAnulacion,
+        fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
     )
 
     internal fun optId(remoteId: String) = remoteId.ifBlank { "mi_optica_base" }
@@ -89,6 +96,8 @@ data class ServicioRemoto(
     @SerialName("optica_id") val opticaId: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
+    @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
 ) {
     fun toEntity() = ServicioExtra(
         id = id,
@@ -105,6 +114,8 @@ data class ServicioRemoto(
         updatedAt = updatedAt,
         updatedBy = updatedBy,
         fechaEntrega = fechaEntrega?.let(LocalDate::parse),
+        motivoAnulacion = motivoAnulacion,
+        fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
     )
 }
 
@@ -491,6 +502,7 @@ internal data class ServicioRemotoLookup(
 internal data class DispensacionRemotaLookup(
     val id: String,
     val ot: String? = null,
+    @SerialName("reclamo_origen_id") val reclamoOrigenId: String? = null,
 )
 
 @Serializable
@@ -501,6 +513,8 @@ internal data class PagoRemotoLookup(
     val monto: Double = 0.0,
     @SerialName("metodo_pago") val metodoPago: String = "",
     val fecha: String = "",
+    @SerialName("servicio_extra_id") val servicioExtraId: String? = null,
+    @SerialName("reversa_pago_id") val reversaPagoId: String? = null,
 )
 
 fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRemota = DispensacionRemota(
@@ -518,6 +532,9 @@ fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRem
     filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
     evaluacionId = evaluacionId,
     updatedAt = updatedAt, updatedBy = updatedBy,
+    reclamoOrigenId = reclamoOrigenId.normalizeOptionalFk(),
+    motivoAnulacion = motivoAnulacion,
+    fechaAnulacion = fechaAnulacion?.toString(),
 )
 
 fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
@@ -569,6 +586,8 @@ fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = Servi
     updatedAt = updatedAt,
     updatedBy = updatedBy,
     fechaEntrega = fechaEntrega?.toString(),
+    motivoAnulacion = motivoAnulacion,
+    fechaAnulacion = fechaAnulacion?.toString(),
 )
 
 internal fun String?.normalizeOptionalFk(): String? = this?.trim()?.takeIf { it.isNotBlank() }
@@ -578,3 +597,11 @@ internal fun String.remotoServicioExtraMetodoToLocal(): String = if (this == Fin
 internal fun String.remotoOtServicioExtraToLocal(): String = if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
 internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
+
+/** Lowest `<base>-R<n>` whose normalized OT is not taken; null when the OT has no base to number from. */
+internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): String? {
+    val base = baseOtForReclamo(ot).ifBlank { return null }
+    return generateSequence(1) { it + 1 }
+        .map { "$base-R$it" }
+        .first { normalizedOtForUnique(it) !in takenNormalizedOts }
+}

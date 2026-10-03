@@ -55,11 +55,14 @@ interface PagoDao {
         """
         SELECT * FROM pagos
         WHERE (dispensacionId = :parentId OR servicioExtraId = :parentId)
-          AND tipo IN ('Abono', 'Pago completo')
           AND opticaId = :opticaId
+        ORDER BY fecha, id
         """,
     )
-    suspend fun getCreditPagosByParent(parentId: String, opticaId: String): List<Pago>
+    suspend fun getPagosByParent(parentId: String, opticaId: String): List<Pago>
+
+    @Query("SELECT COUNT(*) FROM pagos WHERE dispensacionId = :dispensacionId AND opticaId = :opticaId")
+    suspend fun countByDispensacion(dispensacionId: String, opticaId: String): Int
 
     @Query("DELETE FROM pagos WHERE id = :id AND opticaId = :opticaId")
     suspend fun deletePago(id: String, opticaId: String): Int
