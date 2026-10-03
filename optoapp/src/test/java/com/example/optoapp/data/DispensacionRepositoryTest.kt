@@ -288,10 +288,12 @@ class DispensacionRepositoryTest {
         )
         pagoDao.insertPago(abono)
 
+        val todayBefore = DateUtils.today()
         repo.deletePagoRegistrandoAnulacionEnCaja(abono, "o1")
+        val todayAfter = DateUtils.today()
 
         val reverso = pagoDao.getReversoByOriginalId("p-old", "o1")!!
-        assertEquals(DateUtils.today(), reverso.fecha)
+        assertTrue(reverso.fecha in todayBefore..todayAfter)
         assertEquals(tenDaysAgo, pagoDao.getPagoByIdForOptica("p-old", "o1")!!.fecha)
     }
 
