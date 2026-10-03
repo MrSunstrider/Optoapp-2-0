@@ -66,7 +66,7 @@ class CancelLedgerUseCasesTest {
         coEvery { repository.insertPago(any()) } answers { recordWrite("pago") }
         coEvery { stockHelper.restockOnce(any(), any(), any(), any(), any()) } answers {
             recordWrite("stock")
-            Result.success(true)
+            true
         }
         val updates = mutableListOf<ServicioExtra>()
         coEvery { repository.updateServicio(capture(updates)) } answers { recordWrite("servicio") }
@@ -159,8 +159,8 @@ class CancelLedgerUseCasesTest {
     @Test
     fun cancelServicio_stockFailureLeavesServicioActiveWithoutMetadata() = runTest {
         val updates = stubServicio(servicio(), items = listOf(servicioItem("item-1", "m-1")))
-        coEvery { stockHelper.restockOnce("m-1", "o1", 1, "item-1:anul", any()) } returns
-            Result.failure(IllegalStateException("restock failed"))
+        coEvery { stockHelper.restockOnce("m-1", "o1", 1, "item-1:anul", any()) } throws
+            IllegalStateException("restock failed")
 
         val error = runCatching { cancelServicio() }.exceptionOrNull()
 

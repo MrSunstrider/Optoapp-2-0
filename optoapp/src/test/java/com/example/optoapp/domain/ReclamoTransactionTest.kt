@@ -12,6 +12,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.PacienteRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.RoomTransactionRunner
 import com.example.optoapp.data.SyncRepository
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -80,7 +81,7 @@ class ReclamoTransactionTest {
         motivo: String = " Lente rayado ",
         repo: OptoRepository = repository,
     ) = ReclamarDispensacionUseCase(
-        repo, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator), claimScheduler,
+        repo, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator, RoomTransactionRunner(db)), claimScheduler,
         CalcularMontoPagadoUseCase(db.pagoDao()),
     )(origId, opticaId, motivo, total, metodoReembolso)
 
@@ -260,7 +261,7 @@ class ReclamoTransactionTest {
             )
 
             val outcome = ReclamarDispensacionUseCase(
-                repository, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator), claimScheduler,
+                repository, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator, RoomTransactionRunner(db)), claimScheduler,
                 CalcularMontoPagadoUseCase(db.pagoDao()),
             )(id, opticaId, "Garantía", total, "Efectivo") as ReclamoOutcome.Created
 
@@ -430,6 +431,18 @@ class ReclamoTransactionTest {
     }
 
     @Test
+    fun legacyNuevaDeTiendaHeaderFrame_isConsumedByTheReplacement() = runTest {
+        seedOriginal()
+        db.dispensacionDao().updateDispensacion(original().copy(monturaId = "M1", origenMontura = "Nueva de Tienda"))
+        seedMontura("M1", stock = 1)
+
+        val created = claim(total = 200.0) as ReclamoOutcome.Created
+
+        assertEquals(0, stock("M1"))
+        assertEquals(listOf(created.replacementId), movimientos().map { it.referenciaId })
+    }
+
+    @Test
     fun outOfStockCopiedFrame_failsTheWholeClaimWithTypedError() = runTest {
         seedOriginal()
         seedStoreItemAndRegalo(frameStock = 0)
@@ -461,7 +474,7 @@ class ReclamoTransactionTest {
 
         val error = runCatching {
             ReclamarDispensacionUseCase(
-                failingRepo, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator), claimScheduler,
+                failingRepo, db.pagoDao(), DispensacionStockHelper(repository.monturaCoordinator, RoomTransactionRunner(db)), claimScheduler,
                 CalcularMontoPagadoUseCase(db.pagoDao()),
             )(origId, opticaId, "Lente rayado", 200.0, "Efectivo")
         }.exceptionOrNull()

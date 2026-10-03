@@ -189,6 +189,7 @@ open class OptoRepository(
     fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getServiciosByDateRangeForOptica(start, end, opticaId)
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getServiciosByIds(ids, opticaId)
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getDispensacionesByIds(ids, opticaId)
+    suspend fun getDispensacionByReclamoOrigenId(originalId: String, opticaId: String) = dispensacionRepo.getDispensacionByReclamoOrigenId(originalId, opticaId)
     suspend fun getServicioById(id: String, opticaId: String) = dispensacionRepo.getServicioById(id, opticaId)
     suspend fun insertServicio(servicio: ServicioExtra) {
         val stamped = servicio.copy(updatedAt = Instant.now().toString())
