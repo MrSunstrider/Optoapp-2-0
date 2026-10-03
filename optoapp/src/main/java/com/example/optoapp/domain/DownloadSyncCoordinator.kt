@@ -75,6 +75,7 @@ class DownloadSyncCoordinator @Inject constructor(
         entityType: String,
     ): List<T>? = try {
         syncStateTracker.clear(opticaId, "download_$entityType", "batch")
+        // WHY: every entity is cleared, not only pagos, so markers an earlier version wrote for entities without a reader do not linger.
         syncStateTracker.clear(opticaId, downloadBlockedEntityType(entityType), "batch")
         var result: List<T> = emptyList()
         networkRetryHelper.retryNetwork("download:$tableName") {
@@ -99,14 +100,16 @@ class DownloadSyncCoordinator @Inject constructor(
      * `download_<entity>`/`batch` is marked synced only when every fetched row is now local: a row
      * that failed, or was skipped for a local quarantine or pending deletion, leaves the table
      * incomplete. Residual claim credit relies on this to see every remote Reverso before paying.
-     * A skip for a local quarantine or pending deletion also marks [downloadBlockedEntityType], so a
-     * wait the user can resolve is told apart from a network or persistence failure.
+     * With [trackLocalBlock], a skip for a local quarantine or pending deletion also marks
+     * [downloadBlockedEntityType], so a wait the user can resolve is told apart from a network or
+     * persistence failure. Only entities with a reader of that marker opt in.
      */
     private suspend inline fun <T> persistRemoteRows(
         opticaId: String,
         entityType: String,
         skipDeletions: Boolean,
         remotos: List<T>,
+        trackLocalBlock: Boolean = false,
         crossinline getId: (T) -> String,
         crossinline shouldSkip: suspend (T) -> Boolean,
         crossinline upsert: suspend (T) -> Unit,
@@ -148,7 +151,7 @@ class DownloadSyncCoordinator @Inject constructor(
             }
         }
         if (complete) syncStateTracker.markSynced(opticaId, "download_$entityType", "batch")
-        if (blockedLocally) syncStateTracker.markSynced(opticaId, downloadBlockedEntityType(entityType), "batch")
+        if (trackLocalBlock && blockedLocally) syncStateTracker.markSynced(opticaId, downloadBlockedEntityType(entityType), "batch")
         return persisted
     }
 
@@ -212,6 +215,7 @@ class DownloadSyncCoordinator @Inject constructor(
             opticaId,
             "pago",
             skipDeletions = true,
+            trackLocalBlock = true,
             remotos = remotos,
             getId = { it.id },
             shouldSkip = { false },
