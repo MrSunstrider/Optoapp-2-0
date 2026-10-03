@@ -82,16 +82,22 @@ LANGUAGE plpgsql AS $$
 DECLARE
     v_state TEXT;
     v_message TEXT;
+    v_refused BOOLEAN := false;
 BEGIN
+    -- The FAIL raise stays outside this block: raising it inside would be
+    -- caught by the raise_exception handler (it is P0001 too).
     BEGIN
         DELETE FROM public.dispensaciones WHERE id = p_id;
-        RAISE EXCEPTION '% FAIL: traced dispensacion % was deleted', p_label, p_id;
     EXCEPTION WHEN raise_exception THEN
         GET STACKED DIAGNOSTICS v_state = RETURNED_SQLSTATE, v_message = MESSAGE_TEXT;
-        ASSERT v_state = 'P0001', p_label || ' FAIL: expected P0001, got ' || v_state;
-        ASSERT v_message LIKE 'dispensacion_has_trace%',
-            p_label || ' FAIL: expected dispensacion_has_trace token, got ' || v_message;
+        v_refused := true;
     END;
+    IF NOT v_refused THEN
+        RAISE EXCEPTION '% FAIL: traced dispensacion % was deleted', p_label, p_id;
+    END IF;
+    ASSERT v_state = 'P0001', p_label || ' FAIL: expected P0001, got ' || v_state;
+    ASSERT v_message LIKE 'dispensacion_has_trace%',
+        p_label || ' FAIL: expected dispensacion_has_trace token, got ' || v_message;
     ASSERT EXISTS (SELECT 1 FROM public.dispensaciones WHERE id = p_id),
         p_label || ' FAIL: the refused dispensacion must survive';
     RAISE NOTICE '% PASS: delete of % refused with dispensacion_has_trace', p_label, p_id;
