@@ -633,6 +633,55 @@ class DiscardLosingClaimUseCaseTest {
     }
 
     @Test
+    fun pendingCreditNotice_isClearedWhenTheOriginalIsGoneWhileThePagosStayBlocked() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+        discarder().transferResidualCredit(opticaId)
+        assertEquals(1, heldPagosNotices().size)
+
+        db.dispensacionDao().deleteById(origId, opticaId)
+        discarder().transferResidualCredit(opticaId)
+
+        assertTrue(heldPagosNotices().isEmpty())
+    }
+
+    @Test
+    fun completeDownloadThatCannotSettleTheCredit_keepsTheUserInformedUntilItDoes() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+        discarder().transferResidualCredit(opticaId)
+        tracker.clear(opticaId, "download_pago_blocked", "batch")
+        tracker.markSynced(opticaId, "download_pago", "batch")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertEquals(
+            "El crédito del reclamo de la OT 2026-0042 queda pendiente hasta recibir la orden reclamada.",
+            heldPagosNotices().single().lastError,
+        )
+        assertEquals(setOf(origId), pendingCreditMarkers())
+
+        downloadWinner()
+        assertEquals(1, discarder().transferResidualCredit(opticaId))
+        assertTrue(heldPagosNotices().isEmpty())
+        assertTrue(pendingCreditMarkers().isEmpty())
+    }
+
+    @Test
+    fun completeDownloadThatCannotSettleWithoutResidualCredit_postsNoNotice() = runTest {
+        seedClaimedOriginal()
+        discarder()(opticaId)
+        reverseEveryCreditOfTheOriginal()
+        tracker.markSynced(opticaId, "download_pago", "batch")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertTrue(heldPagosNotices().isEmpty())
+    }
+
+    @Test
     fun adoptedWinnerWithoutLocalCredit_needsNoTransfer() = runTest {
         seedClaimedOriginal()
         discarder()(opticaId)
