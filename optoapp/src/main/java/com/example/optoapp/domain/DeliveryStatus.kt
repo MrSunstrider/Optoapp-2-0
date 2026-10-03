@@ -35,18 +35,21 @@ object OrderStatusPolicy {
         if (isTerminal(current)) listOf(current.trim()) else ACTIVE
 
     fun requireEditable(estado: String, operation: String) {
-        check(isEditable(estado)) { "La orden está ${estado.trim().lowercase()} y no se puede $operation." }
+        check(isEditable(estado)) { "La orden está ${terminalAdjective(estado)} y no se puede $operation." }
+    }
+
+    /** Estados are stored with servicio-era gender ("Anulado"); messages refer to "la orden". */
+    private fun terminalAdjective(estado: String): String = when (estado.trim()) {
+        ANULADO -> "anulada"
+        RECLAMADA -> "reclamada"
+        else -> estado.trim().lowercase()
     }
 }
 
-/** Waiting for delivery: still Pendiente and no delivery date recorded. */
 fun isPendingDelivery(estado: String, fechaEntrega: LocalDate?): Boolean =
     estado == OrderStatusPolicy.PENDIENTE && fechaEntrega == null
 
-/**
- * Assigning a delivery date means Entregado. Clearing it returns to Pendiente.
- * Anulado/Reclamada keep their estado.
- */
+/** A cancelled or claimed order is closed, so editing its delivery date must not reopen it. */
 fun estadoAfterFechaEntrega(currentEstado: String, fechaEntrega: LocalDate?): String {
     if (OrderStatusPolicy.isTerminal(currentEstado)) return currentEstado
     return if (fechaEntrega != null) OrderStatusPolicy.ENTREGADO else OrderStatusPolicy.PENDIENTE

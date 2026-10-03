@@ -1,6 +1,7 @@
 package com.example.optoapp.domain
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 /**
@@ -102,5 +103,12 @@ class SyncFinanzasDtoNormalizationTest {
         assertEquals("Tarjeta", "Tarjeta".remotoServicioExtraMetodoToLocal())
         assertEquals("", "".remotoServicioExtraMetodoToLocal())
         assertEquals("Transferencia", "Transferencia".remotoServicioExtraMetodoToLocal())
+    }
+
+    @Test
+    fun normalizedOtForUnique_keepsReclamoSuffixDistinctFromOriginal() {
+        assertEquals("OT-2026-0042-R1", normalizedOtForUnique(" ot-2026-0042-r1 "))
+        assertNotEquals(normalizedOtForUnique("OT-2026-0042"), normalizedOtForUnique("OT-2026-0042-R1"))
+        assertEquals(normalizedOtForUnique("ot-2026-0042"), normalizedOtForUnique("OT-2026-0042 "))
     }
 }
