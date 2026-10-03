@@ -18,7 +18,7 @@ run_migration_lint() {
     local staged_files
     staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
 
-    if ! echo "$staged_files" | grep -q "^supabase/migrations/"; then
+    if ! grep -q "^supabase/migrations/" <<<"$staged_files"; then
         return 0
     fi
 

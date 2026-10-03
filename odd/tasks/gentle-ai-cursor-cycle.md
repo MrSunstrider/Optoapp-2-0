@@ -40,6 +40,7 @@ An audit of the Cursor install (gentle-ai 3.7.0, engram 2.2.1, gga 2.10.1) found
 - [x] T6 Disable Cursor CLI commit/PR attribution; refresh skill registry. Route: inline. Evidence: `~/.cursor/cli-config.json` attribution false; `.cursor/skills` junction to `~/.cursor/skills` so the registry resolves Cursor paths (13 skills); Engram `skill-registry` mirror refreshed.
 - [x] T7 Verify end to end: hook tests, `review assess`, GGA, RDD on the new commits. Evidence: `gentle-ai doctor` healthy (7/7); `test_pre_commit.sh` 15/15 and `test_commit_msg.sh` 8/8 under Git Bash; GGA ran with provider `cursor` on ce241961, which landed without a trailer; RDD `review-4df030caf66aa05e` (bf43cd2d..ce241961, high risk) approved and acknowledged after human consent.
 - [x] T8 Close Claude leakage and RDD advisories: point the Optoapp section of `~/CLAUDE.md` (always loaded by Cursor, including `cursor-agent`) at `AGENTS.md` instead of stale `:app`/Retrofit facts; make `commit-msg` keep non-UTF-8 bodies (`LC_ALL=C`, `grep -a`) with byte-exact tests and the attribution-only case. Route: inline, TDD (scenario 5 RED showed the whole message replaced by "Binary file ... matches"). Commit 4b6a3b6d; RDD `review-85aa51e697a0b7f5` approved and acknowledged.
+- [x] T9 Disable Claude Code plugins for `cursor-agent` and make scenario 5 locale-independent. Route: inline. Commits 5705c81b, 9b728a02; see Progress.
 
 ## Acceptance criteria
 
