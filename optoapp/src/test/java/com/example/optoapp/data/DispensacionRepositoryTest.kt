@@ -6,7 +6,7 @@ import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import com.example.optoapp.util.DateUtils
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -70,7 +70,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun getDispensacionById_withExistingId_returnsSuccess() = runBlocking {
+    fun getDispensacionById_withExistingId_returnsSuccess() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -89,14 +89,14 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun getDispensacionById_withUnknownId_returnsError() = runBlocking {
+    fun getDispensacionById_withUnknownId_returnsError() = runTest {
         val result = repo.getDispensacionById("nonexistent", "o1")
 
         assertTrue(result is Resource.Error)
     }
 
     @Test
-    fun getDispensacionById_returnsNull_forForeignOptica() = runBlocking {
+    fun getDispensacionById_returnsNull_forForeignOptica() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -112,7 +112,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun insertDispensacion_persistsRecord() = runBlocking {
+    fun insertDispensacion_persistsRecord() = runTest {
         insertDummyPaciente()
         val disp = DispensacionOptica(
             id = "d_new",
@@ -130,7 +130,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun updateDispensacion_modifiesExistingRecord() = runBlocking {
+    fun updateDispensacion_modifiesExistingRecord() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -159,7 +159,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun deleteDispensacionById_removesRecord() = runBlocking {
+    fun deleteDispensacionById_removesRecord() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -177,7 +177,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun suggestNextOt_returnsNextSequence() = runBlocking {
+    fun suggestNextOt_returnsNextSequence() = runTest {
         insertDummyPaciente()
         val year = 2026
         dispensacionDao.insertDispensacion(
@@ -205,7 +205,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun insertPago_and_getByDispensacion_returnsPago() = runBlocking {
+    fun insertPago_and_getByDispensacion_returnsPago() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -233,7 +233,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_createsReversal() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_createsReversal() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -256,7 +256,6 @@ class DispensacionRepositoryTest {
 
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        // Original kept; linked Reverso inserted
         assertEquals(pago.id, pagoDao.getPagoByIdForOptica("p1", "o1")!!.id)
         val allPagos = pagoDao.getPagosListByOptica("o1")
         assertEquals(2, allPagos.size)
@@ -267,7 +266,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_oldAbono_reversoIsDatedToday() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_oldAbono_reversoIsDatedToday() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -297,7 +296,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_zeroMontoSkipsReversal() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_zeroMontoSkipsReversal() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
@@ -320,13 +319,12 @@ class DispensacionRepositoryTest {
 
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
-        // Zero monto: keep original, no Reverso
         assertEquals("p_zero", pagoDao.getPagoByIdForOptica("p_zero", "o1")!!.id)
         assertEquals(1, pagoDao.getPagosListByOptica("o1").size)
     }
 
     @Test
-    fun deletePagoRegistrandoAnulacionEnCaja_nonExistentPagoDoesNotCrash() = runBlocking {
+    fun deletePagoRegistrandoAnulacionEnCaja_nonExistentPagoDoesNotCrash() = runTest {
         val pago = Pago(
             id = "p_ghost",
             dispensacionId = "d1",
@@ -336,7 +334,6 @@ class DispensacionRepositoryTest {
             metodoPago = "EFECTIVO",
             opticaId = "o1",
         )
-        // pago not inserted — should not throw and should not insert reversal
         repo.deletePagoRegistrandoAnulacionEnCaja(pago, "o1")
 
         val allPagos = pagoDao.getPagosListByOptica("o1")
@@ -344,7 +341,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun insertServicio_and_getAll_returnsServicio() = runBlocking {
+    fun insertServicio_and_getAll_returnsServicio() = runTest {
         val servicio = ServicioExtra(
             id = "se1",
             descripcion = "Lentes de contacto",
@@ -380,7 +377,7 @@ class DispensacionRepositoryTest {
     )
 
     @Test
-    fun updateServicio_persistsCancellationMetadata() = runBlocking {
+    fun updateServicio_persistsCancellationMetadata() = runTest {
         repo.insertServicio(servicio())
 
         repo.updateServicio(
@@ -398,7 +395,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun updateServicio_nonCancelSaveWithoutMetadata_keepsStoredMetadata() = runBlocking {
+    fun updateServicio_nonCancelSaveWithoutMetadata_keepsStoredMetadata() = runTest {
         repo.insertServicio(
             servicio(
                 estado = "Anulado",
@@ -416,7 +413,7 @@ class DispensacionRepositoryTest {
     }
 
     @Test
-    fun getDispensacionesSnapshotForOptica_returnsAllForOptica() = runBlocking {
+    fun getDispensacionesSnapshotForOptica_returnsAllForOptica() = runTest {
         insertDummyPaciente()
         dispensacionDao.insertDispensacion(
             DispensacionOptica(
