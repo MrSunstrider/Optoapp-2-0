@@ -44,7 +44,7 @@ interface MonturaMovimientoDao {
         SELECT COUNT(*) FROM montura_movimientos
         WHERE opticaId = :opticaId AND (
           referenciaId = :dispensacionId
-          OR referenciaId LIKE :dispensacionId || ':%'
+          OR substr(referenciaId, 1, length(:dispensacionId) + 1) = :dispensacionId || ':'
           OR referenciaId IN (:regaloIds)
         )
         """,
@@ -56,7 +56,7 @@ interface MonturaMovimientoDao {
         SELECT * FROM montura_movimientos
         WHERE opticaId = :opticaId AND (
           referenciaId = :dispensacionId
-          OR referenciaId LIKE :dispensacionId || ':%'
+          OR substr(referenciaId, 1, length(:dispensacionId) + 1) = :dispensacionId || ':'
         )
         """,
     )

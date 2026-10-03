@@ -231,8 +231,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
         val replacement = repository.getDispensacionById(replacementId, opticaId).data
         val original = repository.getDispensacionById(origenId, opticaId).data
 
-        movimientoDao.getMovimientosListByOptica(opticaId)
-            .filter { it.referenciaId == replacementId || it.referenciaId.startsWith("$replacementId:") }
+        movimientoDao.getMovimientosForDispensacion(replacementId, opticaId)
             .forEach { undoMovimiento(opticaId, replacementId, it) }
 
         pagoDao.getPagosByParent(origenId, opticaId)

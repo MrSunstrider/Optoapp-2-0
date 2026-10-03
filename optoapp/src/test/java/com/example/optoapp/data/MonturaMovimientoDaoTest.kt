@@ -21,8 +21,8 @@ import java.time.LocalDate
 /**
  * Tests de integración para [MonturaMovimientoDao] usando Room in-memory database.
  *
- * Verifica que @Query, @Insert, @Upsert funcionan correctamente después
- * de la extracción del DAO a archivo separado.
+ * Verifica inserciones, upserts y consultas acotadas por óptica, incluida la
+ * búsqueda de movimientos por dispensación (referenciaId exacto o con sufijo).
  */
 @RunWith(RobolectricTestRunner::class)
 class MonturaMovimientoDaoTest {
@@ -390,5 +390,32 @@ class MonturaMovimientoDaoTest {
             dao.getMovimientosForDispensacion("d1", "o1").map { it.id }.toSet(),
         )
         assertTrue(dao.getMovimientosForDispensacion("d2", "o1").isEmpty())
+    }
+
+    @Test
+    fun dispensacionRefMatching_isCaseSensitiveAndTreatsWildcardCharactersLiterally() = runTest {
+        monturaDao.insertMontura(
+            Montura(
+                id = "m1", sku = "S001", marca = "M", modelo = "X",
+                color = "N", talla = "M", costo = 50.0, precio = 100.0,
+                stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
+            ),
+        )
+        listOf("mov-upper" to "D1:regalo:g1", "mov-wildcard" to "dX:regalo:g1", "mov-percent" to "dXYZ:anul:i1")
+            .forEach { (id, referenciaId) ->
+                dao.insertMovimiento(
+                    MonturaMovimiento(
+                        id = id, monturaId = "m1", fecha = LocalDate.parse("2026-06-18"), tipo = "SALIDA_VENTA",
+                        cantidad = 1, stockPrevio = 10, stockNuevo = 9, referenciaId = referenciaId, opticaId = "o1",
+                    ),
+                )
+            }
+
+        assertTrue(dao.getMovimientosForDispensacion("d1", "o1").isEmpty())
+        assertTrue(dao.getMovimientosForDispensacion("d_", "o1").isEmpty())
+        assertTrue(dao.getMovimientosForDispensacion("d%", "o1").isEmpty())
+        assertEquals(0, dao.countForDispensacion("d1", emptyList(), "o1"))
+        assertEquals(0, dao.countForDispensacion("d_", emptyList(), "o1"))
+        assertEquals(0, dao.countForDispensacion("d%", emptyList(), "o1"))
     }
 }
