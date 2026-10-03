@@ -123,7 +123,12 @@ open class SyncInventarioUseCase @Inject constructor(
     }
 
     private suspend fun uploadMovimientos(opticaId: String): MovimientoUploadOutcome {
+        val losingReplacements = syncStateTracker.quarantineReasons(opticaId, "dispensacion")
+            .filterValues { FinanzasUploadValidator.reclamoOrigenIdOf(it) != null }
+            .keys
+        // WHY: stock moved by a claim that lost to another device must never reach the server.
         val localMovimientos = repository.getMovimientosMonturaSnapshotForOptica(opticaId)
+            .filterNot { m -> losingReplacements.any { id -> m.referenciaId == id || m.referenciaId.startsWith("$id:") } }
         if (localMovimientos.isEmpty()) {
             syncStateTracker.markSynced(opticaId, "upload_montura_movimientos", "batch")
             return MovimientoUploadOutcome(0, 0)
