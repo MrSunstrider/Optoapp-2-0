@@ -29,6 +29,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.ui.components.ClaimLinkButton
 import com.example.optoapp.ui.components.ConfirmDeleteDialog
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.MotivoDialog
@@ -38,13 +39,17 @@ import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OrderEstadoChip
 import com.example.optoapp.ui.components.OrderReadOnlyBanner
 import com.example.optoapp.ui.components.PatientContextCard
+import com.example.optoapp.ui.components.ReclamoDialog
 import com.example.optoapp.ui.components.WizardStepHeader
+import com.example.optoapp.ui.components.reclamoOrigenLinkLabel
+import com.example.optoapp.ui.components.reemplazoLinkLabel
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionItemUi
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.OrderLifecycleState
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 internal fun wizardStepsForMode(isEditMode: Boolean): List<String> =
@@ -194,12 +199,21 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 )
             }
 
+            val openOrder: (String) -> Unit = { id -> navController.navigate(Route.EditarDispensacion(pacienteId, id).route) }
+            val claimLink: (@Composable () -> Unit)? = uiState.reemplazo?.let { reemplazo ->
+                { ClaimLinkButton(reemplazoLinkLabel(reemplazo.ot)) { openOrder(reemplazo.id) } }
+            } ?: uiState.reclamoOrigen?.let { origen ->
+                { ClaimLinkButton(reclamoOrigenLinkLabel(origen.ot)) { openOrder(origen.id) } }
+            }
             if (lifecycle.isReadOnly) {
                 OrderReadOnlyBanner(
                     estado = uiState.estadoEntrega,
                     motivo = uiState.motivoAnulacion,
                     fecha = uiState.fechaAnulacion,
+                    link = claimLink,
                 )
+            } else if (claimLink != null) {
+                ReplacementOrderBanner(link = claimLink)
             }
 
             when (currentStep) {
@@ -224,6 +238,7 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                         lifecycle = lifecycle,
                         viewModel = viewModel,
                         dispensacionId = dispensacionId!!,
+                        pacienteId = pacienteId,
                         navController = navController,
                     )
                 }
@@ -233,6 +248,14 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                 Text(
                     text = uiState.error ?: "",
                     color = MaterialTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                )
+            }
+
+            if (!uiState.infoMessage.isNullOrBlank()) {
+                Text(
+                    text = uiState.infoMessage ?: "",
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 13.sp,
                 )
             }
@@ -391,21 +414,56 @@ private fun StepProductos(
 }
 
 @Composable
+private fun ReplacementOrderBanner(link: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("Orden de reemplazo por garantía", fontWeight = FontWeight.Bold)
+            link()
+        }
+    }
+}
+
+@Composable
 private fun StepGestion(
     uiState: com.example.optoapp.viewmodel.DispensacionUiState,
     lifecycle: OrderLifecycleState,
     viewModel: DispensacionViewModel,
     dispensacionId: String,
+    pacienteId: String,
     navController: NavController,
 ) {
     var showAnularDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var metodoReembolsoSugerido by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
-    LaunchedEffect(uiState.error) {
-        if (uiState.error != null) {
+    LaunchedEffect(uiState.error, uiState.infoMessage) {
+        if (uiState.error != null || uiState.infoMessage != null) {
             showAnularDialog = false
             showDeleteDialog = false
+            metodoReembolsoSugerido = null
         }
+    }
+
+    metodoReembolsoSugerido?.let { sugerido ->
+        ReclamoDialog(
+            ot = uiState.ot,
+            montoTotalOriginal = uiState.montoTotal.replace(",", ".").toDoubleOrNull() ?: 0.0,
+            creditoTransferido = uiState.montoPagado,
+            metodoReembolsoSugerido = sugerido,
+            submitting = uiState.isLoading,
+            onConfirm = { motivo, nuevoMontoTotal, metodoReembolso ->
+                viewModel.crearReclamo(dispensacionId, motivo, nuevoMontoTotal, metodoReembolso) { replacementId ->
+                    metodoReembolsoSugerido = null
+                    navController.popBackStack()
+                    navController.navigate(Route.EditarDispensacion(pacienteId, replacementId).route)
+                }
+            },
+            onDismiss = { metodoReembolsoSugerido = null },
+        )
     }
 
     if (showAnularDialog) {
@@ -495,6 +553,15 @@ private fun StepGestion(
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
         ) {
             Text("Anular orden")
+        }
+    }
+    if (lifecycle.canClaim) {
+        OutlinedButton(
+            onClick = { scope.launch { metodoReembolsoSugerido = viewModel.metodoReembolsoSugerido(dispensacionId) } },
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Reclamar (garantía)")
         }
     }
     if (lifecycle.canHardDelete) {

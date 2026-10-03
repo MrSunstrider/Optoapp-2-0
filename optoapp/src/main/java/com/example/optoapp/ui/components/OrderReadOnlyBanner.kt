@@ -2,6 +2,7 @@ package com.example.optoapp.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +33,19 @@ fun readOnlyBannerTitle(estado: String, servicio: Boolean = false): String = whe
 fun readOnlyBannerDetail(motivo: String?, fecha: LocalDate?): String {
     val motivoText = motivo?.trim()?.takeIf { it.isNotEmpty() }?.let { "Motivo: $it" } ?: "Sin motivo registrado"
     return if (fecha == null) motivoText else "$motivoText · ${DateUtils.formatLocalized(fecha)}"
+}
+
+fun reemplazoLinkLabel(ot: String): String =
+    ot.trim().takeIf { it.isNotEmpty() }?.let { "Ver reemplazo OT $it" } ?: "Ver orden de reemplazo"
+
+fun reclamoOrigenLinkLabel(ot: String): String =
+    ot.trim().takeIf { it.isNotEmpty() }?.let { "Reclamo de OT $it" } ?: "Reclamo de la orden original"
+
+@Composable
+fun ClaimLinkButton(label: String, onClick: () -> Unit) {
+    TextButton(onClick = onClick, contentPadding = PaddingValues(0.dp)) {
+        Text(label, fontWeight = FontWeight.SemiBold)
+    }
 }
 
 @Composable

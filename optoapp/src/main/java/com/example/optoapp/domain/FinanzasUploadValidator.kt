@@ -50,13 +50,41 @@ object FinanzasUploadValidator {
         return m.contains("23514") || m.contains("check constraint", ignoreCase = true)
     }
 
+    // WHY: only these unique indexes mean "another device already wrote the same claim/reversal";
+    // any other 23505 is a real defect and must keep failing loudly.
+    private const val CLAIM_UNIQUE_INDEX = "dispensaciones_reclamo_origen_uidx"
+    private const val REVERSO_UNIQUE_INDEX = "pagos_reversa_pago_id_uidx"
+    const val CLAIM_UNIQUE_VIOLATION = "quarantine:unique:$CLAIM_UNIQUE_INDEX"
+    const val REVERSO_UNIQUE_VIOLATION = "quarantine:unique:$REVERSO_UNIQUE_INDEX"
+    private const val RECLAMO_DUPLICATE_PREFIX = "quarantine:reclamo_duplicate:"
+
     fun isIsolatableUploadFailure(message: String?): Boolean {
         val m = message.orEmpty()
         return isConstraintViolation(m) ||
             m.contains("42501") ||
-            m.contains("row-level security", ignoreCase = true)
+            m.contains("row-level security", ignoreCase = true) ||
+            m.contains(CLAIM_UNIQUE_INDEX) ||
+            m.contains(REVERSO_UNIQUE_INDEX)
+    }
+
+    fun poisonReason(message: String?): String {
+        val m = message.orEmpty()
+        return when {
+            m.contains(CLAIM_UNIQUE_INDEX) -> CLAIM_UNIQUE_VIOLATION
+            m.contains(REVERSO_UNIQUE_INDEX) -> REVERSO_UNIQUE_VIOLATION
+            else -> "quarantine:constraint:${m.take(120)}"
+        }
     }
 
     fun parentMissingReason(parentKind: String, parentId: String): String =
         "quarantine:parent_missing:$parentKind:$parentId"
+
+    fun reclamoDuplicateReason(origenId: String): String = "$RECLAMO_DUPLICATE_PREFIX$origenId"
+
+    fun reclamoOrigenIdOf(reason: String): String? =
+        reason.takeIf { it.startsWith(RECLAMO_DUPLICATE_PREFIX) }?.removePrefix(RECLAMO_DUPLICATE_PREFIX)
+
+    fun reclamoOtConflictReason(remoteId: String): String = "quarantine:reclamo_ot_conflict:$remoteId"
+
+    fun reversoDuplicateReason(reversaPagoId: String): String = "quarantine:reverso_duplicate:$reversaPagoId"
 }

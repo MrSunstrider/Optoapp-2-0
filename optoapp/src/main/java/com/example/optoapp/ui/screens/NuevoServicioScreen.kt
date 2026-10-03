@@ -35,6 +35,7 @@ fun NuevoServicioScreen(
     val showAnularDialog by viewModel.showDeleteDialog.collectAsState()
     val anulando by viewModel.anulando.collectAsState()
     val anularError by viewModel.deleteError.collectAsState()
+    val infoMessage by viewModel.infoMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var currentStep by remember { mutableIntStateOf(0) }
 
@@ -50,6 +51,12 @@ fun NuevoServicioScreen(
         val msg = anularError ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(msg)
         viewModel.clearDeleteError()
+    }
+
+    LaunchedEffect(infoMessage) {
+        val msg = infoMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearInfoMessage()
     }
 
     LaunchedEffect(servicioId) {

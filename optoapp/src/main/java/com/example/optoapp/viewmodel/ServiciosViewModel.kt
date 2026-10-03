@@ -11,6 +11,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.auth.AuthorizationGuard
@@ -99,6 +100,9 @@ class ServiciosViewModel @Inject constructor(
 
     private val _anulando = MutableStateFlow(false)
     val anulando: StateFlow<Boolean> = _anulando.asStateFlow()
+
+    private val _infoMessage = MutableStateFlow<String?>(null)
+    val infoMessage: StateFlow<String?> = _infoMessage.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -507,10 +511,16 @@ class ServiciosViewModel @Inject constructor(
             try {
                 AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), CANCEL_ROLES, "anular servicio")
                 val reason = normalizeMotivo(motivo)
-                cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
+                val outcome = cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
                 _showDeleteDialog.value = false
                 _servicioToDelete.value = null
-                onComplete()
+                when (outcome) {
+                    LifecycleOutcome.Applied -> onComplete()
+                    is LifecycleOutcome.AlreadyTerminal -> {
+                        _infoMessage.value = servicioAlreadyTerminalMessage(outcome.estado)
+                        if (_uiState.value.id == servicio.id) loadServicio(servicio.id)
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IllegalArgumentException) {
@@ -529,6 +539,13 @@ class ServiciosViewModel @Inject constructor(
     fun clearDeleteError() {
         _deleteError.value = null
     }
+
+    fun clearInfoMessage() {
+        _infoMessage.value = null
+    }
+
+    private fun servicioAlreadyTerminalMessage(estado: String): String =
+        if (estado == OrderStatusPolicy.ANULADO) "Este servicio ya fue anulado" else "Este servicio ya está en estado $estado"
 
     private fun deriveHeader(state: ServiciosUiState): ServiciosUiState {
         val nonBlank = state.items.filter { it.descripcion.isNotBlank() }
