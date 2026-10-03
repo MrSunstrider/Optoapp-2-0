@@ -78,10 +78,40 @@ class ReclamoPreviewTest {
         val valid = reclamoPreview(200.0, "150")
         val invalid = reclamoPreview(200.0, "-1")
 
-        assertTrue(canConfirmReclamo("Lente rayado", valid, submitting = false))
-        assertFalse(canConfirmReclamo("  ", valid, submitting = false))
-        assertFalse(canConfirmReclamo("Lente rayado", invalid, submitting = false))
-        assertFalse(canConfirmReclamo("Lente rayado", valid, submitting = true))
+        assertTrue(canConfirmReclamo("Lente rayado", valid, "Efectivo", submitting = false))
+        assertFalse(canConfirmReclamo("  ", valid, "Efectivo", submitting = false))
+        assertFalse(canConfirmReclamo("Lente rayado", invalid, "Efectivo", submitting = false))
+        assertFalse(canConfirmReclamo("Lente rayado", valid, "Efectivo", submitting = true))
+    }
+
+    @Test
+    fun `non finite new total is invalid and refunds nothing`() {
+        listOf("Infinity", "1e309", "NaN").forEach { input ->
+            val preview = reclamoPreview(creditoTransferido = 200.0, nuevoTotalInput = input)
+
+            assertNull(input, preview.nuevoTotal)
+            assertEquals(input, 0.0, preview.reembolso, 0.001)
+            assertFalse(input, preview.muestraMetodoReembolso)
+        }
+    }
+
+    @Test
+    fun `excess within the ledger epsilon shows no refund like the use case`() {
+        val preview = reclamoPreview(creditoTransferido = 200.0, nuevoTotalInput = "199.997")
+
+        assertEquals(199.997, preview.nuevoTotal!!, 0.0001)
+        assertEquals(0.0, preview.reembolso, 0.0)
+        assertFalse(preview.muestraMetodoReembolso)
+    }
+
+    @Test
+    fun `claim with a shown refund requires a refund method`() {
+        val conReembolso = reclamoPreview(200.0, "150")
+        val sinReembolso = reclamoPreview(200.0, "200")
+
+        assertFalse(canConfirmReclamo("Lente rayado", conReembolso, "", submitting = false))
+        assertFalse(canConfirmReclamo("Lente rayado", conReembolso, "  ", submitting = false))
+        assertTrue(canConfirmReclamo("Lente rayado", sinReembolso, "", submitting = false))
     }
 
     @Test
