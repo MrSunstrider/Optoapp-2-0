@@ -12,6 +12,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
+import java.time.Instant
 import javax.inject.Inject
 
 /**
@@ -312,10 +313,30 @@ open class UploadSyncCoordinator @Inject constructor(
             val freeOt = nextFreeReclamoOt(replacement.ot, takenOts) ?: return@map replacement
             takenOts += normalizedOtForUnique(freeOt).orEmpty()
             val renumbered = replacement.copy(ot = freeOt)
-            repository.updateDispensacion(renumbered)
+            runInTransaction {
+                repository.updateDispensacion(renumbered)
+                rewriteClaimSaleNotes(replacement, freeOt)
+            }
             AppLogger.w(TAG, "OT ${replacement.ot} del reclamo ${replacement.id} ya existe en la nube; renumerada a $freeOt")
             renumbered
         }
+    }
+
+    /**
+     * The claim's frame sale notes carry the replacement's OT ("Venta por reclamo de OT ..."); the
+     * pagos notes carry the original's OT, which a renumber never changes. The rows get a fresh
+     * `updatedAt` so a sale already uploaded under the old OT is upserted again by the next inventario sync.
+     */
+    private suspend fun rewriteClaimSaleNotes(replacement: DispensacionOptica, newOt: String) {
+        val stamp = Instant.now().toString()
+        repository.getMovimientosMonturaSnapshotForOptica(replacement.opticaId)
+            .filter { it.referenciaId == replacement.id || it.referenciaId.startsWith("${replacement.id}:") }
+            .forEach { movimiento ->
+                val nota = replaceOtToken(movimiento.nota, replacement.ot, newOt)
+                if (nota != movimiento.nota) {
+                    repository.upsertMonturaMovimiento(movimiento.copy(nota = nota, updatedAt = stamp))
+                }
+            }
     }
 
     private fun detectClaimConflicts(
