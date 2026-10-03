@@ -16,7 +16,6 @@ import io.mockk.spyk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.After
@@ -37,13 +36,13 @@ class DispensacionStockHelperRoomTest {
     private lateinit var coordinator: MonturaInventoryCoordinator
 
     @Before
-    fun setUp() {
+    fun setUp() = runTest {
         db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), OptoDatabase::class.java)
             .allowMainThreadQueries()
             .build()
         val scheduler = mockk<PostSaveSyncScheduler>(relaxed = true)
         coordinator = spyk(MonturaInventoryCoordinator(db.monturaDao(), db.monturaMovimientoDao(), Lazy { scheduler }))
-        runBlocking { db.monturaDao().insertMontura(Montura(id = "M1", sku = "sku-M1", stockActual = 3, opticaId = opticaId)) }
+        db.monturaDao().insertMontura(Montura(id = "M1", sku = "sku-M1", stockActual = 3, opticaId = opticaId))
     }
 
     @After

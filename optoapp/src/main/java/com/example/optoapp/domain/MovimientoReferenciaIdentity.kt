@@ -48,6 +48,16 @@ fun movimientoReferenciaForDispensacionHeaderAnulacion(dispensacionId: String, m
     return "$dispensacionId:anul:h:$monturaId"
 }
 
+/**
+ * WHY: one restock per uploaded sale movimiento of a discarded claim; the `<replacementId>:` prefix
+ * keeps it inside the replacement's trace (local check and server delete guard).
+ */
+fun movimientoReferenciaForDiscardedClaim(replacementId: String, movimientoId: String): String {
+    require(replacementId.isNotBlank()) { "replacement id must not be blank" }
+    require(movimientoId.isNotBlank()) { "movimiento id must not be blank" }
+    return "$replacementId:descarte:$movimientoId"
+}
+
 fun movimientoReferenciaForRegaloAnulacion(regaloId: String): String {
     require(regaloId.isNotBlank()) { "regalo id must not be blank" }
     return "$regaloId:anul"

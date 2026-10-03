@@ -5,7 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaMovimientoDao
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -48,7 +48,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun insertMovimiento_and_retrieveViaGetMovimientosByOptica() = runBlocking {
+    fun insertMovimiento_and_retrieveViaGetMovimientosByOptica() = runTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
             color = "Negro", talla = "M", costo = 50.0, precio = 100.0,
@@ -79,7 +79,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun getMovimientoById_returnsNull_forForeignOptica() = runBlocking {
+    fun getMovimientoById_returnsNull_forForeignOptica() = runTest {
         monturaDao.insertMontura(
             Montura(
                 id = "m1", sku = "S001", marca = "Marca", modelo = "Mod1",
@@ -104,7 +104,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun getMovimientosByOptica_filtersByOptica() = runBlocking {
+    fun getMovimientosByOptica_filtersByOptica() = runTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "M", modelo = "X",
             color = "N", talla = "M", costo = 50.0, precio = 100.0,
@@ -142,7 +142,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun getMovimientosByMontura_returnsMovimientosForMontura() = runBlocking {
+    fun getMovimientosByMontura_returnsMovimientosForMontura() = runTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "M", modelo = "X",
             color = "N", talla = "M", costo = 50.0, precio = 100.0,
@@ -197,7 +197,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun getMovimientosListByOptica_returnsAllMovimientosForOptica() = runBlocking {
+    fun getMovimientosListByOptica_returnsAllMovimientosForOptica() = runTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "M", modelo = "X",
             color = "N", talla = "M", costo = 50.0, precio = 100.0,
@@ -234,14 +234,14 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun getMovimientosByOptica_whenNoMovimientos_returnsEmpty() = runBlocking {
+    fun getMovimientosByOptica_whenNoMovimientos_returnsEmpty() = runTest {
         val movimientos = dao.getMovimientosByOptica("nonexistent").first()
 
         assertTrue(movimientos.isEmpty())
     }
 
     @Test
-    fun getMovimientosByMontura_whenNoMovimientos_returnsEmpty() = runBlocking {
+    fun getMovimientosByMontura_whenNoMovimientos_returnsEmpty() = runTest {
         val movimientos = dao.getMovimientosByMontura("nonexistent", "o1").first()
 
         assertTrue(movimientos.isEmpty())
@@ -253,7 +253,7 @@ class MonturaMovimientoDaoTest {
      * crashed with SQLITE_CONSTRAINT_UNIQUE (2067) at login. Fixed by @Insert(REPLACE).
      */
     @Test
-    fun insertMovimiento_duplicateSecondaryUniqueKey_replacesRowWithoutThrowing() = runBlocking {
+    fun insertMovimiento_duplicateSecondaryUniqueKey_replacesRowWithoutThrowing() = runTest {
         val montura = Montura(
             id = "m1", sku = "S001", marca = "M", modelo = "X",
             color = "N", talla = "M", costo = 50.0, precio = 100.0,
@@ -293,7 +293,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun insertMovimientoIfAbsent_duplicateSecondaryUniqueKey_keepsExistingRow() = runBlocking {
+    fun insertMovimientoIfAbsent_duplicateSecondaryUniqueKey_keepsExistingRow() = runTest {
         monturaDao.insertMontura(
             Montura(
                 id = "m1", sku = "S001", marca = "M", modelo = "X",
@@ -315,7 +315,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun findByKey_matchesOnlyExactReferenciaTipoAndMontura() = runBlocking {
+    fun findByKey_matchesOnlyExactReferenciaTipoAndMontura() = runTest {
         monturaDao.insertMontura(
             Montura(
                 id = "m1", sku = "S001", marca = "M", modelo = "X",
@@ -336,7 +336,7 @@ class MonturaMovimientoDaoTest {
     }
 
     @Test
-    fun countForDispensacion_matchesOrderRefsReversalRefsAndRegaloRefsOnly() = runBlocking {
+    fun countForDispensacion_matchesOrderRefsReversalRefsAndRegaloRefsOnly() = runTest {
         monturaDao.insertMontura(
             Montura(
                 id = "m1", sku = "S001", marca = "M", modelo = "X",
