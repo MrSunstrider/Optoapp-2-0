@@ -112,13 +112,24 @@ class DispensacionViewModelAnulacionTest {
     }
 
     @Test
-    fun `cancel on an already Anulado order is a silent no-op that completes`() = runTest {
+    fun `cancel on an already Anulado order informs the user and completes to refresh the order`() = runTest {
         coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.AlreadyTerminal("Anulado")
 
         val completed = anularAndAwait()
 
         assertTrue(completed)
+        assertEquals("Esta orden ya fue anulada", viewModel.uiState.value.infoMessage)
         assertNull(viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `applied cancel shows no info message`() = runTest {
+        coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.Applied
+
+        anularAndAwait()
+
+        assertNull(viewModel.uiState.value.infoMessage)
     }
 
     @Test

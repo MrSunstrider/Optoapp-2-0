@@ -7,6 +7,7 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.domain.CancelServicioExtraUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -132,5 +133,70 @@ class ServiciosViewModelTerminalGuardTest {
         assertEquals(true, saved)
         assertNull(viewModel.uiState.value.error)
         coVerify(exactly = 1) { repository.updateServicio(match { it.id == servicioId && it.monturaId == "m-new" }) }
+    }
+
+    private fun loadPersisted(estado: String, motivo: String? = null, fecha: LocalDate? = null): ServiciosViewModel {
+        coEvery { repository.getServicioById(servicioId, opticaId) } returns Resource.Success(
+            ServicioExtra(
+                id = servicioId, ot = "S-1", monturaId = "m-old", descripcion = "Montura", montoTotal = 50.0,
+                estado = estado, fecha = LocalDate.of(2026, 9, 2), opticaId = opticaId,
+                motivoAnulacion = motivo, fechaAnulacion = fecha,
+            ),
+        )
+        every { repository.getPagosByServicioExtra(servicioId, opticaId) } returns flowOf(emptyList())
+        val viewModel = editWithNewMontura()
+        viewModel.loadServicio(servicioId)
+        return viewModel
+    }
+
+    @Test
+    fun `updateEstado cannot move an Anulado servicio back to an active estado`() = runTest(testDispatcher) {
+        val viewModel = loadPersisted("Anulado")
+
+        viewModel.updateEstado("Pendiente")
+        viewModel.updateEstado("Entregado")
+
+        assertEquals("Anulado", viewModel.uiState.value.estado)
+        assertNull(viewModel.uiState.value.fechaEntrega)
+    }
+
+    @Test
+    fun `updateEstado never selects Anulado from a dropdown`() = runTest(testDispatcher) {
+        val viewModel = loadPersisted("Pendiente")
+
+        viewModel.updateEstado("Anulado")
+
+        assertEquals("Pendiente", viewModel.uiState.value.estado)
+    }
+
+    @Test
+    fun `updateEstado still toggles an active servicio to Entregado`() = runTest(testDispatcher) {
+        val viewModel = loadPersisted("Pendiente")
+
+        viewModel.updateEstado("Entregado")
+
+        assertEquals("Entregado", viewModel.uiState.value.estado)
+        assertEquals(DateUtils.today(), viewModel.uiState.value.fechaEntrega)
+    }
+
+    @Test
+    fun `loading an Anulado servicio exposes it as read-only with its reason and date`() = runTest(testDispatcher) {
+        val viewModel = loadPersisted("Anulado", motivo = "Error de registro", fecha = LocalDate.of(2026, 9, 20))
+
+        val state = viewModel.uiState.value
+        assertEquals(true, state.isReadOnly)
+        assertEquals("Error de registro", state.motivoAnulacion)
+        assertEquals(LocalDate.of(2026, 9, 20), state.fechaAnulacion)
+        assertEquals(listOf("Anulado"), state.selectableEstados)
+    }
+
+    @Test
+    fun `an active servicio is editable and offers only manual estados`() = runTest(testDispatcher) {
+        val viewModel = loadPersisted("Entregado")
+
+        val state = viewModel.uiState.value
+        assertEquals(false, state.isReadOnly)
+        assertNull(state.motivoAnulacion)
+        assertEquals(listOf("Pendiente", "Entregado"), state.selectableEstados)
     }
 }

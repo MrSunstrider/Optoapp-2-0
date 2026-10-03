@@ -15,6 +15,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Pago
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.OptoDropdownMenuField
@@ -138,7 +139,12 @@ fun PagosSection(
                 )
             }
 
-            OptoDropdownMenuField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado")) {
+            OptoDropdownMenuField(
+                label = "Estado de Entrega",
+                selected = uiState.estadoEntrega,
+                options = OrderStatusPolicy.selectableEstados(uiState.estadoEntrega),
+                enabled = OrderStatusPolicy.isEditable(uiState.estadoEntrega),
+            ) {
                 onUpdate(uiState.copy(estadoEntrega = it))
             }
         }
