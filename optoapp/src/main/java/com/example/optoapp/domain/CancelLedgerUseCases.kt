@@ -16,8 +16,9 @@ import javax.inject.Inject
 import kotlin.math.abs
 
 private val CREDIT_TIPOS = setOf("Abono", "Pago completo")
-private const val TIPO_REVERSO = "Reverso"
+internal const val TIPO_REVERSO = "Reverso"
 private const val TIPO_REEMBOLSO = "Reembolso"
+internal const val NOTA_COMPENSACION_PREFIX = "Compensación de "
 
 /**
  * Ledger of one parent with reversed credit/Reverso pairs removed. `legacyDebits` are Reembolsos
@@ -51,7 +52,7 @@ internal fun ledgerSnapshot(pagos: List<Pago>): LedgerSnapshot {
     return LedgerSnapshot(unreversedCredits, legacyDebits, netByMetodo)
 }
 
-private fun buildReverso(credit: Pago, parentId: String, opticaId: String, forDispensacion: Boolean) = Pago(
+internal fun buildReverso(credit: Pago, parentId: String, opticaId: String, forDispensacion: Boolean) = Pago(
     id = UUID.randomUUID().toString(),
     dispensacionId = if (forDispensacion) parentId else null,
     servicioExtraId = if (forDispensacion) null else parentId,
@@ -95,7 +96,7 @@ internal suspend fun reverseLedgerFully(
                 tipo = "Abono",
                 monto = debit.monto,
                 metodoPago = debit.metodoPago,
-                nota = "Compensación de ${debit.tipo.trim()} ${debit.id.take(8)} por $contexto",
+                nota = "$NOTA_COMPENSACION_PREFIX${debit.tipo.trim()} ${debit.id.take(8)} por $contexto",
                 opticaId = opticaId,
                 ventaId = debit.ventaId,
                 updatedAt = Instant.now().toString(),
@@ -129,7 +130,7 @@ class CancelServicioExtraUseCase @Inject constructor(
             repository.getRegalosByServicioExtraId(servicioId, opticaId)
                 .filter { it.productoId.isNotBlank() }
                 .forEach { regalo ->
-                    stockHelper.restockOrThrow(
+                    stockHelper.restockOnce(
                         regalo.productoId, opticaId, regalo.cantidad,
                         movimientoReferenciaForRegaloAnulacion(regalo.id), "Reversión por anulación de regalo de servicio",
                     )
@@ -155,30 +156,19 @@ class CancelServicioExtraUseCase @Inject constructor(
         val itemsWithStock = repository.getServicioExtraItems(servicio.id, opticaId).filter { !it.monturaId.isNullOrBlank() }
         if (itemsWithStock.isEmpty()) {
             servicio.monturaId?.takeIf { it.isNotBlank() }?.let { monturaId ->
-                stockHelper.restockOrThrow(
+                stockHelper.restockOnce(
                     monturaId, opticaId, 1, movimientoReferenciaForServicioExtraReverso(servicio.id, monturaId), NOTA_SERVICIO,
                 )
             }
             return
         }
         itemsWithStock.forEach { item ->
-            stockHelper.restockOrThrow(item.monturaId!!, opticaId, 1, movimientoReferenciaForServicioItemAnulacion(item.id), NOTA_SERVICIO)
+            stockHelper.restockOnce(item.monturaId!!, opticaId, 1, movimientoReferenciaForServicioItemAnulacion(item.id), NOTA_SERVICIO)
         }
     }
 }
 
 private const val NOTA_SERVICIO = "Reversión por anulación de servicio extra"
-
-private suspend fun DispensacionStockHelper.restockOrThrow(
-    monturaId: String,
-    opticaId: String,
-    delta: Int,
-    referenciaId: String,
-    nota: String,
-) {
-    restockOnce(monturaId, opticaId, delta, referenciaId, nota)
-        .getOrElse { throw IllegalStateException(it.message ?: "No se pudo reponer el stock.", it) }
-}
 
 sealed interface LifecycleOutcome {
     data object Applied : LifecycleOutcome
@@ -186,7 +176,6 @@ sealed interface LifecycleOutcome {
 }
 
 private const val MOTIVO_MAX_LENGTH = 500
-private const val ORIGEN_TIENDA = "Tienda"
 
 internal fun normalizeMotivo(motivo: String): String {
     val trimmed = motivo.trim()
@@ -240,12 +229,12 @@ class AnularDispensacionUseCase @Inject constructor(
     private suspend fun restockFrames(disp: DispensacionOptica, opticaId: String) {
         val items = repository.getDispensacionItemsByDispensacion(disp.id, opticaId)
         if (items.isEmpty()) {
-            if (disp.origenMontura.trim() == ORIGEN_TIENDA && disp.monturaId.isNotBlank()) {
+            if (OrigenMontura.isTienda(disp.origenMontura) && disp.monturaId.isNotBlank()) {
                 restock(disp.monturaId, opticaId, 1, movimientoReferenciaForDispensacionHeaderAnulacion(disp.id, disp.monturaId))
             }
             return
         }
-        items.filter { it.origenMontura.trim() == ORIGEN_TIENDA && it.monturaId.isNotBlank() }.forEach { item ->
+        items.filter { OrigenMontura.isTienda(it.origenMontura) && it.monturaId.isNotBlank() }.forEach { item ->
             restock(item.monturaId, opticaId, 1, movimientoReferenciaForDispensacionItemAnulacion(disp.id, item.id))
         }
     }
@@ -259,7 +248,7 @@ class AnularDispensacionUseCase @Inject constructor(
     }
 
     private suspend fun restock(monturaId: String, opticaId: String, delta: Int, referenciaId: String) {
-        stockHelper.restockOrThrow(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
+        stockHelper.restockOnce(monturaId, opticaId, delta, referenciaId, "Reversión por anulación de dispensación")
     }
 }
 
@@ -296,7 +285,8 @@ sealed interface ReclamoOutcome {
 class ReclamoStockInsuficienteException(val monturaId: String, val montura: String) :
     IllegalStateException("Sin stock de la montura $montura para el reemplazo. No se registró el reclamo.")
 
-private const val MONEY_EPSILON = 0.005
+/** Ledger amounts at or below this are treated as zero; the claim preview must use the same threshold. */
+internal const val MONEY_EPSILON = 0.005
 
 fun lastCreditMetodo(pagos: List<Pago>): String? = pagos
     .filter { PagoEffect.signedAmount(it.tipo, it.monto) > 0.0 && it.metodoPago.isNotBlank() }
@@ -336,9 +326,11 @@ class ReclamarDispensacionUseCase @Inject constructor(
             }
             val snapshot = ledgerSnapshot(pagoDao.getPagosByParent(originalId, opticaId))
             requireTransferable(snapshot, calcularMontoPagado(originalId, opticaId))
+            val reembolso = (snapshot.netPaid - nuevoMontoTotal).takeIf { it > MONEY_EPSILON }
+            require(reembolso == null || metodoReembolso.isNotBlank()) { "Selecciona el método de reembolso." }
             val replacement = insertReplacement(original, nuevoMontoTotal)
             reverseLedgerFully(repository, pagoDao, originalId, opticaId, forDispensacion = true, contexto = "reclamo")
-            transferCredit(snapshot, replacement, original.ot, nuevoMontoTotal, metodoReembolso)
+            transferCredit(snapshot, replacement, original.ot, reembolso, metodoReembolso.trim())
             repository.updateDispensacion(
                 original.copy(
                     estadoEntrega = OrderStatusPolicy.RECLAMADA,
@@ -389,7 +381,7 @@ class ReclamarDispensacionUseCase @Inject constructor(
             items.map { CopiedFrame(it.origenMontura, it.monturaId, it.descripcionMontura) }
         }
         frames
-            .filter { it.origen.trim() == ORIGEN_TIENDA && it.monturaId.isNotBlank() }
+            .filter { OrigenMontura.isTienda(it.origen) && it.monturaId.isNotBlank() }
             .forEach { consumeFrame(replacement, it) }
         return replacement
     }
@@ -406,7 +398,7 @@ class ReclamarDispensacionUseCase @Inject constructor(
         snapshot: LedgerSnapshot,
         replacement: DispensacionOptica,
         originalOt: String,
-        nuevoMontoTotal: Double,
+        reembolso: Double?,
         metodoReembolso: String,
     ) {
         snapshot.netByMetodo.filterValues { it > MONEY_EPSILON }.forEach { (metodo, monto) ->
@@ -415,9 +407,8 @@ class ReclamarDispensacionUseCase @Inject constructor(
         snapshot.netByMetodo.filterValues { it < -MONEY_EPSILON }.forEach { (metodo, monto) ->
             repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, -monto, metodo, "Ajuste de crédito por reclamo de OT $originalOt"))
         }
-        val excess = snapshot.netPaid - nuevoMontoTotal
-        if (excess > MONEY_EPSILON) {
-            repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, excess, metodoReembolso, "Reembolso por reclamo de OT $originalOt"))
+        if (reembolso != null) {
+            repository.insertPago(replacementPago(replacement, TIPO_REEMBOLSO, reembolso, metodoReembolso, "Reembolso por reclamo de OT $originalOt"))
         }
     }
 

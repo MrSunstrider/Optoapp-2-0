@@ -4,8 +4,12 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.AnularDispensacionUseCase
 import com.example.optoapp.domain.EliminarDispensacionUseCase
+import com.example.optoapp.domain.LifecycleOutcome
+import com.example.optoapp.domain.OrderStatusPolicy
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -18,6 +22,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -30,6 +35,7 @@ class DispensacionViewModelLifecycleStateTest {
     private val rolFlow = MutableStateFlow("admin")
     private lateinit var repository: OptoRepository
     private lateinit var eliminar: EliminarDispensacionUseCase
+    private lateinit var anular: AnularDispensacionUseCase
     private lateinit var viewModel: DispensacionViewModel
 
     @Before
@@ -39,6 +45,7 @@ class DispensacionViewModelLifecycleStateTest {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         eliminar = mockk(relaxed = true)
+        anular = mockk()
         val sessionManager = mockk<SessionManager>()
         every { sessionManager.opticaId } returns MutableStateFlow(opticaId)
         every { sessionManager.opticaRol } returns rolFlow
@@ -49,7 +56,7 @@ class DispensacionViewModelLifecycleStateTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
+            anular,
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
@@ -121,5 +128,71 @@ class DispensacionViewModelLifecycleStateTest {
     fun `hard delete is offered only when the order has no pagos or stock movements`() {
         assertEquals(true, load("Pendiente", hasTrace = false).canHardDelete)
         assertEquals(false, load("Pendiente", hasTrace = true).canHardDelete)
+    }
+
+    @Test
+    fun `load exposes the cancellation details shown by the read-only banner`() {
+        coEvery { repository.getDispensacionById(dispId, opticaId) } returns Resource.Success(
+            DispensacionOptica(
+                id = dispId, pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 1), estadoEntrega = "Reclamada",
+                motivoAnulacion = "Lente rayado", fechaAnulacion = LocalDate.of(2026, 9, 20), reclamoOrigenId = "orig-1",
+            ),
+        )
+
+        viewModel.loadDispensacion(dispId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals("Lente rayado", state.motivoAnulacion)
+        assertEquals(LocalDate.of(2026, 9, 20), state.fechaAnulacion)
+        assertEquals("orig-1", state.reclamoOrigenId)
+    }
+
+    @Test
+    fun `an order without cancellation details loads null banner fields`() {
+        load("Pendiente")
+
+        val state = viewModel.uiState.value
+        assertNull(state.motivoAnulacion)
+        assertNull(state.fechaAnulacion)
+        assertNull(state.reclamoOrigenId)
+    }
+
+    @Test
+    fun `double tap on the cancel confirmation executes the cancel once`() {
+        coEvery { anular(dispId, opticaId, "Cliente desistió") } returns LifecycleOutcome.Applied
+        var completions = 0
+
+        viewModel.anularDispensacion(dispId, "Cliente desistió") { completions++ }
+        viewModel.anularDispensacion(dispId, "Cliente desistió") { completions++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { anular(dispId, opticaId, "Cliente desistió") }
+        assertEquals(1, completions)
+    }
+
+    @Test
+    fun `a cancel after the previous one finished runs again`() {
+        coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.AlreadyTerminal(OrderStatusPolicy.ANULADO)
+
+        viewModel.anularDispensacion(dispId, "A") {}
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.anularDispensacion(dispId, "B") {}
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 2) { anular(dispId, opticaId, any()) }
+        assertEquals(false, viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `double tap on the delete confirmation deletes once`() {
+        var completions = 0
+
+        viewModel.deleteDispensacion(dispId) { completions++ }
+        viewModel.deleteDispensacion(dispId) { completions++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { eliminar(dispId, opticaId) }
+        assertEquals(1, completions)
     }
 }
