@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the behavior of the `pre-commit` git hook that validates migration file integrity before commits, preventing drift from reaching CI.
+Define the behavior of the `pre-commit` git hook that validates migration file integrity and runs the Gentleman Guardian Angel (GGA) code review before commits, preventing drift and standards violations from reaching CI.
 
 ## Requirements
 
@@ -37,6 +37,68 @@ If `supabase db lint` returns a non-zero exit code, the pre-commit hook MUST abo
 - GIVEN a staged migration file that passes all lint rules
 - WHEN `supabase db lint` returns exit code 0
 - THEN the commit proceeds normally
+
+#### Scenario: Missing Supabase CLI skips lint
+
+- GIVEN a staged migration file AND no `supabase` CLI on PATH
+- WHEN they run `git commit`
+- THEN the hook warns that the Supabase CLI was not found AND the migration lint is skipped
+
+### Requirement: GGA Review On Every Commit
+
+After the migration lint passes or is skipped, the pre-commit hook MUST run `gga run` using the provider configured in `.gga`. The GGA command MAY be overridden through the `GGA_CMD` environment variable. A failed migration lint MUST abort before GGA runs.
+
+#### Scenario: GGA approval allows commit
+
+- GIVEN a developer stages any change
+- WHEN `gga run` exits with code 0
+- THEN the commit proceeds normally
+
+#### Scenario: GGA rejection blocks commit
+
+- GIVEN a developer stages a change that violates `AGENTS.md` rules
+- WHEN `gga run` exits non-zero
+- THEN the commit is aborted AND the output states that the GGA review failed
+
+#### Scenario: Missing GGA skips review
+
+- GIVEN `gga` is not installed on the developer machine
+- WHEN they run `git commit`
+- THEN the hook warns that GGA was not found AND the commit proceeds (CI remains the backstop)
+
+### Requirement: Commit Message Attribution Stripping
+
+The `commit-msg` hook MUST remove Cursor attribution trailers (`Co-authored-by: Cursor <cursoragent@cursor.com>` and `Made-with: Cursor`, case-insensitive) from the commit message, together with any blank lines they leave at the end. Human co-authors and messages without attribution MUST be left untouched.
+
+#### Scenario: Cursor trailer is stripped
+
+- GIVEN an agent commit whose message ends with `Co-authored-by: Cursor <cursoragent@cursor.com>`
+- WHEN the `commit-msg` hook runs
+- THEN the committed message ends with the original body and contains no Cursor attribution
+
+#### Scenario: Human co-author is preserved
+
+- GIVEN a message with both a human `Co-authored-by` trailer and the Cursor trailer
+- WHEN the `commit-msg` hook runs
+- THEN only the Cursor trailer is removed
+
+#### Scenario: Message without attribution is untouched
+
+- GIVEN a message with no attribution trailers
+- WHEN the `commit-msg` hook runs
+- THEN the message file is not rewritten
+
+#### Scenario: Non-UTF-8 body survives stripping
+
+- GIVEN a message with Latin-1 encoded accents and the Cursor trailer, under a UTF-8 locale
+- WHEN the `commit-msg` hook runs
+- THEN every body line is kept byte for byte and only the trailer is removed
+
+#### Scenario: Attribution-only message is aborted
+
+- GIVEN a message whose only content is a Cursor attribution trailer
+- WHEN the `commit-msg` hook runs
+- THEN the message file is emptied, so git aborts the commit for an empty message
 
 ### Requirement: Hook Registration
 
