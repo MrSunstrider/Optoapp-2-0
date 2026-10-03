@@ -110,14 +110,23 @@ class DiscardLosingClaimUseCase @Inject constructor(
 
     private suspend fun noticeCreditPending(opticaId: String) {
         syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).forEach { origenId ->
+            val noticeId = pendingCreditNoticeId(origenId)
             val ot = repository.getDispensacionById(origenId, opticaId).data?.ot?.takeIf { it.isNotBlank() }
                 ?: return@forEach
+            if (residualCredits(opticaId, origenId).isEmpty()) {
+                syncStateTracker.clear(opticaId, NOTICE, noticeId)
+                return@forEach
+            }
             syncStateTracker.markError(
-                opticaId, NOTICE, pendingCreditNoticeId(origenId),
+                opticaId, NOTICE, noticeId,
                 "El crédito del reclamo de la OT $ot queda pendiente hasta resolver los pagos en espera.",
             )
         }
     }
+
+    private suspend fun residualCredits(opticaId: String, origenId: String): List<Pago> =
+        ledgerSnapshot(pagoDao.getPagosByParent(origenId, opticaId)).unreversedCredits
+            .filterNot(::isClaimReversalPago)
 
     private fun pendingCreditNoticeId(origenId: String) = "$origenId:credito_pendiente"
 
@@ -179,8 +188,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
     private suspend fun transferToWinner(opticaId: String, origenId: String, winner: DispensacionOptica): Int? {
         val original = repository.getDispensacionById(origenId, opticaId).data ?: return null
         if (original.estadoEntrega.trim() != OrderStatusPolicy.RECLAMADA) return null
-        val residual = ledgerSnapshot(pagoDao.getPagosByParent(origenId, opticaId)).unreversedCredits
-            .filterNot(::isClaimReversalPago)
+        val residual = residualCredits(opticaId, origenId)
         if (residual.isEmpty()) return 0
         residual.forEach { credit ->
             repository.insertPago(buildReverso(credit, origenId, opticaId, forDispensacion = true))

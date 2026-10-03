@@ -564,6 +564,43 @@ class DiscardLosingClaimUseCaseTest {
         assertTrue(heldPagosNotices().isEmpty())
     }
 
+    private suspend fun reverseEveryCreditOfTheOriginal() {
+        val existing = pagosOf(origId).map { it.id }.toSet()
+        (syncedCredits + Triple("a3", 50.0, "Efectivo")).filter { (creditId, _, _) -> creditId in existing }.forEach { (creditId, monto, metodo) ->
+            db.pagoDao().insertPago(
+                Pago(id = "wrv-$creditId", dispensacionId = origId, fecha = today, tipo = "Reverso", monto = monto, metodoPago = metodo, opticaId = opticaId, reversaPagoId = creditId),
+            )
+            tracker.markSynced(opticaId, "pago", "wrv-$creditId")
+        }
+    }
+
+    @Test
+    fun pagosHeldLocallyWithAMarkerButNoResidualCredit_tellTheUserNothing() = runTest {
+        seedClaimedOriginal()
+        discarder()(opticaId)
+        reverseEveryCreditOfTheOriginal()
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertTrue(heldPagosNotices().isEmpty())
+        assertEquals(setOf(origId), pendingCreditMarkers())
+    }
+
+    @Test
+    fun pendingCreditNotice_isDroppedWhenNoResidualCreditRemainsWhileThePagosStayBlocked() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+        discarder().transferResidualCredit(opticaId)
+        assertEquals(1, heldPagosNotices().size)
+
+        reverseEveryCreditOfTheOriginal()
+        discarder().transferResidualCredit(opticaId)
+
+        assertTrue(heldPagosNotices().isEmpty())
+    }
+
     @Test
     fun pendingCreditNotice_isClearedWhenTheTransferRuns() = runTest {
         seedClaimedOriginal(unsyncedCredit = true)
