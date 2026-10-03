@@ -38,7 +38,6 @@ object DiagnosticoCalculator {
         var e = esf ?: 0.0
         var c = cil ?: 0.0
 
-        // Transpose to negative cylinder
         if (c > 0) {
             e += c
             c = -c
@@ -66,7 +65,7 @@ object DiagnosticoCalculator {
      * Converts a Snellen visual acuity string (e.g. "20/20") to LogMAR.
      *
      * Accepts optional spaces around the slash ("20 / 40") — aligned with web.
-     * Returns null for invalid formats, missing slash, zero denominator, or
+     * Returns null for invalid formats, missing slash, zero numerator or denominator, or
      * unparseable input.
      */
     fun parseSnellenToLogMar(snellen: String): Double? {
@@ -76,11 +75,25 @@ object DiagnosticoCalculator {
             val m = regex.find(clean) ?: return null
             val numerator = m.groupValues[1].toDoubleOrNull() ?: return null
             val denominator = m.groupValues[2].toDoubleOrNull() ?: return null
-            if (denominator <= 0) return null
+            if (numerator <= 0 || denominator <= 0) return null
             val decimalAV = numerator / denominator
             return -log10(decimalAV)
         } catch (e: Exception) {
             return null
         }
+    }
+
+    /**
+     * Bidirectional AV → logMAR: Snellen fractional first, then decimal with
+     * explicit separator and clinical ceiling (0, 2.0].
+     */
+    fun parseAvToLogMar(raw: String): Double? {
+        val clean = raw.trim()
+        if (clean.isEmpty()) return null
+        parseSnellenToLogMar(clean)?.let { return it }
+        if ('.' !in clean && ',' !in clean) return null
+        val value = clean.replace(',', '.').toDoubleOrNull() ?: return null
+        if (!value.isFinite() || value <= 0.0 || value > 2.0) return null
+        return -log10(value)
     }
 }

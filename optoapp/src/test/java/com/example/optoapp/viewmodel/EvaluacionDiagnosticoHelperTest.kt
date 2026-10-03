@@ -103,4 +103,116 @@ class EvaluacionDiagnosticoHelperTest {
         assertEquals("-0.75", result.recetaOiCil)
         assertEquals("80", result.recetaOiEje)
     }
+
+    // --- computeOtrosAuto amblyopia (bidirectional AV → logMAR) ---
+
+    @Test
+    fun `computeOtrosAuto mixed Snellen and decimal below threshold clears amblyopia`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20/20",
+            avCcOiLejos = "1.0",
+            autoAmbliopia = true,
+            otrosAmbliopia = true,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(false, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto mixed 20 over 20 and decimal 0_5 triggers amblyopia`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20/20",
+            avCcOiLejos = "0.5",
+            autoAmbliopia = true,
+            otrosAmbliopia = false,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(true, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto mixed 20 over 40 and decimal 1_0 triggers amblyopia`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20/40",
+            avCcOiLejos = "1.0",
+            autoAmbliopia = true,
+            otrosAmbliopia = false,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(true, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto decimal-only with comma triggers amblyopia`() {
+        val state = baseState.copy(
+            avCcOdLejos = "1.0",
+            avCcOiLejos = "0,5",
+            autoAmbliopia = true,
+            otrosAmbliopia = false,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(true, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto below threshold pair clears amblyopia`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20/20",
+            avCcOiLejos = "0.8",
+            autoAmbliopia = true,
+            otrosAmbliopia = true,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(false, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto inclusive threshold 0_19 triggers amblyopia`() {
+        val oiDecimal = Math.pow(10.0, -0.19)
+        val oiStr = String.format(java.util.Locale.US, "%.6f", oiDecimal)
+        val state = baseState.copy(
+            avCcOdLejos = "1.0",
+            avCcOiLejos = oiStr,
+            autoAmbliopia = true,
+            otrosAmbliopia = false,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(true, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto unparseable OD preserves prior amblyopia true`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20",
+            avCcOiLejos = "20/20",
+            autoAmbliopia = true,
+            otrosAmbliopia = true,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(true, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto blank OI preserves prior amblyopia false`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20/20",
+            avCcOiLejos = "",
+            autoAmbliopia = true,
+            otrosAmbliopia = false,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(false, result.otrosAmbliopia)
+    }
+
+    @Test
+    fun `computeOtrosAuto autoAmbliopia false preserves manual even when delta would fire`() {
+        val state = baseState.copy(
+            avCcOdLejos = "20/20",
+            avCcOiLejos = "0.5",
+            autoAmbliopia = false,
+            otrosAmbliopia = false,
+        )
+        val result = computeOtrosAuto(state)
+        assertEquals(false, result.otrosAmbliopia)
+    }
 }
