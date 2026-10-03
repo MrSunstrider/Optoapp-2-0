@@ -34,10 +34,17 @@ class ReclamarDispensacionUseCaseTest {
         )
     }
 
-    private suspend fun claim(motivo: String = "Lente rayado", total: Double = 200.0) =
+    private suspend fun claim(motivo: String = "Lente rayado", total: Double = 200.0, metodoReembolso: String = "Efectivo") =
         ReclamarDispensacionUseCase(repository, pagoDao, stockHelper, scheduler, CalcularMontoPagadoUseCase(pagoDao))(
-            "d1", "o1", motivo, total, "Efectivo",
+            "d1", "o1", motivo, total, metodoReembolso,
         )
+
+    private fun stubPaid(monto: Double) {
+        coEvery { pagoDao.getPagosByParent("d1", "o1") } returns listOf(
+            Pago(id = "a1", dispensacionId = "d1", fecha = LocalDate.of(2026, 9, 2), tipo = "Abono", monto = monto, metodoPago = "Efectivo", opticaId = "o1"),
+        )
+        coEvery { pagoDao.sumMontoByDispensacion("d1", "o1") } returns monto
+    }
 
     private fun assertNoWrites() {
         coVerify(exactly = 0) { repository.insertDispensacion(any()) }
@@ -92,6 +99,29 @@ class ReclamarDispensacionUseCaseTest {
 
         assertEquals("Saldo pagado inconsistente en la orden original; sincroniza y reintenta.", error?.message)
         assertNoWrites()
+    }
+
+    @Test
+    fun blankRefundMethodWithExcess_isRejectedBeforeAnyWrite() = runTest {
+        stubOriginal("Entregado")
+        stubPaid(100.0)
+
+        val errors = listOf("", "   ").map { runCatching { claim(total = 60.0, metodoReembolso = it) }.exceptionOrNull() }
+
+        assertTrue(errors.all { it is IllegalArgumentException })
+        assertEquals("Selecciona el método de reembolso.", errors.first()?.message)
+        assertNoWrites()
+    }
+
+    @Test
+    fun blankRefundMethodWithoutRefundableExcess_isAccepted() = runTest {
+        stubOriginal("Entregado")
+        stubPaid(100.0)
+
+        val outcome = claim(total = 99.997, metodoReembolso = "")
+
+        assertTrue(outcome is ReclamoOutcome.Created)
+        coVerify(exactly = 0) { repository.insertPago(match { it.tipo == "Reembolso" }) }
     }
 
     @Test
