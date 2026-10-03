@@ -14,6 +14,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OrderReadOnlyBanner
 import com.example.optoapp.ui.components.WizardStepHeader
 import com.example.optoapp.ui.components.servicio.ServicioForm
 
@@ -29,6 +30,12 @@ fun NuevoServicioScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pacientes by viewModel.pacientes.collectAsState()
+    val allServicios by viewModel.allServicios.collectAsState()
+    val cancelableServicioIds by viewModel.cancelableServicioIds.collectAsState()
+    val showAnularDialog by viewModel.showDeleteDialog.collectAsState()
+    val anulando by viewModel.anulando.collectAsState()
+    val anularError by viewModel.deleteError.collectAsState()
+    val infoMessage by viewModel.infoMessage.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var currentStep by remember { mutableIntStateOf(0) }
 
@@ -38,6 +45,18 @@ fun NuevoServicioScreen(
         val msg = uiState.error ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(msg)
         viewModel.clearServicioError()
+    }
+
+    LaunchedEffect(anularError) {
+        val msg = anularError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearDeleteError()
+    }
+
+    LaunchedEffect(infoMessage) {
+        val msg = infoMessage ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(msg)
+        viewModel.clearInfoMessage()
     }
 
     LaunchedEffect(servicioId) {
@@ -62,6 +81,18 @@ fun NuevoServicioScreen(
 
     val monturas by viewModel.monturas.collectAsState()
     val isEdit = servicioId != null && servicioId != "null"
+    val servicioAnulable = allServicios.firstOrNull { it.id == uiState.id }
+        ?.takeIf { isEdit && it.id in cancelableServicioIds }
+    val canSave = !uiState.isReadOnly
+
+    if (showAnularDialog) {
+        AnularServicioDialog(
+            descripcion = uiState.descripcion,
+            submitting = anulando,
+            onConfirm = { motivo -> viewModel.confirmAnular(motivo) { navController.popBackStack() } },
+            onDismiss = { viewModel.dismissDeleteDialog() },
+        )
+    }
 
     val saveAction = {
         viewModel.saveServicio {
@@ -85,7 +116,7 @@ fun NuevoServicioScreen(
                 },
                 actions = {
                     if (currentStep == WIZARD_STEPS.lastIndex) {
-                        IconButton(onClick = { saveAction() }) {
+                        IconButton(onClick = { saveAction() }, enabled = canSave) {
                             Icon(Icons.Default.Check, contentDescription = "Guardar")
                         }
                     }
@@ -114,6 +145,7 @@ fun NuevoServicioScreen(
                 } else {
                     Button(
                         onClick = { saveAction() },
+                        enabled = canSave,
                         modifier = Modifier.weight(1f),
                     ) { Text(if (!isEdit) "Guardar Servicio" else "Actualizar Servicio") }
                 }
@@ -139,6 +171,15 @@ fun NuevoServicioScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            if (uiState.isReadOnly) {
+                OrderReadOnlyBanner(
+                    estado = uiState.estado,
+                    motivo = uiState.motivoAnulacion,
+                    fecha = uiState.fechaAnulacion,
+                    servicio = true,
+                )
+            }
+
             ServicioForm(
                 uiState = uiState,
                 onUpdate = { s -> viewModel.updateUiState { s } },
@@ -157,6 +198,15 @@ fun NuevoServicioScreen(
                 step = currentStep,
                 isPacienteLocked = isPacienteLocked,
             )
+
+            if (servicioAnulable != null) {
+                OutlinedButton(
+                    onClick = { viewModel.showDeleteConfirmation(servicioAnulable) },
+                    enabled = !anulando,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("Anular servicio") }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
         }

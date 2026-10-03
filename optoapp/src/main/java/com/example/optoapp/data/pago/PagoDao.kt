@@ -55,16 +55,6 @@ interface PagoDao {
         """
         SELECT * FROM pagos
         WHERE (dispensacionId = :parentId OR servicioExtraId = :parentId)
-          AND tipo IN ('Abono', 'Pago completo')
-          AND opticaId = :opticaId
-        """,
-    )
-    suspend fun getCreditPagosByParent(parentId: String, opticaId: String): List<Pago>
-
-    @Query(
-        """
-        SELECT * FROM pagos
-        WHERE (dispensacionId = :parentId OR servicioExtraId = :parentId)
           AND opticaId = :opticaId
         ORDER BY fecha, id
         """,

@@ -9,7 +9,7 @@ import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.AnularDispensacionUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.PagoEffect
-import com.example.optoapp.domain.ReclaimDispensacionUseCase
+import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.every
@@ -78,7 +78,7 @@ class DispensacionViewModelPagoValidationTest {
             mockk<DispensacionStockHelper>(relaxed = true),
             mockk<CalcularMontoPagadoUseCase>(relaxed = true),
             mockk<AnularDispensacionUseCase>(relaxed = true),
-            mockk<ReclaimDispensacionUseCase>(relaxed = true),
+            mockk<ReclamarDispensacionUseCase>(relaxed = true),
             mockk<CostoProductoDao>(relaxed = true),
             mockk<CostoBiseladoDao>(relaxed = true),
             mockk(relaxed = true),

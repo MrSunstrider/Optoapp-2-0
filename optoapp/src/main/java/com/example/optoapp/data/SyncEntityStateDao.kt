@@ -35,6 +35,9 @@ interface SyncEntityStateDao {
     @Query("DELETE FROM sync_entity_state WHERE opticaId = :opticaId AND entityType = :type AND entityId = :id")
     suspend fun clearEntityState(opticaId: String, type: String, id: String)
 
+    @Query("SELECT * FROM sync_entity_state WHERE opticaId = :opticaId AND entityType = :type AND entityId = :id")
+    suspend fun getState(opticaId: String, type: String, id: String): SyncEntityState?
+
     @Query("SELECT COUNT(*) FROM sync_entity_state WHERE opticaId = :opticaId AND status = :status")
     suspend fun countByStatus(opticaId: String, status: String): Int
 

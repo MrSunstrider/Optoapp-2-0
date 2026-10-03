@@ -21,6 +21,7 @@ import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoFormShell
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.components.OrderReadOnlyBanner
 import com.example.optoapp.ui.components.PatientContextCard
 import com.example.optoapp.ui.components.financiera.FinancieraPagosSection
 import com.example.optoapp.ui.components.financiera.PagosSectionState
@@ -48,7 +49,7 @@ fun InformacionFinancieraScreen(
     OptoFormShell(
         title = "Información Financiera",
         onNavigateBack = { navController.popBackStack() },
-        onSave = saveAction,
+        onSave = saveAction.takeUnless { uiState.isReadOnly },
         isLoading = uiState.isLoading,
     ) {
         uiState.contexto?.let { ctx ->
@@ -60,11 +61,20 @@ fun InformacionFinancieraScreen(
             )
         }
 
+        if (uiState.isReadOnly) {
+            OrderReadOnlyBanner(
+                estado = uiState.estadoEntrega,
+                motivo = uiState.motivoAnulacion,
+                fecha = uiState.fechaAnulacion,
+            )
+        }
+
         OptoTextField(
             value = uiState.montoTotal,
             onValueChange = { viewModel.updateMontoTotal(it) },
             label = "Monto Total",
             keyboardType = KeyboardType.Decimal,
+            enabled = !uiState.isReadOnly,
         )
 
         HorizontalDivider()
@@ -91,11 +101,12 @@ fun InformacionFinancieraScreen(
         OptoDropdownMenuField(
             label = "Estado de Entrega",
             selected = uiState.estadoEntrega,
-            options = listOf("Pendiente", "Entregado"),
+            options = uiState.selectableEstados,
+            enabled = !uiState.isReadOnly,
             onSelected = { viewModel.updateEstado(it) },
         )
 
-        if (uiState.fechaEntrega != null) {
+        if (uiState.fechaEntrega != null && !uiState.isReadOnly) {
             FechaEntregaEditButton(
                 fechaEntrega = uiState.fechaEntrega,
                 onFechaChanged = { viewModel.updateFechaEntrega(it) },
@@ -104,6 +115,7 @@ fun InformacionFinancieraScreen(
 
         Button(
             onClick = { saveAction() },
+            enabled = !uiState.isLoading && !uiState.isReadOnly,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Guardar Cambios")

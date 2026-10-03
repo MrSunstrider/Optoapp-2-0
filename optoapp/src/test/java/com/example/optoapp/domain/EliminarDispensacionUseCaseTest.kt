@@ -44,7 +44,7 @@ class EliminarDispensacionUseCaseTest {
     private fun useCase() = EliminarDispensacionUseCase(repository, pagoDao, coordinator)
 
     @Test
-    fun noPagosAndNoMovimientos_deletesWithTombstone() = runTest {
+    fun noPagosAndNoMovimientos_deletesOrder() = runTest {
         stubCounts(pagos = 0, movimientos = 0)
 
         useCase()("d1", "o1")
@@ -73,6 +73,18 @@ class EliminarDispensacionUseCaseTest {
 
         assertEquals("La orden tiene pagos o movimientos de stock. Usa Anular.", error?.message)
         coVerify(exactly = 0) { repository.deleteDispensacion(any()) }
+    }
+
+    @Test
+    fun hasTrace_isFalseOnlyWithoutPagosAndMovimientos() = runTest {
+        stubCounts(pagos = 0, movimientos = 0)
+        assertEquals(false, useCase().hasTrace("d1", "o1"))
+
+        stubCounts(pagos = 0, movimientos = 1)
+        assertEquals(true, useCase().hasTrace("d1", "o1"))
+
+        stubCounts(pagos = 2, movimientos = 0)
+        assertEquals(true, useCase().hasTrace("d1", "o1"))
     }
 
     @Test

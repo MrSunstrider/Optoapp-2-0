@@ -39,6 +39,12 @@ interface DispensacionDao {
     @Query("SELECT ot FROM dispensaciones WHERE opticaId = :opticaId AND ot LIKE ('OT-' || :year || '-%')")
     suspend fun getOtsWithYearPrefix(opticaId: String, year: String): List<String>
 
+    @Query("SELECT ot FROM dispensaciones WHERE opticaId = :opticaId AND ot LIKE (:prefix || '%')")
+    suspend fun getOtsWithPrefix(opticaId: String, prefix: String): List<String>
+
+    @Query("SELECT * FROM dispensaciones WHERE reclamo_origen_id = :originalId AND opticaId = :opticaId LIMIT 1")
+    suspend fun getByReclamoOrigenId(originalId: String, opticaId: String): DispensacionOptica?
+
     @Query("DELETE FROM dispensaciones WHERE id = :id AND opticaId = :opticaId")
     suspend fun deleteById(id: String, opticaId: String): Int
 
