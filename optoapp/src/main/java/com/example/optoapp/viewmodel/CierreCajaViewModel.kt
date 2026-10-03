@@ -10,6 +10,8 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.NOTA_COMPENSACION_PREFIX
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.ui.screens.cierreVentaPagado
 import com.example.optoapp.ui.screens.pagosEffectByDispensacion
@@ -40,6 +42,8 @@ data class PagoDisplayItem(
     val dispensacionId: String?,
     val servicioExtraId: String?,
     val pacienteId: String?,
+    val esReversion: Boolean = false,
+    val etiquetaReversion: String? = null,
 )
 
 data class CierreCajaUiState(
@@ -117,6 +121,14 @@ class CierreCajaViewModel @Inject constructor(
                     if (missingServIds.isNotEmpty()) {
                         repository.getServiciosByIds(missingServIds, opticaId)
                             .forEach { servMap[it.id] = it }
+                    }
+                    val missingOrigenIds = pagos
+                        .filter { it.tipo.trim() == TIPO_REEMBOLSO }
+                        .mapNotNull { pago -> pago.dispensacionId?.let { dispMap[it]?.reclamoOrigenId } }
+                        .filter { it !in dispMap }.distinct()
+                    if (missingOrigenIds.isNotEmpty()) {
+                        repository.getDispensacionesByIds(missingOrigenIds, opticaId)
+                            .forEach { dispMap[it.id] = it }
                     }
                     var ventasHoy = 0.0
                     var cobrosAtrasados = 0.0
@@ -208,6 +220,52 @@ class CierreCajaViewModel @Inject constructor(
         private const val TAG = "CierreCajaVM"
         private const val ESTADO_ANULADO = "Anulado"
         private const val ESTADO_RECLAMADA = "Reclamada"
+        private const val TIPO_ABONO = "Abono"
+        private const val TIPO_REVERSO = "Reverso"
+        private const val TIPO_REEMBOLSO = "Reembolso"
+        private const val ETIQUETA_PAGO_ANULADO = "Pago anulado"
+        private const val SIN_MOTIVO = "Sin motivo registrado"
+
+        private fun etiqueta(estado: String, motivo: String?): String =
+            "$estado · ${motivo?.takeIf { it.isNotBlank() } ?: SIN_MOTIVO}"
+
+        private fun estadoTerminalLabel(estado: String, esServicio: Boolean): String = when {
+            esServicio -> ESTADO_ANULADO
+            estado == ESTADO_ANULADO -> "Anulada"
+            else -> ESTADO_RECLAMADA
+        }
+
+        /**
+         * First match wins: terminal parent (from its cancellation day on, so lines of days before
+         * the cancellation keep their original label), then claim refund on a replacement (reason of
+         * the original), then a Reverso on an active parent (single deleted pago).
+         */
+        internal fun etiquetaReversion(
+            pago: Pago,
+            disp: DispensacionOptica?,
+            serv: ServicioExtra?,
+            dispMap: Map<String, DispensacionOptica>,
+        ): String? {
+            val tipo = pago.tipo.trim()
+            val esCompensacion = tipo == TIPO_ABONO && pago.nota.startsWith(NOTA_COMPENSACION_PREFIX)
+            if (tipo != TIPO_REVERSO && tipo != TIPO_REEMBOLSO && !esCompensacion) return null
+            val estado = (disp?.estadoEntrega ?: serv?.estado)?.trim()
+            val fechaAnulacion = if (disp != null) disp.fechaAnulacion else serv?.fechaAnulacion
+            if (estado != null && OrderStatusPolicy.isTerminal(estado) &&
+                (fechaAnulacion == null || pago.fecha >= fechaAnulacion)
+            ) {
+                val motivo = if (disp != null) disp.motivoAnulacion else serv?.motivoAnulacion
+                return etiqueta(estadoTerminalLabel(estado, esServicio = disp == null), motivo)
+            }
+            val reclamoOrigenId = disp?.reclamoOrigenId
+            return when {
+                esCompensacion -> null
+                tipo == TIPO_REEMBOLSO && reclamoOrigenId != null ->
+                    etiqueta(ESTADO_RECLAMADA, dispMap[reclamoOrigenId]?.motivoAnulacion)
+                tipo == TIPO_REVERSO && estado != null -> ETIQUETA_PAGO_ANULADO
+                else -> null
+            }
+        }
 
         internal fun buildPagosDisplay(
             pagos: List<Pago>,
@@ -244,6 +302,8 @@ class CierreCajaViewModel @Inject constructor(
                 dispensacionId = pago.dispensacionId,
                 servicioExtraId = pago.servicioExtraId,
                 pacienteId = pacienteId,
+                esReversion = pago.tipo.trim().let { it == TIPO_REVERSO || it == TIPO_REEMBOLSO },
+                etiquetaReversion = etiquetaReversion(pago, disp, serv, dispMap),
             )
         }
     }

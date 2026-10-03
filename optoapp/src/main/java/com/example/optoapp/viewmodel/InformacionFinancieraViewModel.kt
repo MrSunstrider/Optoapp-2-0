@@ -11,6 +11,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
@@ -36,10 +37,18 @@ data class FinancieraUiState(
     val regalos: List<RegaloDispensacionUi> = emptyList(),
     val estadoEntrega: String = "Pendiente",
     val fechaEntrega: LocalDate? = null,
+    val motivoAnulacion: String? = null,
+    val fechaAnulacion: LocalDate? = null,
     val isLoading: Boolean = false,
     val loadFailed: Boolean = false,
     val error: String? = null,
 ) {
+    val isReadOnly: Boolean
+        get() = OrderStatusPolicy.isTerminal(estadoEntrega)
+
+    val selectableEstados: List<String>
+        get() = OrderStatusPolicy.selectableEstados(estadoEntrega)
+
     val saldoRestante: Double
         get() {
             val total = montoTotal.toDoubleOrNull() ?: 0.0
@@ -99,6 +108,8 @@ class InformacionFinancieraViewModel @Inject constructor(
                             regalos = regalosUi,
                             estadoEntrega = d.estadoEntrega,
                             fechaEntrega = d.fechaEntrega,
+                            motivoAnulacion = d.motivoAnulacion,
+                            fechaAnulacion = d.fechaAnulacion,
                         )
                     }
                 }
@@ -128,11 +139,13 @@ class InformacionFinancieraViewModel @Inject constructor(
 
     fun updateEstado(estado: String) {
         _uiState.update { s ->
-            val nuevaFechaEntrega = when (estado) {
-                "Entregado" -> s.fechaEntrega ?: LocalDate.now()
+            val target = estado.trim()
+            if (target !in OrderStatusPolicy.selectableEstados(s.estadoEntrega)) return@update s
+            val nuevaFechaEntrega = when (target) {
+                OrderStatusPolicy.ENTREGADO -> s.fechaEntrega ?: LocalDate.now()
                 else -> null
             }
-            s.copy(estadoEntrega = estado, fechaEntrega = nuevaFechaEntrega, error = null)
+            s.copy(estadoEntrega = target, fechaEntrega = nuevaFechaEntrega, error = null)
         }
     }
 
@@ -184,7 +197,8 @@ class InformacionFinancieraViewModel @Inject constructor(
                 val dispId = s.dispensacionId
 
                 val montoTotal = s.montoTotal.replace(",", ".").toDoubleOrNull()
-                if (montoTotal == null || montoTotal <= 0.0) {
+                val zeroAllowed = montoTotal == 0.0 && isClaimReplacement(dispId, opticaId)
+                if (montoTotal == null || montoTotal < 0.0 || (montoTotal == 0.0 && !zeroAllowed)) {
                     _uiState.update {
                         it.copy(isLoading = false, error = FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO)
                     }
@@ -192,6 +206,9 @@ class InformacionFinancieraViewModel @Inject constructor(
                 }
 
                 repository.withTransaction {
+                    val persisted = (repository.obtenerDispensacion(dispId, opticaId) as? Resource.Success)?.data
+                        ?: throw IllegalStateException("Dispensación no encontrada")
+                    OrderStatusPolicy.requireEditable(persisted.estadoEntrega, "modificar la información financiera")
                     repository.actualizarMontoTotal(dispId, montoTotal, opticaId)
                     repository.actualizarEstado(dispId, s.estadoEntrega, s.fechaEntrega, opticaId)
 
@@ -269,6 +286,12 @@ class InformacionFinancieraViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /** A warranty remake may be free, so a claim replacement keeps a total of 0. */
+    private suspend fun isClaimReplacement(dispensacionId: String, opticaId: String): Boolean {
+        val persisted = repository.obtenerDispensacion(dispensacionId, opticaId)
+        return (persisted as? Resource.Success)?.data?.reclamoOrigenId != null
     }
 }
 

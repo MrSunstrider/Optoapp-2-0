@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Pago
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.viewmodel.PagoDisplayItem
 import java.util.Locale
 
@@ -94,6 +95,15 @@ fun TransactionItem(
                         )
                     }
                 }
+                item.etiquetaReversion?.let { etiqueta ->
+                    Text(
+                        etiqueta,
+                        modifier = Modifier.padding(top = 4.dp),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.alertRed,
+                    )
+                }
                 if (pago.nota.isNotEmpty()) {
                     Text(pago.nota, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -104,6 +114,7 @@ fun TransactionItem(
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = when {
+                        item.esReversion -> MaterialTheme.colorScheme.alertRed
                         signedAmount < 0 -> MaterialTheme.colorScheme.error
                         signedAmount == 0.0 -> MaterialTheme.colorScheme.onSurfaceVariant
                         else -> MaterialTheme.colorScheme.tertiary
