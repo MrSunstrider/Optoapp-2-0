@@ -1,105 +1,66 @@
 package com.example.optoapp.viewmodel
 
-import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
-import com.example.optoapp.data.Pago
-import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costoproducto.CostoProductoDao
-import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
-import com.example.optoapp.domain.CalcularMontoPagadoUseCase
-import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.domain.AnularDispensacionUseCase
+import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DispensacionViewModelAnulacionTest {
-
-    private lateinit var repository: OptoRepository
-    private lateinit var sessionManager: SessionManager
-    private lateinit var postSaveSyncScheduler: PostSaveSyncScheduler
-    private lateinit var stockHelper: DispensacionStockHelper
-    private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
-    private lateinit var costoProductoDao: CostoProductoDao
-    private lateinit var costoBiseladoDao: CostoBiseladoDao
-    private lateinit var viewModel: DispensacionViewModel
-
-    private val opticaIdFlow = MutableStateFlow("optica-test")
     private val testDispatcher = StandardTestDispatcher()
     private val dispId = "disp-1"
-    private val testDate = LocalDate.of(2026, 7, 10)
-
-    private val testDispensacion = DispensacionOptica(
-        id = dispId, ot = "OT-2026-0001", pacienteId = "pac-1", fecha = testDate,
-        opticaId = "optica-test", tipoLente = "Monofocal", montoTotal = 300.0,
-        montoPagado = 150.0, estadoEntrega = "Pendiente", metodoPago = "Efectivo",
-    )
-
-    private val testRegalos = listOf(
-        RegaloDispensacionEntity(
-            id = "reg-1",
-            dispensacionId = dispId,
-            productoId = "prod-1",
-            cantidad = 2,
-            costoUnitario = 10.0,
-            descripcion = "Estuche",
-            motivo = "Cortesía",
-            opticaId = "optica-test",
-        ),
-        RegaloDispensacionEntity(
-            id = "reg-2",
-            dispensacionId = dispId,
-            productoId = "prod-2",
-            cantidad = 1,
-            costoUnitario = 15.0,
-            descripcion = "Líquido",
-            motivo = "Promoción",
-            opticaId = "optica-test",
-        ),
-    )
+    private val opticaId = "optica-test"
+    private val rolFlow = MutableStateFlow("gerente")
+    private lateinit var repository: OptoRepository
+    private lateinit var stockHelper: DispensacionStockHelper
+    private lateinit var anular: AnularDispensacionUseCase
+    private lateinit var viewModel: DispensacionViewModel
 
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
-        every { android.util.Log.d(any(), any()) } returns 0
-        every { android.util.Log.w(any(), any<String>()) } returns 0
-        every { android.util.Log.w(any(), any<String>(), any()) } returns 0
-        every { android.util.Log.e(any(), any<String>()) } returns 0
         every { android.util.Log.e(any(), any<String>(), any()) } returns 0
-
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
-        sessionManager = mockk()
-        postSaveSyncScheduler = mockk(relaxed = true)
         stockHelper = mockk(relaxed = true)
-        calcularMontoPagadoUseCase = mockk()
-        costoProductoDao = mockk(relaxed = true)
-        costoBiseladoDao = mockk(relaxed = true)
-
-        every { sessionManager.opticaId } returns opticaIdFlow
-
-        coEvery { repository.getDispensacionById(dispId, any()) } returns Resource.Success(testDispensacion)
-        coEvery { calcularMontoPagadoUseCase(dispId, any()) } returns 150.0
-        coEvery { repository.getRegalosByDispensacionId(dispId, any()) } returns testRegalos
+        anular = mockk()
+        val sessionManager = mockk<SessionManager>()
+        every { sessionManager.opticaId } returns MutableStateFlow(opticaId)
+        every { sessionManager.opticaRol } returns rolFlow
+        viewModel = DispensacionViewModel(
+            repository,
+            sessionManager,
+            mockk(relaxed = true),
+            stockHelper,
+            mockk(relaxed = true),
+            anular,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @After
@@ -107,112 +68,78 @@ class DispensacionViewModelAnulacionTest {
         Dispatchers.resetMain()
     }
 
-    @Test
-    fun `anularDispensacion flips estado to Anulado`() = runTest {
-        val cancel = mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true)
-        viewModel = DispensacionViewModel(
-            repository,
-            sessionManager,
-            postSaveSyncScheduler,
-            stockHelper,
-            calcularMontoPagadoUseCase,
-            cancel,
-            mockk(relaxed = true),
-            costoProductoDao,
-            costoBiseladoDao,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
-
+    private fun anularAndAwait(): Boolean {
         var completed = false
-        viewModel.anularDispensacion(dispId) { completed = true }
+        viewModel.anularDispensacion(dispId, "Cliente desistió") { completed = true }
         testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { cancel(dispId, "optica-test") }
+        return completed
     }
 
     @Test
-    fun `anularDispensacion creates inverse Pago with negative monto`() = runTest {
-        val cancel = mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true)
-        viewModel = DispensacionViewModel(
-            repository,
-            sessionManager,
-            postSaveSyncScheduler,
-            stockHelper,
-            calcularMontoPagadoUseCase,
-            cancel,
-            mockk(relaxed = true),
-            costoProductoDao,
-            costoBiseladoDao,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `asesor is rejected without invoking the use case`() = runTest {
+        rolFlow.value = "asesor"
 
-        var completed = false
-        viewModel.anularDispensacion(dispId) { completed = true }
-        testDispatcher.scheduler.advanceUntilIdle()
+        val completed = anularAndAwait()
 
-        coVerify { cancel(dispId, "optica-test") }
-        coVerify(exactly = 0) { repository.insertPago(match { it.tipo == "Anulación" }) }
+        assertFalse(completed)
+        assertTrue(viewModel.uiState.value.error!!.contains("anular dispensación"))
+        assertFalse(viewModel.uiState.value.isLoading)
+        confirmVerified(anular)
     }
 
     @Test
-    fun `anularDispensacion restores stock for associated regalos`() = runTest {
-        viewModel = DispensacionViewModel(
-            repository,
-            sessionManager,
-            postSaveSyncScheduler,
-            stockHelper,
-            calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
-            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
-            costoProductoDao,
-            costoBiseladoDao,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `applied cancel completes and the view model no longer restocks regalos itself`() = runTest {
+        coEvery { anular(dispId, opticaId, "Cliente desistió") } returns LifecycleOutcome.Applied
 
-        var completed = false
-        viewModel.anularDispensacion(dispId) { completed = true }
-        testDispatcher.scheduler.advanceUntilIdle()
+        val completed = anularAndAwait()
 
-        // Verify stock restored for each regalo with positive delta
-        coVerify {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-1",
-                "optica-test",
-                2,
-                "AJUSTE",
-                "reg-1",
-                "Reversión por anulación de dispensación",
-            )
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                "prod-2",
-                "optica-test",
-                1,
-                "AJUSTE",
-                "reg-2",
-                "Reversión por anulación de dispensación",
-            )
-        }
+        assertTrue(completed)
+        assertNull(viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isLoading)
+        coVerify(exactly = 0) { stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { repository.getRegalosByDispensacionId(any(), any()) }
     }
 
     @Test
-    fun `anularDispensacion calls onComplete`() = runTest {
-        viewModel = DispensacionViewModel(
-            repository,
-            sessionManager,
-            postSaveSyncScheduler,
-            stockHelper,
-            calcularMontoPagadoUseCase,
-            mockk<com.example.optoapp.domain.CancelDispensacionUseCase>(relaxed = true),
-            mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
-            costoProductoDao,
-            costoBiseladoDao,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+    fun `cancel on a Reclamada order shows an error and does not complete`() = runTest {
+        coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.AlreadyTerminal("Reclamada")
 
-        var completed = false
-        viewModel.anularDispensacion(dispId) { completed = true }
-        testDispatcher.scheduler.advanceUntilIdle()
+        val completed = anularAndAwait()
 
-        assertEquals(true, completed)
+        assertFalse(completed)
+        assertEquals("No se puede anular una orden reclamada", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `cancel on an already Anulado order informs the user and completes to refresh the order`() = runTest {
+        coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.AlreadyTerminal("Anulado")
+
+        val completed = anularAndAwait()
+
+        assertTrue(completed)
+        assertEquals("Esta orden ya fue anulada", viewModel.uiState.value.infoMessage)
+        assertNull(viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `applied cancel shows no info message`() = runTest {
+        coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.Applied
+
+        anularAndAwait()
+
+        assertNull(viewModel.uiState.value.infoMessage)
+    }
+
+    @Test
+    fun `use case failure surfaces its message`() = runTest {
+        coEvery { anular(dispId, opticaId, any()) } throws IllegalStateException("Stock insuficiente")
+
+        val completed = anularAndAwait()
+
+        assertFalse(completed)
+        assertEquals("Stock insuficiente", viewModel.uiState.value.error)
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 }
