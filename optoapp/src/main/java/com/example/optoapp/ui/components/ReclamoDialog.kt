@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.domain.MONEY_EPSILON
 import com.example.optoapp.util.MontoDraftFormatting
 import kotlin.math.max
 
@@ -45,18 +46,19 @@ data class ReclamoPreview(
 
 fun reclamoPreview(creditoTransferido: Double, nuevoTotalInput: String): ReclamoPreview {
     val credito = max(creditoTransferido, 0.0)
-    val total = nuevoTotalInput.trim().replace(",", ".").toDoubleOrNull()?.takeIf { it >= 0.0 }
+    val total = nuevoTotalInput.trim().replace(",", ".").toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0.0 }
         ?: return ReclamoPreview(credito, nuevoTotal = null, reembolso = 0.0, saldoReemplazo = 0.0)
     return ReclamoPreview(
         creditoTransferido = credito,
         nuevoTotal = total,
-        reembolso = max(credito - total, 0.0),
+        reembolso = (credito - total).takeIf { it > MONEY_EPSILON } ?: 0.0,
         saldoReemplazo = max(total - credito, 0.0),
     )
 }
 
-fun canConfirmReclamo(motivo: String, preview: ReclamoPreview, submitting: Boolean): Boolean =
-    canConfirmMotivo(motivo, submitting) && preview.nuevoTotal != null
+fun canConfirmReclamo(motivo: String, preview: ReclamoPreview, metodoReembolso: String, submitting: Boolean): Boolean =
+    canConfirmMotivo(motivo, submitting) && preview.nuevoTotal != null &&
+        (!preview.muestraMetodoReembolso || metodoReembolso.isNotBlank())
 
 fun metodosReembolso(sugerido: String): List<String> =
     if (sugerido.isBlank() || sugerido in METODOS_REEMBOLSO_BASE) METODOS_REEMBOLSO_BASE
@@ -83,7 +85,7 @@ fun ReclamoDialog(
         submitting = submitting,
         onConfirm = { motivo ->
             val total = preview.nuevoTotal
-            if (total != null && canConfirmReclamo(motivo, preview, submitting)) onConfirm(motivo, total, metodo)
+            if (total != null && canConfirmReclamo(motivo, preview, metodo, submitting)) onConfirm(motivo, total, metodo)
         },
         onDismiss = onDismiss,
     ) {
@@ -115,7 +117,7 @@ private fun ReclamoPreviewSummary(preview: ReclamoPreview) {
             return@Column
         }
         PreviewRow("Crédito transferido", preview.creditoTransferido)
-        if (preview.reembolso > 0.0) PreviewRow("Reembolso al paciente", preview.reembolso, highlight = true)
+        if (preview.muestraMetodoReembolso) PreviewRow("Reembolso al paciente", preview.reembolso, highlight = true)
         if (preview.saldoReemplazo > 0.0) PreviewRow("Saldo del reemplazo", preview.saldoReemplazo)
     }
 }
@@ -146,7 +148,8 @@ private fun MetodoReembolsoField(
             onValueChange = {},
             readOnly = true,
             enabled = enabled,
-            label = { Text("Método de reembolso") },
+            isError = metodo.isBlank(),
+            label = { Text("Método de reembolso *") },
             trailingIcon = {
                 IconButton(onClick = { expanded = true }, enabled = enabled, modifier = Modifier.size(48.dp)) {
                     Icon(Icons.Default.ArrowDropDown, contentDescription = "Desplegar")
