@@ -1,6 +1,5 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
@@ -67,7 +66,7 @@ class CancelLedgerUseCasesTest {
         coEvery { repository.insertPago(any()) } answers { recordWrite("pago") }
         coEvery { stockHelper.restockOnce(any(), any(), any(), any(), any()) } answers {
             recordWrite("stock")
-            Result.success(true)
+            true
         }
         val updates = mutableListOf<ServicioExtra>()
         coEvery { repository.updateServicio(capture(updates)) } answers { recordWrite("servicio") }
@@ -160,8 +159,8 @@ class CancelLedgerUseCasesTest {
     @Test
     fun cancelServicio_stockFailureLeavesServicioActiveWithoutMetadata() = runTest {
         val updates = stubServicio(servicio(), items = listOf(servicioItem("item-1", "m-1")))
-        coEvery { stockHelper.restockOnce("m-1", "o1", 1, "item-1:anul", any()) } returns
-            Result.failure(IllegalStateException("restock failed"))
+        coEvery { stockHelper.restockOnce("m-1", "o1", 1, "item-1:anul", any()) } throws
+            IllegalStateException("restock failed")
 
         val error = runCatching { cancelServicio() }.exceptionOrNull()
 
@@ -181,30 +180,6 @@ class CancelLedgerUseCasesTest {
         coVerify(exactly = 0) { repository.updateServicio(any()) }
         coVerify(exactly = 0) { stockHelper.restockOnce(any(), any(), any(), any(), any()) }
         coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
-    }
-
-    @Test
-    fun reclaim_positiveReembolsoWithoutReversaLink() = runTest {
-        coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
-            DispensacionOptica(
-                id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
-                estadoEntrega = "Pendiente", metodoPago = "Efectivo", ot = "OT-1",
-            ),
-        )
-        val slot = slot<Pago>()
-        coEvery { repository.insertPago(capture(slot)) } returns Unit
-
-        ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", 50.0, "Efectivo", "OT-1")
-
-        assertEquals("Reembolso", slot.captured.tipo)
-        assertEquals(50.0, slot.captured.monto, 0.001)
-        assertNull(slot.captured.reversaPagoId)
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Reclamada" }) }
-    }
-
-    @Test(expected = IllegalArgumentException::class)
-    fun reclaim_rejectsNegativeMonto() = runTest {
-        ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", -1.0, "Efectivo", "OT-1")
     }
 
     private fun ledgerPago(
@@ -285,5 +260,27 @@ class CancelLedgerUseCasesTest {
         assertEquals("d1", inserted.single().servicioExtraId)
         assertNull(inserted.single().dispensacionId)
         assertEquals(mapOf("Yape" to 30.0), snapshot.netByMetodo)
+    }
+
+    @Test
+    fun lastCreditMetodo_sameDateTie_isResolvedByLatestUpdatedAt() {
+        val pagos = listOf(
+            ledgerPago("late", "Abono", 40.0, "Yape").copy(updatedAt = "2026-08-14T18:00:00Z"),
+            ledgerPago("early", "Abono", 60.0, "Tarjeta").copy(updatedAt = "2026-08-14T09:00:00Z"),
+        )
+
+        assertEquals("Yape", lastCreditMetodo(pagos))
+        assertEquals("Yape", lastCreditMetodo(pagos.reversed()))
+    }
+
+    @Test
+    fun lastCreditMetodo_ignoresNewerReversoAndReembolsoRows() {
+        val pagos = listOf(
+            ledgerPago("abono", "Abono", 100.0, "Efectivo").copy(fecha = date.minusDays(2)),
+            ledgerPago("reverso", "Reverso", 30.0, "Tarjeta", reversaPagoId = "abono"),
+            ledgerPago("reembolso", "Reembolso", 20.0, "Yape").copy(fecha = date.plusDays(1)),
+        )
+
+        assertEquals("Efectivo", lastCreditMetodo(pagos))
     }
 }

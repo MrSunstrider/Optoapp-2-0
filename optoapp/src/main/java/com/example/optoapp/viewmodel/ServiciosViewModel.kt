@@ -11,6 +11,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.auth.AuthorizationGuard
@@ -58,7 +59,15 @@ data class ServiciosUiState(
     val pagosToDelete: List<Pago> = emptyList(),
     val generatedId: String = UUID.randomUUID().toString(),
     val isEdit: Boolean = false,
-)
+    val motivoAnulacion: String? = null,
+    val fechaAnulacion: LocalDate? = null,
+) {
+    val isReadOnly: Boolean
+        get() = OrderStatusPolicy.isTerminal(estado)
+
+    val selectableEstados: List<String>
+        get() = OrderStatusPolicy.selectableEstados(estado)
+}
 
 @HiltViewModel
 class ServiciosViewModel @Inject constructor(
@@ -71,6 +80,7 @@ class ServiciosViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "ServiciosViewModel"
+        private val CANCEL_ROLES = setOf("admin", "gerente")
     }
 
     private val _uiState = MutableStateFlow(ServiciosUiState())
@@ -88,6 +98,12 @@ class ServiciosViewModel @Inject constructor(
     private val _deleteError = MutableStateFlow<String?>(null)
     val deleteError: StateFlow<String?> = _deleteError.asStateFlow()
 
+    private val _anulando = MutableStateFlow(false)
+    val anulando: StateFlow<Boolean> = _anulando.asStateFlow()
+
+    private val _infoMessage = MutableStateFlow<String?>(null)
+    val infoMessage: StateFlow<String?> = _infoMessage.asStateFlow()
+
     init {
         viewModelScope.launch {
             val oid = sessionManager.opticaId.first()
@@ -99,6 +115,15 @@ class ServiciosViewModel @Inject constructor(
     val allServicios: StateFlow<List<ServicioExtra>> = sessionManager.opticaId
         .flatMapLatest { repository.getAllServiciosForOptica(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val cancelableServicioIds: StateFlow<Set<String>> =
+        combine(allServicios, sessionManager.opticaRol) { servicios, rol ->
+            if (rol.trim().lowercase() !in CANCEL_ROLES) {
+                emptySet()
+            } else {
+                servicios.filter { OrderStatusPolicy.canCancel(it.estado) }.map { it.id }.toSet()
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val pacientes: StateFlow<List<Paciente>> = sessionManager.opticaId
@@ -128,9 +153,10 @@ class ServiciosViewModel @Inject constructor(
 
     fun updateEstado(estado: String) {
         _uiState.update {
+            if (estado !in it.selectableEstados) return@update it
             it.copy(
                 estado = estado,
-                fechaEntrega = if (estado == "Entregado") DateUtils.today() else it.fechaEntrega,
+                fechaEntrega = if (estado == OrderStatusPolicy.ENTREGADO) DateUtils.today() else it.fechaEntrega,
             )
         }
     }
@@ -231,6 +257,8 @@ class ServiciosViewModel @Inject constructor(
                         isEdit = true,
                         isLoading = false,
                         error = null,
+                        motivoAnulacion = s.motivoAnulacion,
+                        fechaAnulacion = s.fechaAnulacion,
                     )
                     _uiState.value = deriveHeader(base)
                 }
@@ -475,15 +503,24 @@ class ServiciosViewModel @Inject constructor(
         _deleteError.value = null
     }
 
-    fun confirmAnular(motivo: String) {
+    fun confirmAnular(motivo: String, onComplete: () -> Unit = {}) {
         val servicio = _servicioToDelete.value ?: return
+        if (_anulando.value) return
+        _anulando.value = true
         viewModelScope.launch {
             try {
-                AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), setOf("admin", "gerente"), "anular servicio")
+                AuthorizationGuard.requireRole(sessionManager.opticaRol.first(), CANCEL_ROLES, "anular servicio")
                 val reason = normalizeMotivo(motivo)
-                cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
+                val outcome = cancelServicioExtraUseCase(servicio.id, sessionManager.opticaId.first(), reason)
                 _showDeleteDialog.value = false
                 _servicioToDelete.value = null
+                when (outcome) {
+                    LifecycleOutcome.Applied -> onComplete()
+                    is LifecycleOutcome.AlreadyTerminal -> {
+                        _infoMessage.value = servicioAlreadyTerminalMessage(outcome.estado)
+                        if (_uiState.value.id == servicio.id) loadServicio(servicio.id)
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IllegalArgumentException) {
@@ -493,6 +530,8 @@ class ServiciosViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Anular servicio", e)
                 _deleteError.value = "Error inesperado. Reintente más tarde."
+            } finally {
+                _anulando.value = false
             }
         }
     }
@@ -500,6 +539,13 @@ class ServiciosViewModel @Inject constructor(
     fun clearDeleteError() {
         _deleteError.value = null
     }
+
+    fun clearInfoMessage() {
+        _infoMessage.value = null
+    }
+
+    private fun servicioAlreadyTerminalMessage(estado: String): String =
+        if (estado == OrderStatusPolicy.ANULADO) "Este servicio ya fue anulado" else "Este servicio ya está en estado $estado"
 
     private fun deriveHeader(state: ServiciosUiState): ServiciosUiState {
         val nonBlank = state.items.filter { it.descripcion.isNotBlank() }

@@ -12,6 +12,7 @@ import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -79,12 +80,13 @@ class DownloadSyncCoordinatorTest {
     private val repository = mockk<OptoRepository>(relaxed = true)
     private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
     private val deletionSyncHelper = mockk<DeletionSyncHelper>(relaxed = true)
+    private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
     private val coordinator = DownloadSyncCoordinator(
         repository = repository,
         supabase = mockk<SupabaseClient>(relaxed = true),
         syncStateTracker = syncStateTracker,
         deletionSyncHelper = deletionSyncHelper,
-        networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true),
+        networkRetryHelper = networkRetryHelper,
         resumenDiarioDao = mockk<ResumenDiarioDao>(relaxed = true),
         configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
         costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
@@ -197,6 +199,62 @@ class DownloadSyncCoordinatorTest {
 
         assertEquals(1, persisted)
         coVerify { repository.upsertServicioFromRemote(match { it.id == "s1" && it.estado == "Anulado" }) }
+    }
+
+    @Test
+    fun successfulPagosFetch_marksTheDownloadBatchSynced() = runTest {
+        stubSyncInfra()
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerifyOrder {
+            syncStateTracker.clear(opticaId, "download_pago", "batch")
+            syncStateTracker.markSynced(opticaId, "download_pago", "batch")
+        }
+    }
+
+    private fun remotePago(id: String) = PagoRemoto(id = id, dispensacionId = "d1", fecha = "2026-09-01", tipo = "Reverso", monto = 10.0, opticaId = opticaId)
+
+    @Test
+    fun everyPagoPersisted_marksTheDownloadBatchComplete() = runTest {
+        stubSyncInfra()
+
+        assertEquals(2, coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2"))))
+
+        coVerify { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun pagoPersistFailureAfterASuccessfulFetch_leavesTheBatchIncomplete() = runTest {
+        stubSyncInfra()
+        coEvery { repository.upsertPagoFromRemote(match { it.id == "p2" }) } throws IllegalStateException("constraint")
+
+        assertEquals(1, coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2"))))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun quarantinedOrPendingDeletionPago_leavesTheBatchIncomplete() = runTest {
+        stubSyncInfra()
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns setOf("p1")
+        coordinator.persistPagos(opticaId, listOf(remotePago("p1")))
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns emptySet()
+        coEvery { deletionSyncHelper.deletedIds(opticaId) } returns setOf("p2")
+        coordinator.persistPagos(opticaId, listOf(remotePago("p2")))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun failedPagosFetch_leavesTheDownloadBatchInError() = runTest {
+        stubSyncInfra()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } throws java.io.IOException("timeout")
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerify { syncStateTracker.markError(opticaId, "download_pago", "batch", "timeout") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
     }
 
     @Test
