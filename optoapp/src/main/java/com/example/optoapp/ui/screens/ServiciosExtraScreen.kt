@@ -18,9 +18,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.ui.navigation.Route
+import com.example.optoapp.ui.components.MotivoDialog
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.OrderEstadoChip
+import com.example.optoapp.ui.components.orderEstadoColor
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
@@ -44,6 +47,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val servicioToDelete by viewModel.servicioToDelete.collectAsState()
     val deleteError by viewModel.deleteError.collectAsState()
+    val infoMessage by viewModel.infoMessage.collectAsState()
+    val anulando by viewModel.anulando.collectAsState()
 
     val filteredServicios = servicios.filter { servicio ->
         val matchesSearch = searchQuery.isEmpty() ||
@@ -78,23 +83,19 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         }
     }
 
-    if (showDeleteDialog && servicioToDelete != null) {
-        var motivo by remember(servicioToDelete) { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissDeleteDialog() },
-            title = { Text("¿Anular servicio?", fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("¿Anular ${servicioToDelete!!.descripcion}?")
-                    OutlinedTextField(value = motivo, onValueChange = { motivo = it }, label = { Text("Motivo") })
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmAnular(motivo) }, enabled = motivo.isNotBlank()) {
-                    Text("Anular", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = { TextButton(onClick = { viewModel.dismissDeleteDialog() }) { Text("Cancelar") } },
+    LaunchedEffect(infoMessage) {
+        infoMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearInfoMessage()
+        }
+    }
+
+    servicioToDelete?.takeIf { showDeleteDialog }?.let { servicio ->
+        AnularServicioDialog(
+            descripcion = servicio.descripcion,
+            submitting = anulando,
+            onConfirm = { viewModel.confirmAnular(it) },
+            onDismiss = { viewModel.dismissDeleteDialog() },
         )
     }
 
@@ -157,7 +158,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Todos", "Pendiente", "Entregado").forEach { estado ->
+                    listOf("Todos", "Pendiente", "Entregado", "Anulado").forEach { estado ->
                         FilterChip(
                             selected = estadoFilter == estado,
                             onClick = { estadoFilter = estado },
@@ -166,6 +167,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                                 selectedContainerColor = when (estado) {
                                     "Pendiente" -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.15f)
                                     "Entregado" -> MaterialTheme.colorScheme.positiveGreen.copy(alpha = 0.15f)
+                                    "Anulado" -> orderEstadoColor(estado, null).copy(alpha = 0.15f)
                                     else -> MaterialTheme.colorScheme.primaryContainer
                                 },
                             ),
@@ -225,11 +227,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 @Composable
 private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onAnular: (() -> Unit)?) {
     val saldo = servicio.montoTotal - aCuenta
-    val estadoColor = when (servicio.estado) {
-        "Entregado" -> MaterialTheme.colorScheme.positiveGreen
-        "Pendiente" -> if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.warningAmber
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val estadoColor = orderEstadoColor(servicio.estado, saldo)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -253,18 +251,7 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = estadoColor.copy(alpha = 0.15f),
-                ) {
-                    Text(
-                        servicio.estado,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = estadoColor,
-                    )
-                }
+                OrderEstadoChip(servicio.estado, saldo = saldo, servicio = true)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -292,15 +279,49 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                             Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
                         if (onAnular != null) {
-                            IconButton(onClick = onAnular, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = "Anular", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(18.dp))
-                            }
+                            ServicioOverflowMenu(onAnular = onAnular)
                         }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun ServicioOverflowMenu(onAnular: () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { expanded = true }, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.MoreVert, contentDescription = "Más acciones", modifier = Modifier.size(18.dp))
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text("Anular", color = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    expanded = false
+                    onAnular()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+internal fun AnularServicioDialog(
+    descripcion: String,
+    submitting: Boolean,
+    onConfirm: (motivo: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    MotivoDialog(
+        title = "¿Anular servicio?",
+        confirmText = "Anular",
+        message = "${descripcion.ifBlank { "Servicio" }}: se revierten los pagos y vuelven al stock los productos y regalos. No se puede deshacer.",
+        submitting = submitting,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+    )
 }
 
 private fun fmt(value: Double): String = if (value == value.toLong().toDouble()) {

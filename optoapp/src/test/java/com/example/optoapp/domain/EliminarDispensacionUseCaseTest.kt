@@ -76,6 +76,18 @@ class EliminarDispensacionUseCaseTest {
     }
 
     @Test
+    fun hasTrace_isFalseOnlyWithoutPagosAndMovimientos() = runTest {
+        stubCounts(pagos = 0, movimientos = 0)
+        assertEquals(false, useCase().hasTrace("d1", "o1"))
+
+        stubCounts(pagos = 0, movimientos = 1)
+        assertEquals(true, useCase().hasTrace("d1", "o1"))
+
+        stubCounts(pagos = 2, movimientos = 0)
+        assertEquals(true, useCase().hasTrace("d1", "o1"))
+    }
+
+    @Test
     fun missingOrder_isRejected() = runTest {
         coEvery { repository.getDispensacionById("d1", "o1") } returns Resource.Error("not found")
         stubCounts(pagos = 0, movimientos = 0)

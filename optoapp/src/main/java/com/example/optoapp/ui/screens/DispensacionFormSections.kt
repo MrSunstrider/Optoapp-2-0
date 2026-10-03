@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
@@ -164,13 +165,19 @@ fun FinancieraInfoSection(
                 )
             }
 
-            com.example.optoapp.ui.components.OptoDropdownMenuField(label = "Estado de Entrega", selected = uiState.estadoEntrega, options = listOf("Pendiente", "Entregado"), onSelected = { newEstado ->
-                val newFechaEntrega = when (newEstado) {
-                    "Entregado" -> uiState.fechaEntrega ?: LocalDate.now()
-                    else -> null
-                }
-                onUpdate(uiState.copy(estadoEntrega = newEstado, fechaEntrega = newFechaEntrega))
-            })
+            com.example.optoapp.ui.components.OptoDropdownMenuField(
+                label = "Estado de Entrega",
+                selected = uiState.estadoEntrega,
+                options = OrderStatusPolicy.selectableEstados(uiState.estadoEntrega),
+                enabled = OrderStatusPolicy.isEditable(uiState.estadoEntrega),
+                onSelected = { newEstado ->
+                    val newFechaEntrega = when (newEstado) {
+                        "Entregado" -> uiState.fechaEntrega ?: LocalDate.now()
+                        else -> null
+                    }
+                    onUpdate(uiState.copy(estadoEntrega = newEstado, fechaEntrega = newFechaEntrega))
+                },
+            )
             if (uiState.fechaEntrega != null) {
                 FechaEntregaEditButton(
                     fechaEntrega = uiState.fechaEntrega,
@@ -285,7 +292,6 @@ fun RegalosSection(
             title = { Text("Agregar Regalo") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    // Producto search
                     var query by remember { mutableStateOf("") }
                     var showResults by remember { mutableStateOf(false) }
 
@@ -338,7 +344,6 @@ fun RegalosSection(
                         Text("Sin resultados", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                     }
 
-                    // Cantidad
                     OutlinedTextField(
                         value = cantidad,
                         onValueChange = { cantidad = it.filter { c -> c.isDigit() } },
@@ -347,7 +352,6 @@ fun RegalosSection(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    // Motivo
                     OutlinedTextField(
                         value = motivo,
                         onValueChange = { motivo = it },
@@ -355,7 +359,6 @@ fun RegalosSection(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
-                    // Costo (auto-filled, no editable)
                     if (selectedMontura != null) {
                         Text(
                             "Costo unitario: S/. ${String.format(Locale.getDefault(), "%.2f", selectedMontura.costo)}",
