@@ -57,6 +57,7 @@ class ServiciosViewModelPagoValidationTest {
         stockHelper = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
+        every { sessionManager.opticaRol } returns flowOf("asesor")
         every { sessionManager.userTimeZone } returns flowOf(null)
         every { repository.getAllServiciosForOptica(any()) } returns flowOf(emptyList())
         every { repository.getAllPagosFlowForOptica(any()) } returns flowOf(emptyList())

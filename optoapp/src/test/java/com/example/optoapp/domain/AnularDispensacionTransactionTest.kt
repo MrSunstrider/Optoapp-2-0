@@ -12,6 +12,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.PacienteRepository
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.RoomTransactionRunner
 import com.example.optoapp.data.SyncRepository
 import com.example.optoapp.data.backup.BackupRestoreCoordinator
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
@@ -33,6 +34,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -83,7 +85,7 @@ class AnularDispensacionTransactionTest {
     private fun useCase(repo: OptoRepository = repository) = AnularDispensacionUseCase(
         repo,
         db.pagoDao(),
-        DispensacionStockHelper(repo.monturaCoordinator),
+        DispensacionStockHelper(repo.monturaCoordinator, RoomTransactionRunner(db)),
         scheduler,
         CalcularMontoPagadoUseCase(db.pagoDao()),
     )
@@ -206,6 +208,40 @@ class AnularDispensacionTransactionTest {
     }
 
     @Test
+    fun alreadyReversedPago_getsNoSecondReversoAndOnlyUnreversedOneIsReversed() = runTest {
+        seedOrder()
+        seedPago("a1", "Abono", 100.0, "Efectivo", daysAgo = 10)
+        seedPago("rv-a1", "Reverso", 100.0, "Efectivo", daysAgo = 9, reversaPagoId = "a1")
+        seedPago("a2", "Abono", 50.0, "Yape", daysAgo = 2)
+
+        val outcome = useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(LifecycleOutcome.Applied, outcome)
+        val newReversos = reversos().filter { it.id != "rv-a1" }
+        assertEquals(listOf("a2"), newReversos.map { it.reversaPagoId })
+        assertEquals(50.0, newReversos.single().monto, 0.001)
+        assertEquals(today, newReversos.single().fecha)
+        assertEquals(listOf("rv-a1"), reversos().filter { it.reversaPagoId == "a1" }.map { it.id })
+        assertEquals(0.0, netPaid(), 0.001)
+        assertEquals("Anulado", order().estadoEntrega)
+    }
+
+    @Test
+    fun noPagosWithStoreFrame_restocksFrameWithoutPagoRows() = runTest {
+        seedOrder()
+        seedMontura("M1", stock = 2)
+        seedItem("i1", "M1")
+
+        val outcome = useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(LifecycleOutcome.Applied, outcome)
+        assertEquals(0, pagos().size)
+        assertEquals(3, stock("M1"))
+        assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
+        assertEquals("Anulado", order().estadoEntrega)
+    }
+
+    @Test
     fun legacyHeaderStoreFrame_restocksWithHeaderReferencia() = runTest {
         seedOrder(headerMonturaId = "M1", headerOrigen = "Tienda")
         seedMontura("M1", stock = 0)
@@ -215,6 +251,31 @@ class AnularDispensacionTransactionTest {
         assertEquals(1, stock("M1"))
         assertEquals(listOf("d1:anul:h:M1"), movimientos().map { it.referenciaId })
         assertEquals(0, pagos().size)
+    }
+
+    @Test
+    fun legacyNuevaDeTiendaHeaderFrame_restocksOnceAcrossRepeatedCancels() = runTest {
+        seedOrder(headerMonturaId = "M1", headerOrigen = "Nueva de Tienda")
+        seedMontura("M1", stock = 0)
+
+        useCase()(dispId, opticaId, "Cliente desistió")
+        val second = useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), second)
+        assertEquals(1, stock("M1"))
+        assertEquals(listOf("d1:anul:h:M1"), movimientos().map { it.referenciaId })
+    }
+
+    @Test
+    fun legacyNuevaDeTiendaItemFrame_isRestocked() = runTest {
+        seedOrder()
+        seedMontura("M1", stock = 2)
+        seedItem("i1", "M1", origen = "Nueva de Tienda")
+
+        useCase()(dispId, opticaId, "Cliente desistió")
+
+        assertEquals(3, stock("M1"))
+        assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
     }
 
     @Test
@@ -239,6 +300,27 @@ class AnularDispensacionTransactionTest {
         assertEquals(orderBefore, order())
         assertEquals(4, stock("M1"))
         assertEquals(6, stock("P1"))
+    }
+
+    @Test
+    fun redownloadedSyncedReversal_staysSingleAndRestockIsNotRepeated() = runTest {
+        seedOrder()
+        seedMontura("M1", stock = 3)
+        seedItem("i1", "M1")
+        useCase()(dispId, opticaId, "Cliente desistió")
+        val synced = movimientos().single()
+
+        repository.upsertMonturaMovimiento(synced.toRemoto().toEntity())
+        repository.upsertMonturaMovimiento(synced.copy(id = "remote-other-device").toRemoto().toEntity())
+
+        assertEquals(listOf("d1:anul:i1"), movimientos().map { it.referenciaId })
+        assertEquals(4, stock("M1"))
+        assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), useCase()(dispId, opticaId, "Otra vez"))
+        val restock = DispensacionStockHelper(repository.monturaCoordinator, RoomTransactionRunner(db))
+            .restockOnce("M1", opticaId, 1, "d1:anul:i1", "Reintento")
+        assertFalse(restock)
+        assertEquals(1, movimientos().size)
+        assertEquals(4, stock("M1"))
     }
 
     @Test

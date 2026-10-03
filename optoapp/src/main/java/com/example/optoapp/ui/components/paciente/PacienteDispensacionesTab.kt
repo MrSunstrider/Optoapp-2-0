@@ -21,6 +21,7 @@ import com.example.optoapp.data.Paciente
 import com.example.optoapp.ui.components.common.EmptyState
 import com.example.optoapp.ui.components.common.InfoSection
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
+import com.example.optoapp.ui.components.OrderEstadoChip
 import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
@@ -72,18 +73,7 @@ fun DispensacionesList(
                                 IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForResumen.value = disp }) {
                                     Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                                 }
-                                Surface(
-                                    color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
-                                    shape = RoundedCornerShape(8.dp),
-                                ) {
-                                    Text(
-                                        disp.estadoEntrega,
-                                        color = if (disp.estadoEntrega == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    )
-                                }
+                                OrderEstadoChip(disp.estadoEntrega)
                             }
                         }
                         if (disp.fechaEntrega != null) {

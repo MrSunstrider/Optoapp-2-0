@@ -55,9 +55,6 @@ interface ServicioExtraDao {
     @Query("SELECT * FROM servicios_extra WHERE id IN (:ids) AND opticaId = :opticaId")
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String): List<ServicioExtra>
 
-    @Query("DELETE FROM servicios_extra WHERE id = :id AND opticaId = :opticaId")
-    suspend fun deleteServicio(id: String, opticaId: String): Int
-
     @Query("UPDATE servicios_extra SET opticaId = :newOpticaId WHERE opticaId = 'mi_optica_base'")
     suspend fun reassignFromLegacyMiOpticaBase(newOpticaId: String): Int
 
