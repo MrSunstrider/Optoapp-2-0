@@ -367,7 +367,6 @@ class PagoDaoTest {
         dao.insertPago(pago)
 
         assertNotNull(dao.getPagoByIdForOptica("p1", "opticaX"))
-        // cross-tenant isolation
         assertNull(dao.getPagoByIdForOptica("p1", "opticaY"))
     }
 
