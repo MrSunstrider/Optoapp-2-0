@@ -1,6 +1,8 @@
 package com.example.optoapp.util
 
+import com.example.optoapp.data.DatabaseTransactionRunner
 import com.example.optoapp.data.Montura
+import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import io.mockk.coEvery
@@ -14,12 +16,15 @@ import org.junit.Test
 class DispensacionStockHelperTest {
 
     private lateinit var coordinator: MonturaInventoryCoordinator
+    private lateinit var transactionRunner: DatabaseTransactionRunner
     private lateinit var helper: DispensacionStockHelper
 
     @Before
     fun setUp() {
         coordinator = mockk(relaxed = true)
-        helper = DispensacionStockHelper(coordinator)
+        transactionRunner = mockk()
+        coEvery { transactionRunner.inTransaction<Any?>(any()) } coAnswers { firstArg<suspend () -> Any?>().invoke() }
+        helper = DispensacionStockHelper(coordinator, transactionRunner)
     }
 
     @Test
@@ -167,47 +172,89 @@ class DispensacionStockHelperTest {
     }
 
     @Test
-    fun restockOnce_existingAjusteForReferencia_skipsWithoutTouchingStock() = runTest {
-        coEvery { coordinator.hasMovimiento("d1:anul:i1", "AJUSTE", "m1", "o1") } returns true
+    fun restockOnce_movimientoKeyAlreadyTaken_skipsWithoutTouchingStock() = runTest {
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns false
+        coEvery { coordinator.findMovimientoByKey("d1:anul:i1", "AJUSTE", "m1") } returns
+            MonturaMovimiento(
+                id = "existing", monturaId = "m1", tipo = "AJUSTE", cantidad = 1,
+                stockPrevio = 3, stockNuevo = 4, referenciaId = "d1:anul:i1", opticaId = "o1",
+            )
 
         val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
 
-        assertEquals(false, result.getOrNull())
-        coVerify(exactly = 0) { coordinator.adjustMonturaStock(any(), any(), any()) }
+        assertFalse(result)
+        coVerify(exactly = 0) { coordinator.adjustMonturaStockLocal(any(), any(), any()) }
         coVerify(exactly = 0) { coordinator.insertMonturaMovimiento(any()) }
     }
 
     @Test
-    fun restockOnce_noPriorAjuste_restocksWithAjusteMovimiento() = runTest {
-        coEvery { coordinator.hasMovimiento("r1:anul", "AJUSTE", "m1", "o1") } returns false
+    fun restockOnce_ignoredClaimWithoutExistingRow_throwsInsteadOfReportingAlreadyRestocked() = runTest {
         coEvery { coordinator.getMonturaById("m1", "o1") } returns
             Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
-        coEvery { coordinator.adjustMonturaStock("m1", "o1", 2) } returns 1
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns false
+        coEvery { coordinator.findMovimientoByKey("d1:anul:i1", "AJUSTE", "m1") } returns null
+
+        val error = restockError()
+
+        assertTrue("expected IllegalStateException, got $error", error is IllegalStateException)
+        assertEquals("No se pudo registrar el movimiento de reposición", error?.message)
+        coVerify(exactly = 0) { coordinator.adjustMonturaStockLocal(any(), any(), any()) }
+    }
+
+    @Test
+    fun restockOnce_noPriorAjuste_restocksWithAjusteMovimiento() = runTest {
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns true
+        coEvery { coordinator.adjustMonturaStockLocal("m1", "o1", 2) } returns 1
 
         val result = helper.restockOnce("m1", "o1", 2, "r1:anul", "Reposición de regalo")
 
-        assertEquals(true, result.getOrNull())
-        coVerify(exactly = 1) { coordinator.adjustMonturaStock("m1", "o1", 2) }
+        assertTrue(result)
+        coVerify(exactly = 1) { coordinator.adjustMonturaStockLocal("m1", "o1", 2) }
         coVerify(exactly = 1) {
-            coordinator.insertMonturaMovimiento(
+            coordinator.insertMonturaMovimientoIfAbsent(
                 match { mov ->
                     mov.tipo == "AJUSTE" && mov.referenciaId == "r1:anul" &&
                         mov.cantidad == 2 && mov.stockPrevio == 4 && mov.stockNuevo == 6
                 },
             )
         }
+        coVerify(exactly = 1) { transactionRunner.inTransaction<Any?>(any()) }
+        coVerify(exactly = 1) { coordinator.scheduleInventarioSync("o1") }
+        coVerify(exactly = 0) { coordinator.adjustMonturaStock(any(), any(), any()) }
     }
 
     @Test
-    fun restockOnce_adjustFailure_propagatesFailure() = runTest {
-        coEvery { coordinator.hasMovimiento(any(), any(), any(), any()) } returns false
+    fun restockOnce_monturaLookupFailure_throwsWithoutWrites() = runTest {
         coEvery { coordinator.getMonturaById("m1", "o1") } returns Resource.Error("Montura no encontrada")
 
-        val result = helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
+        val error = restockError()
 
-        assertTrue(result.isFailure)
-        coVerify(exactly = 0) { coordinator.insertMonturaMovimiento(any()) }
+        assertTrue("expected IllegalStateException, got $error", error is IllegalStateException)
+        assertEquals("Montura no encontrada", error?.message)
+        coVerify(exactly = 0) { coordinator.insertMonturaMovimientoIfAbsent(any()) }
+        coVerify(exactly = 0) { coordinator.adjustMonturaStockLocal(any(), any(), any()) }
     }
+
+    @Test
+    fun restockOnce_adjustFailsAfterClaim_throwsAndSkipsSync() = runTest {
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns true
+        coEvery { coordinator.adjustMonturaStockLocal("m1", "o1", 1) } returns 0
+
+        val error = restockError()
+
+        assertTrue("expected IllegalStateException, got $error", error is IllegalStateException)
+        assertEquals("No se pudo ajustar el stock", error?.message)
+        coVerify(exactly = 0) { coordinator.scheduleInventarioSync(any()) }
+    }
+
+    private suspend fun restockError(): Throwable? =
+        runCatching { helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación") }.exceptionOrNull()
 
     @Test
     fun adjustStock_loadingState_returnsFailure() = runTest {
