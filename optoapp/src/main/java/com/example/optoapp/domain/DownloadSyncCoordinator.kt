@@ -72,6 +72,7 @@ class DownloadSyncCoordinator @Inject constructor(
         tableName: String,
         entityType: String,
     ): List<T>? = try {
+        syncStateTracker.clear(opticaId, "download_$entityType", "batch")
         var result: List<T> = emptyList()
         networkRetryHelper.retryNetwork("download:$tableName") {
             result = supabase.postgrest[tableName]
@@ -91,6 +92,11 @@ class DownloadSyncCoordinator @Inject constructor(
         null
     }
 
+    /**
+     * `download_<entity>`/`batch` is marked synced only when every fetched row is now local: a row
+     * that failed, or was skipped for a local quarantine or pending deletion, leaves the table
+     * incomplete. Residual claim credit relies on this to see every remote Reverso before paying.
+     */
     private suspend inline fun <T> persistRemoteRows(
         opticaId: String,
         entityType: String,
@@ -103,11 +109,14 @@ class DownloadSyncCoordinator @Inject constructor(
         val skipIds = if (skipDeletions) deletionSyncHelper.deletedIds(opticaId) else emptySet()
         val quarantineIds = syncStateTracker.quarantinedEntityIds(opticaId, entityType)
         var persisted = 0
+        var complete = true
         remotos.forEach { r ->
             val id = getId(r)
-            if (skipDeletions && id in skipIds) return@forEach
             // Narrow skip: only quarantine: errors — PRD LWW otherwise.
-            if (id in quarantineIds) return@forEach
+            if ((skipDeletions && id in skipIds) || id in quarantineIds) {
+                complete = false
+                return@forEach
+            }
             try {
                 val applied = repository.withTransaction {
                     if (shouldSkip(r)) {
@@ -122,13 +131,16 @@ class DownloadSyncCoordinator @Inject constructor(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {
+                complete = false
                 AppLogger.e(TAG, "Error de red descargando item $entityType $id: ${e.message}", e)
                 syncStateTracker.markError(opticaId, entityType, id, e.message)
             } catch (e: Exception) {
+                complete = false
                 AppLogger.e(TAG, "Error inesperado descargando item $entityType $id: ${e.message}", e)
                 syncStateTracker.markError(opticaId, entityType, id, e.message)
             }
         }
+        if (complete) syncStateTracker.markSynced(opticaId, "download_$entityType", "batch")
         return persisted
     }
 
@@ -182,15 +194,22 @@ class DownloadSyncCoordinator @Inject constructor(
             repository.upsertServicioFromRemote(r.toEntity())
         }
 
-    suspend fun downloadPagos(opticaId: String): Int = downloadTable<PagoRemoto>(
-        opticaId,
-        TABLE_PAGOS,
-        "pago",
-        skipDeletions = true,
-        getId = { it.id },
-    ) { r ->
-        repository.upsertPagoFromRemote(r.toEntity())
+    suspend fun downloadPagos(opticaId: String): Int {
+        val remotos = fetchRemoteRows<PagoRemoto>(opticaId, TABLE_PAGOS, "pago") ?: return 0
+        return persistPagos(opticaId, remotos)
     }
+
+    internal suspend fun persistPagos(opticaId: String, remotos: List<PagoRemoto>): Int =
+        persistRemoteRows(
+            opticaId,
+            "pago",
+            skipDeletions = true,
+            remotos = remotos,
+            getId = { it.id },
+            shouldSkip = { false },
+        ) { r ->
+            repository.upsertPagoFromRemote(r.toEntity())
+        }
 
     suspend fun downloadRegalos(opticaId: String): Int = downloadTable<RegaloDispensacionRemota>(
         opticaId,

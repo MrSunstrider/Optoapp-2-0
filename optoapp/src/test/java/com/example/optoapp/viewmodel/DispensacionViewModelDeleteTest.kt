@@ -82,7 +82,7 @@ class DispensacionViewModelDeleteTest {
         stockHelper,
         calcularMontoPagadoUseCase,
         mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
-        mockk<com.example.optoapp.domain.ReclaimDispensacionUseCase>(relaxed = true),
+        mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true),
         costoProductoDao,
         costoBiseladoDao,
         eliminar,
