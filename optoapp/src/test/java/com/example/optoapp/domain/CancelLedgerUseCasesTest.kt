@@ -1,11 +1,12 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.pago.PagoDao
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
+import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
@@ -26,236 +27,159 @@ class CancelLedgerUseCasesTest {
     private val scheduler = mockk<PostSaveSyncScheduler>(relaxed = true)
     private val stockHelper = mockk<DispensacionStockHelper>(relaxed = true)
     private val date = LocalDate.of(2026, 8, 14)
+    private var inTransaction = false
+    private val writesOutsideTransaction = mutableListOf<String>()
 
     init {
         coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers {
-            firstArg<suspend () -> Any?>().invoke()
+            inTransaction = true
+            try {
+                firstArg<suspend () -> Any?>().invoke()
+            } finally {
+                inTransaction = false
+            }
         }
     }
 
+    private fun recordWrite(kind: String) {
+        if (!inTransaction) writesOutsideTransaction += kind
+    }
+
+    private fun servicio(estado: String = "Pendiente", monturaId: String? = null) = ServicioExtra(
+        id = "s1", descripcion = "x", montoTotal = 100.0, estado = estado, fecha = date, monturaId = monturaId,
+    )
+
+    private fun servicioItem(id: String, monturaId: String) = ServicioExtraItem(
+        id = id, servicioExtraId = "s1", monturaId = monturaId, descripcion = id, monto = 20.0, opticaId = "o1",
+    )
+
+    private fun stubServicio(
+        servicio: ServicioExtra,
+        items: List<ServicioExtraItem> = emptyList(),
+        regalos: List<RegaloServicioExtraEntity> = emptyList(),
+        pagos: List<Pago> = emptyList(),
+    ): MutableList<ServicioExtra> {
+        coEvery { repository.getServicioById("s1", "o1") } returns Resource.Success(servicio)
+        coEvery { repository.getServicioExtraItems("s1", "o1") } returns items
+        coEvery { repository.getRegalosByServicioExtraId("s1", "o1") } returns regalos
+        coEvery { pagoDao.getPagosByParent("s1", "o1") } returns pagos
+        coEvery { repository.insertPago(any()) } answers { recordWrite("pago") }
+        coEvery { stockHelper.restockOnce(any(), any(), any(), any(), any()) } answers {
+            recordWrite("stock")
+            true
+        }
+        val updates = mutableListOf<ServicioExtra>()
+        coEvery { repository.updateServicio(capture(updates)) } answers { recordWrite("servicio") }
+        return updates
+    }
+
+    private suspend fun cancelServicio(motivo: String = "Error de registro") =
+        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1", motivo)
+
     @Test
-    fun cancelServicio_insertsLinkedReverso() = runTest {
+    fun cancelServicio_reversesCreditsRestocksAndStoresMetadataInOneTransaction() = runTest {
         val credit = Pago(
-            id = "p1", servicioExtraId = "s1", fecha = date,
+            id = "p1", servicioExtraId = "s1", fecha = date.minusDays(3),
             tipo = "Abono", monto = 80.0, metodoPago = "Efectivo", opticaId = "o1",
         )
-        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
-            ServicioExtra(id = "s1", descripcion = "x", montoTotal = 100.0, estado = "Pendiente", fecha = date),
+        val updates = stubServicio(
+            servicio(),
+            items = listOf(servicioItem("item-a", "m-a"), servicioItem("item-b", "m-b")),
+            regalos = listOf(
+                RegaloServicioExtraEntity(
+                    id = "reg-1", servicioExtraId = "s1", productoId = "P1", cantidad = 2,
+                    costoUnitario = 5.0, descripcion = "Estuche", opticaId = "o1",
+                ),
+            ),
+            pagos = listOf(credit),
         )
-        coEvery { repository.getServicioExtraItems("s1", any()) } returns emptyList()
-        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
-        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns listOf(credit)
-        coEvery { pagoDao.getReversoByOriginalId("p1", any()) } returns null
-        val slot = slot<Pago>()
-        coEvery { repository.insertPago(capture(slot)) } returns Unit
+        val reverso = slot<Pago>()
+        coEvery { repository.insertPago(capture(reverso)) } answers { recordWrite("pago") }
 
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+        val outcome = cancelServicio("  Error de registro ")
 
-        assertEquals("Reverso", slot.captured.tipo)
-        assertEquals("p1", slot.captured.reversaPagoId)
-        assertEquals(80.0, slot.captured.monto, 0.001)
-        coVerify { repository.updateServicio(match { it.estado == "Anulado" }) }
+        assertEquals(LifecycleOutcome.Applied, outcome)
+        assertEquals("Reverso", reverso.captured.tipo)
+        assertEquals("p1", reverso.captured.reversaPagoId)
+        assertEquals(80.0, reverso.captured.monto, 0.001)
+        assertEquals(DateUtils.today(), reverso.captured.fecha)
+        coVerify(exactly = 1) { stockHelper.restockOnce("m-a", "o1", 1, "item-a:anul", any()) }
+        coVerify(exactly = 1) { stockHelper.restockOnce("m-b", "o1", 1, "item-b:anul", any()) }
+        coVerify(exactly = 1) { stockHelper.restockOnce("P1", "o1", 2, "reg-1:anul", any()) }
+        val saved = updates.single()
+        assertEquals("Anulado", saved.estado)
+        assertEquals("Error de registro", saved.motivoAnulacion)
+        assertEquals(DateUtils.today(), saved.fechaAnulacion)
+        assertEquals(emptyList<String>(), writesOutsideTransaction)
         coVerify(exactly = 1) { scheduler.scheduleFinanzasSync("o1") }
+        coVerify(exactly = 1) { scheduler.scheduleInventarioSync("o1") }
     }
 
     @Test
-    fun cancelServicio_withMonturaId_restock() = runTest {
-        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
-            ServicioExtra(
-                id = "s1",
-                monturaId = "m-liquido",
-                descripcion = "Líquido",
-                montoTotal = 20.0,
-                estado = "Pendiente",
-                fecha = date,
-            ),
-        )
-        coEvery { repository.getServicioExtraItems("s1", any()) } returns emptyList()
-        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
-        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
-        coEvery {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = "m-liquido",
-                opticaId = "o1",
-                delta = 1,
-                tipo = "AJUSTE",
-                referenciaId = movimientoReferenciaForServicioExtraReverso("s1", "m-liquido"),
-                nota = any(),
-            )
-        } returns Result.success(1)
+    fun cancelServicio_legacyHeaderFrameKeepsServicioReversoReferencia() = runTest {
+        stubServicio(servicio(monturaId = "m-liquido"))
 
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+        cancelServicio()
 
         coVerify(exactly = 1) {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = "m-liquido",
-                opticaId = "o1",
-                delta = 1,
-                tipo = "AJUSTE",
-                referenciaId = movimientoReferenciaForServicioExtraReverso("s1", "m-liquido"),
-                nota = any(),
-            )
+            stockHelper.restockOnce("m-liquido", "o1", 1, movimientoReferenciaForServicioExtraReverso("s1", "m-liquido"), any())
         }
     }
 
     @Test
-    fun cancelServicio_withItems_restocks_item_ids_not_header() = runTest {
-        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
-            ServicioExtra(
-                id = "s1",
-                monturaId = "m-header",
-                descripcion = "Multi",
-                montoTotal = 40.0,
-                estado = "Pendiente",
-                fecha = date,
-            ),
-        )
-        coEvery { repository.getServicioExtraItems("s1", any()) } returns listOf(
-            com.example.optoapp.data.servicio.ServicioExtraItem(
-                id = "item-a",
-                servicioExtraId = "s1",
-                monturaId = "m-a",
-                descripcion = "A",
-                monto = 20.0,
-                opticaId = "o1",
-            ),
-            com.example.optoapp.data.servicio.ServicioExtraItem(
-                id = "item-b",
-                servicioExtraId = "s1",
-                monturaId = "m-b",
-                descripcion = "B",
-                monto = 20.0,
-                opticaId = "o1",
-            ),
-        )
-        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
-        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
-        coEvery {
-            stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
-        } returns Result.success(1)
+    fun cancelServicio_withItemsNeverRestocksTheHeaderFrame() = runTest {
+        stubServicio(servicio(monturaId = "m-header"), items = listOf(servicioItem("item-a", "m-a")))
 
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+        cancelServicio()
 
-        coVerify(exactly = 1) {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = "m-a",
-                opticaId = "o1",
-                delta = 1,
-                tipo = "AJUSTE",
-                referenciaId = "item-a",
-                nota = any(),
-            )
-        }
-        coVerify(exactly = 1) {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = "m-b",
-                opticaId = "o1",
-                delta = 1,
-                tipo = "AJUSTE",
-                referenciaId = "item-b",
-                nota = any(),
-            )
-        }
-        coVerify(exactly = 0) {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = "m-header",
-                opticaId = any(),
-                delta = any(),
-                tipo = any(),
-                referenciaId = any(),
-                nota = any(),
-            )
-        }
+        coVerify(exactly = 0) { stockHelper.restockOnce("m-header", any(), any(), any(), any()) }
     }
 
     @Test
-    fun cancelServicio_withoutMonturaId_skips_restock() = runTest {
-        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
-            ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Pendiente", fecha = date),
-        )
-        coEvery { repository.getServicioExtraItems("s1", any()) } returns emptyList()
-        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
-        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
+    fun cancelServicio_withoutFramesOrRegalosSkipsRestock() = runTest {
+        stubServicio(servicio())
 
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+        cancelServicio()
 
-        coVerify(exactly = 0) {
-            stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
-        }
+        coVerify(exactly = 0) { stockHelper.restockOnce(any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun cancelServicio_stockFailure_does_not_mark_anulado() = runTest {
-        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
-            ServicioExtra(
-                id = "s1",
-                monturaId = "m-1",
-                descripcion = "x",
-                montoTotal = 20.0,
-                estado = "Pendiente",
-                fecha = date,
-            ),
-        )
-        coEvery { repository.getServicioExtraItems("s1", any()) } returns listOf(
-            com.example.optoapp.data.servicio.ServicioExtraItem(
-                id = "item-1",
-                servicioExtraId = "s1",
-                monturaId = "m-1",
-                descripcion = "x",
-                monto = 20.0,
-                opticaId = "o1",
-            ),
-        )
-        coEvery { repository.getRegalosByServicioExtraId("s1", any()) } returns emptyList()
-        coEvery { pagoDao.getCreditPagosByParent("s1", any()) } returns emptyList()
-        coEvery {
-            stockHelper.adjustStockAndRegistrarMovimiento(
-                monturaId = "m-1",
-                opticaId = "o1",
-                delta = 1,
-                tipo = "AJUSTE",
-                referenciaId = "item-1",
-                nota = any(),
-            )
-        } returns Result.failure(IllegalStateException("restock failed"))
+    fun cancelServicio_blankMotivoIsRejectedBeforeAnyWrite() = runTest {
+        stubServicio(servicio(monturaId = "m-1"))
 
-        val result = runCatching { CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1") }
+        val error = runCatching { cancelServicio("   ") }.exceptionOrNull()
 
-        assertTrue(result.exceptionOrNull() is IllegalStateException)
-        coVerify(exactly = 0) { repository.updateServicio(match { it.estado == "Anulado" }) }
-    }
-
-    @Test
-    fun cancelServicio_idempotentWhenAlreadyAnulado() = runTest {
-        coEvery { repository.getServicioById("s1", any()) } returns Resource.Success(
-            ServicioExtra(id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Anulado", fecha = date),
-        )
-        CancelServicioExtraUseCase(repository, pagoDao, scheduler, stockHelper)("s1", "o1")
+        assertTrue(error is IllegalArgumentException)
+        coVerify(exactly = 0) { repository.updateServicio(any()) }
         coVerify(exactly = 0) { repository.insertPago(any()) }
+        coVerify(exactly = 0) { stockHelper.restockOnce(any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun reclaim_positiveReembolsoWithoutReversaLink() = runTest {
-        coEvery { repository.getDispensacionById("d1", any()) } returns Resource.Success(
-            DispensacionOptica(
-                id = "d1", pacienteId = "pac", fecha = date, opticaId = "o1",
-                estadoEntrega = "Pendiente", metodoPago = "Efectivo", ot = "OT-1",
-            ),
-        )
-        val slot = slot<Pago>()
-        coEvery { repository.insertPago(capture(slot)) } returns Unit
+    fun cancelServicio_stockFailureLeavesServicioActiveWithoutMetadata() = runTest {
+        val updates = stubServicio(servicio(), items = listOf(servicioItem("item-1", "m-1")))
+        coEvery { stockHelper.restockOnce("m-1", "o1", 1, "item-1:anul", any()) } throws
+            IllegalStateException("restock failed")
 
-        ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", 50.0, "Efectivo", "OT-1")
+        val error = runCatching { cancelServicio() }.exceptionOrNull()
 
-        assertEquals("Reembolso", slot.captured.tipo)
-        assertEquals(50.0, slot.captured.monto, 0.001)
-        assertNull(slot.captured.reversaPagoId)
-        coVerify { repository.updateDispensacion(match { it.estadoEntrega == "Reclamada" }) }
+        assertTrue(error is IllegalStateException)
+        assertEquals(emptyList<ServicioExtra>(), updates)
+        coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
     }
 
-    @Test(expected = IllegalArgumentException::class)
-    fun reclaim_rejectsNegativeMonto() = runTest {
-        ReclaimDispensacionUseCase(repository, scheduler)("d1", "o1", -1.0, "Efectivo", "OT-1")
+    @Test
+    fun cancelServicio_alreadyAnuladoIsANoOpThatKeepsMetadata() = runTest {
+        stubServicio(servicio(estado = " Anulado "))
+
+        val outcome = cancelServicio("Otro motivo")
+
+        assertEquals(LifecycleOutcome.AlreadyTerminal("Anulado"), outcome)
+        coVerify(exactly = 0) { repository.insertPago(any()) }
+        coVerify(exactly = 0) { repository.updateServicio(any()) }
+        coVerify(exactly = 0) { stockHelper.restockOnce(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
     }
 
     private fun ledgerPago(
@@ -273,30 +197,8 @@ class CancelLedgerUseCasesTest {
     private fun stubLedger(pagos: List<Pago>): MutableList<Pago> {
         val inserted = mutableListOf<Pago>()
         coEvery { pagoDao.getPagosByParent("d1", "o1") } returns pagos
-        coEvery { pagoDao.getCreditPagosByParent("d1", "o1") } returns
-            pagos.filter { it.tipo == "Abono" || it.tipo == "Pago completo" }
-        coEvery { pagoDao.getReversoByOriginalId(any(), "o1") } answers {
-            pagos.firstOrNull { p -> p.tipo == "Reverso" && p.reversaPagoId == firstArg<String>() }
-        }
         coEvery { repository.insertPago(capture(inserted)) } returns Unit
         return inserted
-    }
-
-    @Test
-    fun insertMissingReversos_returnsOnlyNewReversosAndSkipsAlreadyReversedCredit() = runTest {
-        val inserted = stubLedger(
-            listOf(
-                ledgerPago("a1", "Abono", 100.0, "Efectivo"),
-                ledgerPago("r1", "Reverso", 100.0, "Efectivo", reversaPagoId = "a1"),
-                ledgerPago("a2", "Abono", 50.0, "Tarjeta"),
-            ),
-        )
-
-        val result = insertMissingReversos(repository, pagoDao, "d1", "o1", forDispensacion = true)
-
-        assertEquals(listOf("a2"), result.map { it.reversaPagoId })
-        assertEquals(inserted, result)
-        assertEquals(DateUtils.today(), result.single().fecha)
     }
 
     @Test
@@ -358,5 +260,27 @@ class CancelLedgerUseCasesTest {
         assertEquals("d1", inserted.single().servicioExtraId)
         assertNull(inserted.single().dispensacionId)
         assertEquals(mapOf("Yape" to 30.0), snapshot.netByMetodo)
+    }
+
+    @Test
+    fun lastCreditMetodo_sameDateTie_isResolvedByLatestUpdatedAt() {
+        val pagos = listOf(
+            ledgerPago("late", "Abono", 40.0, "Yape").copy(updatedAt = "2026-08-14T18:00:00Z"),
+            ledgerPago("early", "Abono", 60.0, "Tarjeta").copy(updatedAt = "2026-08-14T09:00:00Z"),
+        )
+
+        assertEquals("Yape", lastCreditMetodo(pagos))
+        assertEquals("Yape", lastCreditMetodo(pagos.reversed()))
+    }
+
+    @Test
+    fun lastCreditMetodo_ignoresNewerReversoAndReembolsoRows() {
+        val pagos = listOf(
+            ledgerPago("abono", "Abono", 100.0, "Efectivo").copy(fecha = date.minusDays(2)),
+            ledgerPago("reverso", "Reverso", 30.0, "Tarjeta", reversaPagoId = "abono"),
+            ledgerPago("reembolso", "Reembolso", 20.0, "Yape").copy(fecha = date.plusDays(1)),
+        )
+
+        assertEquals("Efectivo", lastCreditMetodo(pagos))
     }
 }

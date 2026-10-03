@@ -107,10 +107,14 @@ class MonturaInventoryCoordinator @Inject constructor(
     }
 
     suspend fun adjustMonturaStock(monturaId: String, opticaId: String, delta: Int): Int {
-        val changed = monturaDao.adjustStock(monturaId, opticaId, delta, Instant.now().toString())
+        val changed = adjustMonturaStockLocal(monturaId, opticaId, delta)
         if (changed > 0) postSaveSyncScheduler.get().scheduleInventarioSync(opticaId)
         return changed
     }
+
+    /** Persist row only; caller owns transaction + sync scheduling. */
+    suspend fun adjustMonturaStockLocal(monturaId: String, opticaId: String, delta: Int): Int =
+        monturaDao.adjustStock(monturaId, opticaId, delta, Instant.now().toString())
 
     fun getMovimientosMonturaByOptica(opticaId: String): Flow<List<MonturaMovimiento>> = monturaMovimientoDao.getMovimientosByOptica(opticaId)
 
@@ -120,13 +124,25 @@ class MonturaInventoryCoordinator @Inject constructor(
     suspend fun getMovimientoMonturaById(id: String, opticaId: String): MonturaMovimiento? =
         monturaMovimientoDao.getMovimientoById(id, opticaId)
 
-    suspend fun hasMovimiento(referenciaId: String, tipo: String, monturaId: String, opticaId: String): Boolean =
-        monturaMovimientoDao.countByKey(referenciaId, tipo, monturaId, opticaId) > 0
+    suspend fun findMovimientoByKey(referenciaId: String, tipo: String, monturaId: String): MonturaMovimiento? =
+        monturaMovimientoDao.findByKey(referenciaId, tipo, monturaId)
+
+    suspend fun countMovimientosForDispensacion(dispensacionId: String, regaloIds: List<String>, opticaId: String): Int =
+        monturaMovimientoDao.countForDispensacion(dispensacionId, regaloIds, opticaId)
 
     suspend fun insertMonturaMovimiento(movimiento: MonturaMovimiento) {
         val stamped = movimiento.copy(updatedAt = Instant.now().toString())
         monturaMovimientoDao.insertMovimiento(stamped)
         postSaveSyncScheduler.get().scheduleInventarioSync(stamped.opticaId)
+    }
+
+    /**
+     * Never replaces an existing row; returns false when the movimiento key is already taken.
+     * Persist row only; caller owns transaction + sync scheduling.
+     */
+    suspend fun insertMonturaMovimientoIfAbsent(movimiento: MonturaMovimiento): Boolean {
+        val stamped = movimiento.copy(updatedAt = Instant.now().toString())
+        return monturaMovimientoDao.insertMovimientoIfAbsent(stamped) != -1L
     }
 
     suspend fun registrarSalida(

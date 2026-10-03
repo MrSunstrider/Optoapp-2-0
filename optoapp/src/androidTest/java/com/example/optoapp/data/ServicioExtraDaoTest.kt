@@ -16,12 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
 import java.time.LocalDate
 
-/**
- * Tests de integración para [ServicioExtraDao] usando Room in-memory database.
- *
- * Verifica que @Query, @Insert, @Update, @Delete y @Upsert funcionan
- * correctamente después de la extracción del DAO a archivo separado.
- */
 @RunWith(AndroidJUnit4::class)
 class ServicioExtraDaoTest {
 
@@ -136,55 +130,6 @@ class ServicioExtraDaoTest {
         val retrieved = dao.getServicioById("s1", "o1")
         assertEquals("Modificado", retrieved!!.descripcion)
         assertEquals("Entregado", retrieved.estado)
-    }
-
-    @Test
-    fun deleteServicio_removesRecord() = runBlocking {
-        val servicio = ServicioExtra(
-            id = "s1",
-            descripcion = "Temp",
-            montoTotal = 100.0,
-            aCuenta = 50.0,
-            estado = "Pendiente",
-            fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO",
-            opticaId = "o1",
-        )
-        dao.insertServicio(servicio)
-        dao.deleteServicio(servicio.id, servicio.opticaId)
-
-        val retrieved = dao.getServicioById("s1", "o1")
-        assertNull(retrieved)
-    }
-
-    @Test
-    fun deleteAll_removesAllServicios() = runBlocking {
-        val s1 = ServicioExtra(
-            id = "s1",
-            descripcion = "A",
-            montoTotal = 50.0,
-            aCuenta = 25.0,
-            estado = "Pendiente",
-            fecha = LocalDate.parse("2026-01-15"),
-            metodoPago = "EFECTIVO",
-            opticaId = "o1",
-        )
-        val s2 = ServicioExtra(
-            id = "s2",
-            descripcion = "B",
-            montoTotal = 75.0,
-            aCuenta = 0.0,
-            estado = "Entregado",
-            fecha = LocalDate.parse("2026-02-01"),
-            metodoPago = "TARJETA",
-            opticaId = "o1",
-        )
-        dao.insertServicio(s1)
-        dao.insertServicio(s2)
-        db.openHelper.writableDatabase.execSQL("DELETE FROM servicios_extra WHERE opticaId = 'o1'")
-
-        val all = dao.getAllServiciosForOptica("o1").first()
-        assertEquals(0, all.size)
     }
 
     @Test

@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.ui.components.OrderEstadoChip
 import com.example.optoapp.ui.components.common.EmptyState
 import java.util.Locale
 
@@ -39,18 +40,7 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit,
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Surface(
-                                color = if (serv.estado == "Entregado") MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.secondary,
-                                shape = RoundedCornerShape(8.dp),
-                            ) {
-                                Text(
-                                    serv.estado,
-                                    color = if (serv.estado == "Entregado") MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSecondary,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                )
-                            }
+                            OrderEstadoChip(serv.estado, saldo = saldo, servicio = true)
                         }
                         Text(serv.descripcion, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

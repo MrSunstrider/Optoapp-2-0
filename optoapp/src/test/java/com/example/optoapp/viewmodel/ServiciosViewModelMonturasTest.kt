@@ -53,6 +53,7 @@ class ServiciosViewModelMonturasTest {
         stockHelper = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
+        every { sessionManager.opticaRol } returns flowOf("asesor")
         coEvery { repository.reassignLegacyMiOpticaBaseTo(any()) } returns Unit
         every { repository.getAllServiciosForOptica(any()) } returns flowOf(emptyList())
         every { repository.pacientesFlowForOptica(any()) } returns flowOf(emptyList())
