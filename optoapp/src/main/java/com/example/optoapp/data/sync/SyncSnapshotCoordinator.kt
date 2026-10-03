@@ -64,4 +64,7 @@ class SyncSnapshotCoordinator @Inject constructor(
     suspend fun getMonturasSnapshotForOptica(opticaId: String): List<Montura> = syncRepo.getMonturasSnapshotForOptica(opticaId)
 
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String): List<MonturaMovimiento> = syncRepo.getMovimientosMonturaSnapshotForOptica(opticaId)
+
+    suspend fun getMovimientosForDispensacion(dispensacionId: String, opticaId: String): List<MonturaMovimiento> =
+        syncRepo.getMovimientosForDispensacion(dispensacionId, opticaId)
 }

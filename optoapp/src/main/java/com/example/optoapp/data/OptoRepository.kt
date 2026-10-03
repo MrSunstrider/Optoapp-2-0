@@ -248,6 +248,8 @@ open class OptoRepository(
     suspend fun getServiciosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getServiciosSnapshotForOptica(opticaId)
     suspend fun getMonturasSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMonturasSnapshotForOptica(opticaId)
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMovimientosMonturaSnapshotForOptica(opticaId)
+    suspend fun getMovimientosForDispensacion(dispensacionId: String, opticaId: String) =
+        snapshotCoordinator.getMovimientosForDispensacion(dispensacionId, opticaId)
     suspend fun getRegalosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getRegalosSnapshotForOptica(opticaId)
     suspend fun getServicioExtraItemsSnapshotForOptica(opticaId: String) =
         snapshotCoordinator.getServicioExtraItemsSnapshotForOptica(opticaId)

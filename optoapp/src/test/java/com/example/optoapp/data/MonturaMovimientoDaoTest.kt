@@ -359,4 +359,36 @@ class MonturaMovimientoDaoTest {
         assertEquals(0, dao.countForDispensacion("d2", emptyList(), "o1"))
         assertEquals(0, dao.countForDispensacion("d1", listOf("r1"), "o-other"))
     }
+
+    @Test
+    fun getMovimientosForDispensacion_returnsOnlyTheOrderAndItsChildRefsOfThatOptica() = runTest {
+        monturaDao.insertMontura(
+            Montura(
+                id = "m1", sku = "S001", marca = "M", modelo = "X",
+                color = "N", talla = "M", costo = 50.0, precio = 100.0,
+                stockActual = 10, stockMinimo = 2, activo = true, opticaId = "o1",
+            ),
+        )
+        listOf(
+            listOf("mov-order", "d1", "o1", "SALIDA_VENTA"),
+            listOf("mov-child", "d1:regalo:g1", "o1", "SALIDA_VENTA"),
+            listOf("mov-longer-id", "d10", "o1", "SALIDA_VENTA"),
+            listOf("mov-longer-child", "d10:regalo:g1", "o1", "SALIDA_VENTA"),
+            listOf("mov-unrelated", "r1", "o1", "SALIDA_VENTA"),
+            listOf("mov-other-optica", "d1", "o-other", "AJUSTE"),
+        ).forEach { (id, referenciaId, opticaId, tipo) ->
+            dao.insertMovimiento(
+                MonturaMovimiento(
+                    id = id, monturaId = "m1", fecha = LocalDate.parse("2026-06-18"), tipo = tipo,
+                    cantidad = 1, stockPrevio = 10, stockNuevo = 9, referenciaId = referenciaId, opticaId = opticaId,
+                ),
+            )
+        }
+
+        assertEquals(
+            setOf("mov-order", "mov-child"),
+            dao.getMovimientosForDispensacion("d1", "o1").map { it.id }.toSet(),
+        )
+        assertTrue(dao.getMovimientosForDispensacion("d2", "o1").isEmpty())
+    }
 }
