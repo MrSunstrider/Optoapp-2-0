@@ -33,7 +33,7 @@ Production check (read-only, 2026-10-01): 0 rows with `reclamo_origen_id`, so a 
 
 ## Tasks
 
-- [ ] T1 Migration: partial unique index on `dispensaciones(reclamo_origen_id)`; `BEFORE DELETE` guard on `dispensaciones` refusing direct deletes with pagos or montura movimientos (mirroring the local trace check), allowing paciente cascades; stable error code/token. Route: delegated writer. Status: committed; runtime proof (lint + SQL test) pending, no Docker locally.
+- [x] T1 Migration: partial unique index on `dispensaciones(reclamo_origen_id)`; `BEFORE DELETE` guard on `dispensaciones` refusing direct deletes with pagos or montura movimientos (mirroring the local trace check), allowing paciente cascades; stable error code/token. Route: delegated writer. Status: committed; runtime proof observed on a local Docker stack (see Progress).
 - [x] T2 Claim conflict on upload: detect a local replacement whose original already has a different remote replacement (OT reconciliation and the new index), quarantine it instead of adopting the remote id; make the claim-index and `pagos_reversa_pago_id_uidx` violations isolatable; keep the loser's movimientos from uploading. Route: delegated writer.
 - [x] T3 Discard the losing claim locally in one transaction (replacement, its pagos and items, unsynced Reversos on the original, consumed frames restocked idempotently, original held for the winner instead of restored), then let download bring the winner; one informational message. Route: delegated writer.
 - [x] T4 Refused remote delete: `DeletionSyncHelper` recognises the guard refusal, clears the tombstone so download restores the order, and records a user-visible message without the `quarantine:` prefix; transient errors keep today's retry. Route: delegated writer.
@@ -53,7 +53,7 @@ Production check (read-only, 2026-10-01): 0 rows with `reclamo_origen_id`, so a 
   - [x] T8.1 Complete-download gate: `download_<entity>`/`batch` is cleared when the fetch starts and marked synced only after the persist step, and only when every fetched row is local; any per-row failure or any row skipped for a local quarantine or pending deletion leaves it unmarked. `transferResidualCredit` consumes the pagos marker (reads and clears it), so only a complete pagos download of the same run authorizes a transfer. Rationale for the stricter option (any skip or failure blocks, not only skips on marked originals): a skipped or failed row may be exactly the winner's Reverso, and identifying the affected original from a skipped remote row is itself unreliable; the cost of being strict is only a delayed transfer while the quarantine or pending deletion is visible to the user, never a double payment.
   - [x] T8.2 Fold only into a claimed twin: the remote twin must be Reclamada and its winning replacement local before the local original is folded; otherwise nothing changes and the marker stays for a later sync. The fold moves the `reclamo_credito` marker to the twin id, inside the same transaction as the fold, transfer and marker clear.
 - [x] T9 Keep a failed pagos download visible: `transferResidualCredit` consumes the `download_pago`/`batch` marker only when it is a success, so a recorded fetch error survives until a later fetch succeeds (WARNING from native RDD `review-62e28377e3859317`). Route: parent inline (one-line fix plus one test).
-- [ ] T5 Verify: full suite, `supabase db lint` on the migration, GGA, native RDD, read-only re-audit. Route: parent.
+- [x] T5 Verify: full suite, `supabase db lint` on the migration, GGA, native RDD, read-only re-audit. Route: parent.
 
 Route evidence: the sync map spans 10+ files (upload, validator, merge, download, deletion, inventario, DTOs, migrations), so the mapping and writer triggers fire.
 
@@ -91,6 +91,14 @@ One work-unit commit per task on `feat/anulaciones-wu8-server-guards`; the chain
 - T9 commit `478617b8` (GGA passed); full `testDebugUnitTest` green.
 - T5 evidence: native RDD `review-65c3a5709455f5a0` approved and acknowledged on `72d474b0..478617b8` with no findings. Every slice of `f98a5d54..478617b8` is now reviewed. Server triggers on `pagos` (`trg_pagos_maintain_monto_pagado`, `pagos_updated_at`, auto `venta_id`) do not reject rows by dispensacion estado, so claim Reversos and transfers on a Reclamada original are accepted (verified against the repository migrations).
 
+- T1/T5 runtime proof (local only, Docker Desktop 4.93.0 / Engine 29.8.1, Supabase CLI 2.109.1; nothing run against the remote project):
+  - `supabase start` and `supabase db reset --local`: every migration applied, exit 0; `20261001042950_anulacion_motivo_fecha.sql` and `20261002034600_anulacion_server_guards.sql` emit only the idempotency NOTICE for `DROP TRIGGER IF EXISTS`.
+  - `supabase db lint --local`: exit 0, no finding on either new migration; the only finding is the pre-existing `create_optica_for_current_user` unused parameter `p_optica_id` (warning extra).
+  - SQL test via `docker exec -i supabase_db_optoapp psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/test_anulacion_server_guards.sql`: G1, G2, G3a-G3d, G4, G5 PASS, ROLLBACK, exit 0.
+  - RED, each guard broken in a separate psql session on the local DB, restored by `db reset`: index dropped, G1 FAIL (second replacement accepted); trigger dropped, G3a/G3b/G3c/G3d each FAIL "traced dispensacion ... was deleted" (one temporary variant per trace kind, outside the working tree); guard without the optica filter, G4 fails (`dispensacion_has_trace: zzt_guard_other`); guard without the paciente cascade bypass, G5 fails (`dispensacion_has_trace: zzt_guard_sold`). GREEN again after reset.
+  - Test fix found by RED: the G3 helper raised its "was deleted" failure inside the block that catches `raise_exception` (also P0001), so its own handler swallowed it and the test failed only through the token assertion with a misleading message. The failure is now raised after the block. Migration unchanged. Commit `f20ddd2c` (GGA passed).
+- T5: full suite last run green after T9; since then only `odd/` docs and the SQL test changed, so the Android result still holds.
+
 ## Next step
 
-T5 remaining: runtime proof of the migration. Run `supabase db lint` and `supabase/tests/test_anulacion_server_guards.sql` on a local stack (Docker) or an authorized Supabase branch before G1.
+G1 (apply to production) remains a separate decision: GGA plus explicit user authorization. The test fix `f20ddd2c` has not been through native RDD.
