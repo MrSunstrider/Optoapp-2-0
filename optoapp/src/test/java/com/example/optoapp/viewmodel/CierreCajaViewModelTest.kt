@@ -1120,4 +1120,221 @@ class CierreCajaViewModelTest {
         assertEquals(0.0, vm.uiState.value.saldoPendiente, 0.001)
         assertEquals(25.0, vm.uiState.value.pagadoLedgerByServicio["s1"] ?: 0.0, 0.001)
     }
+
+    // Reversal and refund lines (anulaciones-devoluciones-reclamos, spec cierre-caja delta)
+
+    private val fiveDaysAgo = today.minusDays(5)
+
+    private fun disp(
+        id: String,
+        ot: String,
+        fecha: LocalDate,
+        estado: String = "Entregado",
+        motivo: String? = null,
+        fechaAnulacion: LocalDate? = null,
+        reclamoOrigenId: String? = null,
+    ) = DispensacionOptica(
+        id = id,
+        ot = ot,
+        pacienteId = "pac1",
+        fecha = fecha,
+        estadoEntrega = estado,
+        motivoAnulacion = motivo,
+        fechaAnulacion = fechaAnulacion,
+        reclamoOrigenId = reclamoOrigenId,
+        opticaId = opticaId,
+    )
+
+    private fun pago(
+        id: String,
+        tipo: String,
+        monto: Double,
+        metodo: String,
+        dispensacionId: String? = null,
+        servicioExtraId: String? = null,
+        fecha: LocalDate = today,
+        nota: String = "",
+    ) = Pago(
+        id = id,
+        fecha = fecha,
+        tipo = tipo,
+        monto = monto,
+        metodoPago = metodo,
+        nota = nota,
+        opticaId = opticaId,
+        dispensacionId = dispensacionId,
+        servicioExtraId = servicioExtraId,
+    )
+
+    private fun stubDay(pagos: List<Pago>, dispensacionesHoy: List<DispensacionOptica>, otras: List<DispensacionOptica>) {
+        every { repository.getPagosByDateRangeForOptica(today, today, opticaId) } returns flowOf(pagos)
+        every { repository.getDispensacionesByDateRangeForOptica(today, today, opticaId) } returns flowOf(dispensacionesHoy)
+        coEvery { repository.getDispensacionesByIds(any(), opticaId) } answers {
+            val ids = firstArg<List<String>>()
+            otras.filter { it.id in ids }
+        }
+    }
+
+    private fun CierreCajaUiState.line(pagoId: String) = pagosDisplay.single { it.pago.id == pagoId }
+
+    @Test
+    fun `cancel today shows negative Reverso line labelled Anulada with reason`() = runTest(testDispatcher) {
+        val d = disp("d1", "2026-0010", fiveDaysAgo, "Anulado", "Cliente desistió", today)
+        stubDay(listOf(pago("r1", "Reverso", 100.0, "Efectivo", dispensacionId = "d1")), emptyList(), listOf(d))
+
+        val vm = createViewModel()
+
+        val line = vm.uiState.value.line("r1")
+        assertTrue(line.esReversion)
+        assertEquals("Anulada · Cliente desistió", line.etiquetaReversion)
+        assertEquals(-100.0, vm.getCobradoHoy(), 0.001)
+        assertEquals(-100.0, vm.getTotalesPorMetodo()["Efectivo"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `past day keeps its total and unlabelled lines after a later cancel`() = runTest(testDispatcher) {
+        val d = disp("d1", "2026-0010", fiveDaysAgo, "Anulado", "Cliente desistió", today)
+        val abono = pago("a1", "Abono", 100.0, "Efectivo", dispensacionId = "d1", fecha = fiveDaysAgo)
+        every { repository.getPagosByDateRangeForOptica(fiveDaysAgo, fiveDaysAgo, opticaId) } returns flowOf(listOf(abono))
+        every { repository.getDispensacionesByDateRangeForOptica(fiveDaysAgo, fiveDaysAgo, opticaId) } returns flowOf(listOf(d))
+        val vm = CierreCajaViewModel(repository, sessionManager)
+        vm.setFecha(fiveDaysAgo)
+
+        val state = vm.uiState.first { !it.isLoading && it.fecha == fiveDaysAgo }
+
+        val line = state.line("a1")
+        assertFalse(line.esReversion)
+        assertEquals(null, line.etiquetaReversion)
+        assertEquals(100.0, vm.getCobradoHoy(), 0.001)
+    }
+
+    @Test
+    fun `claim with same total nets zero per method and labels the Reversos Reclamada`() = runTest(testDispatcher) {
+        val original = disp("o1", "2026-0042", fiveDaysAgo, "Reclamada", "Lente rayado", today)
+        val replacement = disp("r1", "2026-0042-R1", today, "Pendiente", reclamoOrigenId = "o1")
+        stubDay(
+            listOf(
+                pago("rv1", "Reverso", 120.0, "Efectivo", dispensacionId = "o1"),
+                pago("rv2", "Reverso", 80.0, "Tarjeta", dispensacionId = "o1"),
+                pago("t1", "Abono", 120.0, "Efectivo", dispensacionId = "r1"),
+                pago("t2", "Abono", 80.0, "Tarjeta", dispensacionId = "r1"),
+            ),
+            listOf(replacement),
+            listOf(original),
+        )
+
+        val vm = createViewModel()
+
+        val state = vm.uiState.value
+        assertEquals("Reclamada · Lente rayado", state.line("rv1").etiquetaReversion)
+        assertEquals("Reclamada · Lente rayado", state.line("rv2").etiquetaReversion)
+        assertTrue(state.line("rv2").esReversion)
+        assertFalse(state.line("t1").esReversion)
+        assertEquals(null, state.line("t1").etiquetaReversion)
+        assertEquals("OT 2026-0042-R1", state.line("t2").label)
+        assertEquals(0.0, vm.getCobradoHoy(), 0.001)
+        assertEquals(0.0, vm.getTotalesPorMetodo()["Efectivo"] ?: 0.0, 0.001)
+        assertEquals(0.0, vm.getTotalesPorMetodo()["Tarjeta"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `claim refund on replacement carries the original reason and nets minus D`() = runTest(testDispatcher) {
+        val original = disp("o1", "2026-0042", fiveDaysAgo, "Reclamada", "Lente rayado", today)
+        val replacement = disp("r1", "2026-0042-R1", today, "Pendiente", reclamoOrigenId = "o1")
+        stubDay(
+            listOf(
+                pago("rv1", "Reverso", 200.0, "Efectivo", dispensacionId = "o1"),
+                pago("t1", "Abono", 200.0, "Efectivo", dispensacionId = "r1"),
+                pago("rb1", "Reembolso", 50.0, "Efectivo", dispensacionId = "r1"),
+            ),
+            listOf(replacement),
+            listOf(original),
+        )
+
+        val vm = createViewModel()
+
+        val refund = vm.uiState.value.line("rb1")
+        assertTrue(refund.esReversion)
+        assertEquals("Reclamada · Lente rayado", refund.etiquetaReversion)
+        assertEquals(-50.0, vm.getCobradoHoy(), 0.001)
+        assertEquals(-50.0, vm.getTotalesPorMetodo()["Efectivo"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `legacy compensating Abono is listed positive with the claim label`() = runTest(testDispatcher) {
+        val original = disp("o1", "2026-0050", fiveDaysAgo, "Reclamada", "Lente rayado", today)
+        val replacement = disp("r1", "2026-0050-R1", today, "Pendiente", reclamoOrigenId = "o1")
+        stubDay(
+            listOf(
+                pago("rv1", "Reverso", 120.0, "Efectivo", dispensacionId = "o1"),
+                pago("c1", "Abono", 50.0, "Efectivo", dispensacionId = "o1", nota = "Compensación de Reembolso abcd1234 por reclamo"),
+                pago("t1", "Abono", 70.0, "Efectivo", dispensacionId = "r1"),
+            ),
+            listOf(replacement),
+            listOf(original),
+        )
+
+        val vm = createViewModel()
+
+        val state = vm.uiState.value
+        assertEquals("Reclamada · Lente rayado", state.line("rv1").etiquetaReversion)
+        val compensacion = state.line("c1")
+        assertFalse(compensacion.esReversion)
+        assertEquals("Reclamada · Lente rayado", compensacion.etiquetaReversion)
+        assertEquals(null, state.line("t1").etiquetaReversion)
+        assertEquals(0.0, vm.getCobradoHoy(), 0.001)
+        assertEquals(0.0, vm.getTotalesPorMetodo()["Efectivo"] ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `claim refund resolves the original reason when the original has no lines that day`() = runTest(testDispatcher) {
+        val original = disp("o1", "2026-0042", fiveDaysAgo, "Reclamada", "Armazón roto", fiveDaysAgo)
+        val replacement = disp("r1", "2026-0042-R1", fiveDaysAgo, "Pendiente", reclamoOrigenId = "o1")
+        stubDay(listOf(pago("rb1", "Reembolso", 30.0, "Yape", dispensacionId = "r1")), emptyList(), listOf(original, replacement))
+
+        val vm = createViewModel()
+
+        assertEquals("Reclamada · Armazón roto", vm.uiState.value.line("rb1").etiquetaReversion)
+    }
+
+    @Test
+    fun `buildPagosDisplay labels single deleted pago and legacy reasons`() {
+        val activa = disp("d1", "2026-0001", fiveDaysAgo)
+        val legacyAnulada = disp("d2", "2026-0002", fiveDaysAgo, "Anulado")
+        val anuladaLuego = disp("d3", "2026-0003", fiveDaysAgo, "Anulado", "Error de registro", today)
+        val servicio = ServicioExtra(
+            id = "s1",
+            descripcion = "Ajuste",
+            montoTotal = 40.0,
+            estado = "Anulado",
+            fecha = fiveDaysAgo,
+            motivoAnulacion = "Duplicado",
+            fechaAnulacion = today,
+            opticaId = opticaId,
+        )
+        val pagos = listOf(
+            pago("p1", "Reverso", 30.0, "Efectivo", dispensacionId = "d1"),
+            pago("p2", "Reverso", 20.0, "Efectivo", dispensacionId = "d2"),
+            pago("p3", "Reverso", 10.0, "Efectivo", dispensacionId = "d3", fecha = fiveDaysAgo),
+            pago("p4", "Abono", 15.0, "Efectivo", dispensacionId = "d3"),
+            pago("p5", "Reverso", 40.0, "Yape", servicioExtraId = "s1"),
+            pago("p6", "Reembolso", 5.0, "Efectivo", dispensacionId = "d1"),
+        )
+
+        val display = CierreCajaViewModel.buildPagosDisplay(
+            pagos,
+            mapOf("d1" to activa, "d2" to legacyAnulada, "d3" to anuladaLuego),
+            mapOf("s1" to servicio),
+            today,
+        ).associateBy { it.pago.id }
+
+        assertEquals("Pago anulado", display.getValue("p1").etiquetaReversion)
+        assertEquals("Anulada · Sin motivo registrado", display.getValue("p2").etiquetaReversion)
+        assertEquals("Pago anulado", display.getValue("p3").etiquetaReversion)
+        assertEquals(null, display.getValue("p4").etiquetaReversion)
+        assertFalse(display.getValue("p4").esReversion)
+        assertEquals("Anulado · Duplicado", display.getValue("p5").etiquetaReversion)
+        assertTrue(display.getValue("p6").esReversion)
+        assertEquals(null, display.getValue("p6").etiquetaReversion)
+    }
 }

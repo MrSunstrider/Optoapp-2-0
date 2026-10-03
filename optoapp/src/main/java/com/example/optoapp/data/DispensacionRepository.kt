@@ -10,6 +10,11 @@ import java.io.IOException
 import java.time.LocalDate
 import java.util.UUID
 
+internal val RECLAMO_SUFFIX = Regex("-R(\\d+)$", RegexOption.IGNORE_CASE)
+
+/** A claim on a replacement numbers from the root order, so `-R1` yields `-R2`, never `-R1-R1`. */
+internal fun baseOtForReclamo(ot: String): String = ot.trim().replace(RECLAMO_SUFFIX, "")
+
 class DispensacionRepository(
     private val dispensacionDao: DispensacionDao,
     private val dispensacionItemDao: DispensacionItemDao,
@@ -83,6 +88,16 @@ class DispensacionRepository(
         }
         val next = max + 1
         return "OT-$year-" + next.toString().padStart(4, '0')
+    }
+
+    /** LIKE over-matches (`_`/`%` wildcards, longer numbers), so the regex decides which suffixes count. */
+    suspend fun nextReclamoOt(opticaId: String, originalOt: String, fecha: LocalDate): String {
+        val base = baseOtForReclamo(originalOt).ifBlank { return suggestNextOt(opticaId, fecha) }
+        val pattern = Regex("^" + Regex.escape(base) + "-R(\\d+)$", RegexOption.IGNORE_CASE)
+        val highest = dispensacionDao.getOtsWithPrefix(opticaId, "$base-R")
+            .mapNotNull { pattern.find(it.trim())?.groupValues?.get(1)?.toIntOrNull() }
+            .maxOrNull() ?: 0
+        return "$base-R${highest + 1}"
     }
 
     suspend fun reassignFromLegacyMiOpticaBase(currentOpticaId: String): Int {
@@ -188,6 +203,9 @@ class DispensacionRepository(
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String): List<ServicioExtra> = servicioExtraDao.getServiciosByIds(ids, opticaId)
 
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String): List<DispensacionOptica> = dispensacionDao.getDispensacionesByIds(ids, opticaId)
+
+    suspend fun getDispensacionByReclamoOrigenId(originalId: String, opticaId: String): DispensacionOptica? =
+        dispensacionDao.getByReclamoOrigenId(originalId, opticaId)
 
     suspend fun getServicioById(id: String, opticaId: String): Resource<ServicioExtra> = try {
         val servicio = servicioExtraDao.getServicioById(id, opticaId)

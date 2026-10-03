@@ -249,6 +249,29 @@ class SyncInventarioUseCaseUploadTest {
     }
 
     @Test
+    fun uploadMovimientos_skipsMovimientosOfALosingClaimReplacement() = runTest {
+        stubMonturasUploadEmpty()
+        coEvery { syncStateTracker.quarantineReasons(opticaId, "dispensacion") } returns
+            mapOf("repl-loser" to "quarantine:reclamo_duplicate:orig-1")
+        val sale = mov(id = "mov-sale", referenciaId = "repl-loser")
+        val restock = mov(id = "mov-restock", referenciaId = "repl-loser:anul:item-1").copy(tipo = "ENTRADA")
+        val unrelated = mov(id = "mov-ok", referenciaId = "repl-loser-2")
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(sale, restock, unrelated)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } answers {
+            MovimientoUploadPlan(
+                safeIds = secondArg<List<MonturaMovimiento>>().map { it.id },
+                remoteByKey = emptyMap(),
+                conflictedIds = emptyList(),
+            )
+        }
+
+        createUseCase().invoke(opticaId, downloadAfterUpload = false)
+
+        assertEquals(listOf("mov-ok"), uploadedBatches.flatten().map { it.id })
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "montura_movimiento", "mov-sale") }
+    }
+
+    @Test
     fun uploadMovimientos_marksErrorWhenReconcileFails() = runTest {
         stubMonturasUploadEmpty()
         val local = mov(id = "uuid-new")

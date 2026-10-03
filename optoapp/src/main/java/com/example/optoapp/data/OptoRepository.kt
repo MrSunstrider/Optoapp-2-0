@@ -155,6 +155,8 @@ open class OptoRepository(
     suspend fun getDispensacionItemsByDispensacion(dispensacionId: String, opticaId: String) =
         dispensacionRepo.getItemsListByDispensacion(dispensacionId, opticaId)
     suspend fun suggestNextOt(opticaId: String, fecha: LocalDate) = dispensacionRepo.suggestNextOt(opticaId, fecha)
+    suspend fun nextReclamoOt(opticaId: String, originalOt: String, fecha: LocalDate) =
+        dispensacionRepo.nextReclamoOt(opticaId, originalOt, fecha)
     suspend fun suggestNextHistoriaOptometrica(opticaId: String) = pacienteRepo.suggestNextHistoriaOptometrica(opticaId)
     suspend fun existsDuplicateHistoriaOptometrica(opticaId: String, historia: String, excludePacienteId: String?) = pacienteRepo.existsDuplicateHistoriaOptometrica(opticaId, historia, excludePacienteId)
 
@@ -187,6 +189,7 @@ open class OptoRepository(
     fun getServiciosByDateRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = dispensacionRepo.getServiciosByDateRangeForOptica(start, end, opticaId)
     suspend fun getServiciosByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getServiciosByIds(ids, opticaId)
     suspend fun getDispensacionesByIds(ids: List<String>, opticaId: String) = dispensacionRepo.getDispensacionesByIds(ids, opticaId)
+    suspend fun getDispensacionByReclamoOrigenId(originalId: String, opticaId: String) = dispensacionRepo.getDispensacionByReclamoOrigenId(originalId, opticaId)
     suspend fun getServicioById(id: String, opticaId: String) = dispensacionRepo.getServicioById(id, opticaId)
     suspend fun insertServicio(servicio: ServicioExtra) {
         val stamped = servicio.copy(updatedAt = Instant.now().toString())

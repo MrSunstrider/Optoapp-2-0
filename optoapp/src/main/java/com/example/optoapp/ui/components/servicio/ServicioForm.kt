@@ -298,11 +298,12 @@ private fun StepPagos(
     OptoDropdownMenuField(
         label = "Estado",
         selected = uiState.estado,
-        options = listOf("Pendiente", "Entregado"),
+        options = uiState.selectableEstados,
+        enabled = !uiState.isReadOnly,
         onSelected = { onUpdateEstado(it) },
     )
 
-    if (uiState.fechaEntrega != null) {
+    if (uiState.fechaEntrega != null && !uiState.isReadOnly) {
         FechaEntregaEditButton(
             fechaEntrega = uiState.fechaEntrega,
             onFechaChanged = { nuevaFecha ->
