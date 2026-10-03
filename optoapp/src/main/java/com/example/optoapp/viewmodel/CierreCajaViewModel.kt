@@ -13,6 +13,7 @@ import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.NOTA_COMPENSACION_PREFIX
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.domain.TIPO_REVERSO
 import com.example.optoapp.ui.screens.cierreVentaPagado
 import com.example.optoapp.ui.screens.pagosEffectByDispensacion
 import com.example.optoapp.ui.screens.pagosEffectByServicio
@@ -221,7 +222,6 @@ class CierreCajaViewModel @Inject constructor(
         private const val ESTADO_ANULADO = "Anulado"
         private const val ESTADO_RECLAMADA = "Reclamada"
         private const val TIPO_ABONO = "Abono"
-        private const val TIPO_REVERSO = "Reverso"
         private const val TIPO_REEMBOLSO = "Reembolso"
         private const val ETIQUETA_PAGO_ANULADO = "Pago anulado"
         private const val SIN_MOTIVO = "Sin motivo registrado"

@@ -605,3 +605,9 @@ internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): Str
         .map { "$base-R$it" }
         .first { normalizedOtForUnique(it) !in takenNormalizedOts }
 }
+
+/** Replaces [oldOt] only where it stands alone, so `-R1` never matches inside `-R12` or another order's OT. */
+internal fun replaceOtToken(nota: String, oldOt: String, newOt: String): String {
+    if (oldOt.isBlank()) return nota
+    return nota.replace(Regex("(?<![\\w-])${Regex.escape(oldOt)}(?![\\w-])"), Regex.escapeReplacement(newOt))
+}

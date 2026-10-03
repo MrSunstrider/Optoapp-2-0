@@ -88,14 +88,38 @@ class DiscardLosingClaimUseCase @Inject constructor(
      * Reversos are local and already-reversed credit is never transferred twice. The download marker
      * is consumed here, so a success left by an earlier run never authorizes a later one; a recorded
      * download failure is left in place so it stays visible until a later fetch succeeds.
+     *
+     * An incomplete download caused by a local quarantine or pending deletion is something the user
+     * can resolve, so each pending original gets one notice that the transfer is waiting; a network
+     * failure already surfaces as a sync error and gets none. The notice is dropped once the
+     * transfer is attempted on a complete download.
      */
     suspend fun transferResidualCredit(opticaId: String): Int {
-        if (!syncStateTracker.isSynced(opticaId, DOWNLOAD_PAGOS, "batch")) return 0
+        if (!syncStateTracker.isSynced(opticaId, DOWNLOAD_PAGOS, "batch")) {
+            if (syncStateTracker.isSynced(opticaId, downloadBlockedEntityType("pago"), "batch")) {
+                noticeCreditPending(opticaId)
+            }
+            return 0
+        }
         syncStateTracker.clear(opticaId, DOWNLOAD_PAGOS, "batch")
         return syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).sumOf { localOrigenId ->
             repository.withTransaction { settle(opticaId, localOrigenId) }
+                .also { syncStateTracker.clear(opticaId, NOTICE, pendingCreditNoticeId(localOrigenId)) }
         }
     }
+
+    private suspend fun noticeCreditPending(opticaId: String) {
+        syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).forEach { origenId ->
+            val ot = repository.getDispensacionById(origenId, opticaId).data?.ot?.takeIf { it.isNotBlank() }
+                ?: return@forEach
+            syncStateTracker.markError(
+                opticaId, NOTICE, pendingCreditNoticeId(origenId),
+                "El crédito del reclamo de la OT $ot queda pendiente hasta resolver los pagos en espera.",
+            )
+        }
+    }
+
+    private fun pendingCreditNoticeId(origenId: String) = "$origenId:credito_pendiente"
 
     private suspend fun settle(opticaId: String, localOrigenId: String): Int {
         val snapshot = repository.getDispensacionesSnapshotForOptica(opticaId)

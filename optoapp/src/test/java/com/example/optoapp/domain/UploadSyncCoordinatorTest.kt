@@ -2,12 +2,15 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.MonturaMovimiento
 import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import io.github.jan.supabase.SupabaseClient
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -23,7 +26,6 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
-import java.time.Instant
 import java.time.LocalDate
 
 class UploadSyncCoordinatorTest {
@@ -38,25 +40,33 @@ class UploadSyncCoordinatorTest {
     private val costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true)
     private lateinit var coordinator: UploadSyncCoordinator
 
+    // WHY: Room's withTransaction is an extension function MockK cannot stub.
+    private open inner class TestUploadCoordinator : UploadSyncCoordinator(
+        repository = repository,
+        supabase = supabase,
+        database = database,
+        syncStateTracker = syncStateTracker,
+        mergeHandler = mergeHandler,
+        networkRetryHelper = networkRetryHelper,
+        costoProductoDao = costoProductoDao,
+        costoBiseladoDao = costoBiseladoDao,
+    ) {
+        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+    }
+
+    private fun stubRetryPassThrough() {
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
+            secondArg<suspend () -> Unit>().invoke()
+        }
+    }
+
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
         coEvery { syncStateTracker.quarantinedEntityIds(any(), any()) } returns emptySet()
         coEvery { syncStateTracker.quarantineReasons(any(), any()) } returns emptyMap()
         coEvery { syncStateTracker.awaitingRemoteIds(any(), any()) } returns emptySet()
-        // WHY: Room's withTransaction is an extension function MockK cannot stub.
-        coordinator = object : UploadSyncCoordinator(
-            repository = repository,
-            supabase = supabase,
-            database = database,
-            syncStateTracker = syncStateTracker,
-            mergeHandler = mergeHandler,
-            networkRetryHelper = networkRetryHelper,
-            costoProductoDao = costoProductoDao,
-            costoBiseladoDao = costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
-        }
+        coordinator = TestUploadCoordinator()
     }
 
     @After
@@ -69,77 +79,53 @@ class UploadSyncCoordinatorTest {
         coEvery { repository.getDispensacionItemsSnapshotForOptica("") } returns listOf(
             DispensacionItem(id = "i1", dispensacionId = "d1", opticaId = ""),
         )
-        try {
-            coordinator.uploadDispensacionItems("")
-            fail("Expected IllegalArgumentException")
-        } catch (_: IllegalArgumentException) {
-            // expected
-        }
+        val error = runCatching { coordinator.uploadDispensacionItems("") }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
+    }
+
+    private fun duplicateOtPair(): List<DispensacionOptica> = listOf(
+        DispensacionOptica(
+            id = "d1", ot = "OT-2026-0001", fecha = LocalDate.parse("2026-01-01"),
+            pacienteId = "p1", opticaId = "optica-test",
+        ),
+        DispensacionOptica(
+            id = "d2", ot = "OT-2026-0001", fecha = LocalDate.parse("2026-01-02"),
+            pacienteId = "p2", opticaId = "optica-test",
+        ),
+    )
+
+    private fun upsertingCoordinator(onUpsert: (List<DispensacionRemota>) -> Unit) = object : TestUploadCoordinator() {
+        override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) = emptyList<DispensacionRemotaLookup>()
+        override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) = onUpsert(chunk)
     }
 
     @Test
-    fun `local merge should only execute after remote upsert succeeds`() = runTest {
-        val d1 = DispensacionOptica(
-            id = "d1", ot = "OT-2026-0001", fecha = LocalDate.parse("2026-01-01"),
-            pacienteId = "p1", opticaId = "optica-test",
-        )
-        val d2 = DispensacionOptica(
-            id = "d2", ot = "OT-2026-0001", fecha = LocalDate.parse("2026-01-02"),
-            pacienteId = "p2", opticaId = "optica-test",
-        )
-        coEvery { repository.getDispensacionesSnapshotForOptica("optica-test") } returns listOf(d1, d2)
+    fun `local merge does not execute when the remote upsert fails`() = runTest {
+        coEvery { repository.getDispensacionesSnapshotForOptica("optica-test") } returns duplicateOtPair()
         coEvery { repository.getPagosSnapshotForOptica("optica-test") } returns emptyList()
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } throws IOException("Network error")
+        stubRetryPassThrough()
 
-        try {
-            coordinator.uploadDispensaciones("optica-test")
-            fail("Expected exception")
-        } catch (_: IOException) { /* expected */ }
-          catch (_: UploadPartialException) { /* expected */ }
-          catch (_: UploadSyncCoordinator.UploadPreCheckFailedException) {
-            // acceptable — mock can't handle inline Postgrest DSL
-        }
+        val error = runCatching {
+            upsertingCoordinator { throw IOException("Network error") }.uploadDispensaciones("optica-test")
+        }.exceptionOrNull()
 
+        assertTrue(error is UploadPartialException)
         coVerify(exactly = 0) { mergeHandler.mergeLocalDispensacionConflict(any(), any(), any()) }
     }
 
     @Test
-    fun `servicio dedup should use Instant comparison not string comparison`() {
-        val olderStr = "2025-01-01T10:00:00Z"
-        val newerStr = "2025-01-01T10:00:00.500Z"
+    fun `local merge executes once after the remote upsert succeeds`() = runTest {
+        val pair = duplicateOtPair()
+        coEvery { repository.getDispensacionesSnapshotForOptica("optica-test") } returns pair
+        coEvery { repository.getPagosSnapshotForOptica("optica-test") } returns emptyList()
+        stubRetryPassThrough()
+        val upserted = mutableListOf<DispensacionRemota>()
 
-        val stringWinner = if (newerStr > olderStr) newerStr else olderStr
-        assertEquals("String compare picks older (Z > .)", olderStr, stringWinner)
+        upsertingCoordinator { upserted.addAll(it) }.uploadDispensaciones("optica-test")
 
-        val olderInstant = Instant.parse(olderStr)
-        val newerInstant = Instant.parse(newerStr)
-        val instantWinner = if (newerInstant > olderInstant) newerStr else olderStr
-        assertEquals("Instant compare picks newer (.500Z)", newerStr, instantWinner)
-    }
-
-    @Test
-    fun `servicio dedup unparseable timestamp falls back to existing record`() {
-        val validTimestamp = "2025-01-01T10:00:00Z"
-        val malformedTimestamp = "not-a-timestamp"
-
-        var caught = false
-        try {
-            Instant.parse(malformedTimestamp)
-        } catch (_: Exception) {
-            caught = true
-        }
-        assertEquals("Instant.parse throws on malformed", true, caught)
-
-        val existingTime = validTimestamp.let { Instant.parse(it) }
-        val rowTime = try { Instant.parse(malformedTimestamp) } catch (_: Exception) { null }
-
-        val winner = if (rowTime != null && existingTime != null) {
-            if (rowTime > existingTime) "new" else "existing"
-        } else {
-            "existing"
-        }
-
-        assertEquals("existing", winner)
+        assertEquals(listOf("d1"), upserted.map { it.id })
+        coVerify(exactly = 1) { mergeHandler.mergeLocalDispensacionConflict("optica-test", pair[0], pair[1]) }
     }
 
     @Test
@@ -174,20 +160,8 @@ class UploadSyncCoordinatorTest {
         )
         coEvery { repository.getDispensacionesSnapshotForOptica("opt_new") } returns listOf(leftover)
         coEvery { repository.getPagosSnapshotForOptica("opt_new") } returns emptyList()
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
-        val testCoordinator = object : UploadSyncCoordinator(
-            repository = repository,
-            supabase = supabase,
-            database = database,
-            syncStateTracker = syncStateTracker,
-            mergeHandler = mergeHandler,
-            networkRetryHelper = networkRetryHelper,
-            costoProductoDao = costoProductoDao,
-            costoBiseladoDao = costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        stubRetryPassThrough()
+        val testCoordinator = object : TestUploadCoordinator() {
             override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
                 emptyList<DispensacionRemotaLookup>()
             override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
@@ -212,22 +186,12 @@ class UploadSyncCoordinatorTest {
         parentDispIds: Set<String> = setOf("disp-1", "disp-2", "other-disp", "disp-X"),
         parentServIds: Set<String> = emptySet(),
         fetchPagos: suspend (String) -> List<PagoRemotoLookup>,
-    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
-        repository = repository,
-        supabase = supabase,
-        database = database,
-        syncStateTracker = syncStateTracker,
-        mergeHandler = mergeHandler,
-        networkRetryHelper = networkRetryHelper,
-        costoProductoDao = costoProductoDao,
-        costoBiseladoDao = costoBiseladoDao,
-    ) {
-        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+    ): UploadSyncCoordinator = object : TestUploadCoordinator() {
         override suspend fun fetchRemotePagosForLookup(opticaId: String): List<PagoRemotoLookup> =
             fetchPagos(opticaId)
         override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
             parentDispIds to parentServIds
-        override suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) { /* no-op */ }
+        override suspend fun upsertPagosChunk(chunk: List<PagoRemoto>) = Unit
     }
 
     @Test
@@ -245,7 +209,7 @@ class UploadSyncCoordinatorTest {
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-1", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -273,7 +237,7 @@ class UploadSyncCoordinatorTest {
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-1", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -303,7 +267,7 @@ class UploadSyncCoordinatorTest {
             }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-null", dispensacionId = null, servicioExtraId = "s1", tipo = "Abono", monto = 50.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -333,7 +297,7 @@ class UploadSyncCoordinatorTest {
             }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-null", dispensacionId = null, servicioExtraId = "s1", tipo = "Abono", monto = 50.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -354,7 +318,7 @@ class UploadSyncCoordinatorTest {
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-1", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -364,7 +328,7 @@ class UploadSyncCoordinatorTest {
             testCoordinator.uploadPagos(opticaId)
             fail("Expected UploadPreCheckFailedException")
         } catch (e: UploadSyncCoordinator.UploadPreCheckFailedException) {
-            assertTrue(e.message!!.contains("Reconciliation fetch failed"))
+            assertTrue(e.message.orEmpty().contains("Reconciliation fetch failed"))
         }
     }
 
@@ -389,17 +353,7 @@ class UploadSyncCoordinatorTest {
 
     private fun createServicioCoordinator(
         fetchServicios: suspend (String) -> List<ServicioRemotoLookup>,
-    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
-        repository = repository,
-        supabase = supabase,
-        database = database,
-        syncStateTracker = syncStateTracker,
-        mergeHandler = mergeHandler,
-        networkRetryHelper = networkRetryHelper,
-        costoProductoDao = costoProductoDao,
-        costoBiseladoDao = costoBiseladoDao,
-    ) {
-        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+    ): UploadSyncCoordinator = object : TestUploadCoordinator() {
         override suspend fun fetchRemoteServiciosForLookup(opticaId: String): List<ServicioRemotoLookup> =
             fetchServicios(opticaId)
     }
@@ -419,11 +373,11 @@ class UploadSyncCoordinatorTest {
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-A", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-B", dispensacionId = "disp-1", tipo = "Abono", monto = 100.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -449,7 +403,7 @@ class UploadSyncCoordinatorTest {
         }
 
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "local-P1", dispensacionId = "disp-X", tipo = "Abono", monto = 50.0,
                 metodoPago = "Tarjeta", fecha = LocalDate.parse("2026-03-15"), opticaId = opticaId,
             ),
@@ -525,11 +479,11 @@ class UploadSyncCoordinatorTest {
             parentDispIds = parentIds,
         ) { emptyList() }
         val pagos = (1..79).map { i ->
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "ok-$i", dispensacionId = "d$i", tipo = "Abono", monto = 10.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             )
-        } + com.example.optoapp.data.Pago(
+        } + Pago(
             id = "poison", dispensacionId = "d80", tipo = "Abono", monto = -1.0,
             metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
         )
@@ -557,7 +511,7 @@ class UploadSyncCoordinatorTest {
             parentDispIds = emptySet(),
         ) { emptyList() }
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.Pago(
+            Pago(
                 id = "orphan", dispensacionId = "missing-d", tipo = "Abono", monto = 10.0,
                 metodoPago = "Efectivo", fecha = LocalDate.parse("2026-01-01"), opticaId = opticaId,
             ),
@@ -588,32 +542,20 @@ class UploadSyncCoordinatorTest {
             montoTotal = 500.0,
             montoPagado = -50.0,
         )
-        val abono = com.example.optoapp.data.Pago(
+        val abono = Pago(
             id = "p-abono", dispensacionId = dispId, tipo = "Abono", monto = 100.0,
             metodoPago = "Efectivo", fecha = LocalDate.parse("2026-08-20"), opticaId = opticaId,
         )
-        val reembolso = com.example.optoapp.data.Pago(
+        val reembolso = Pago(
             id = "p-reemb", dispensacionId = dispId, tipo = "Reembolso", monto = 150.0,
             metodoPago = "Efectivo", fecha = LocalDate.parse("2026-08-21"), opticaId = opticaId,
         )
         coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(disp)
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns listOf(abono, reembolso)
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
+        stubRetryPassThrough()
 
         val captured = mutableListOf<List<DispensacionRemota>>()
-        val testCoordinator = object : UploadSyncCoordinator(
-            repository = repository,
-            supabase = supabase,
-            database = database,
-            syncStateTracker = syncStateTracker,
-            mergeHandler = mergeHandler,
-            networkRetryHelper = networkRetryHelper,
-            costoProductoDao = costoProductoDao,
-            costoBiseladoDao = costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        val testCoordinator = object : TestUploadCoordinator() {
             override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
                 emptyList<DispensacionRemotaLookup>()
             override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
@@ -650,17 +592,7 @@ class UploadSyncCoordinatorTest {
     private fun createDispensacionCaptureCoordinator(
         remotos: List<DispensacionRemotaLookup>,
         captured: MutableList<DispensacionRemota>,
-    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
-        repository = repository,
-        supabase = supabase,
-        database = database,
-        syncStateTracker = syncStateTracker,
-        mergeHandler = mergeHandler,
-        networkRetryHelper = networkRetryHelper,
-        costoProductoDao = costoProductoDao,
-        costoBiseladoDao = costoBiseladoDao,
-    ) {
-        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+    ): UploadSyncCoordinator = object : TestUploadCoordinator() {
         override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) = remotos
         override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
             captured.addAll(chunk)
@@ -673,9 +605,7 @@ class UploadSyncCoordinatorTest {
         val (original, replacement) = claimPair(opticaId)
         coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
+        stubRetryPassThrough()
         val captured = mutableListOf<DispensacionRemota>()
         val testCoordinator = createDispensacionCaptureCoordinator(
             remotos = listOf(DispensacionRemotaLookup(id = "remote-orig", ot = "2026-0042")),
@@ -699,9 +629,7 @@ class UploadSyncCoordinatorTest {
         val (original, replacement) = claimPair(opticaId)
         coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
+        stubRetryPassThrough()
         val captured = mutableListOf<DispensacionRemota>()
         val testCoordinator = createDispensacionCaptureCoordinator(
             remotos = listOf(DispensacionRemotaLookup(id = "remote-other", ot = "2026-0099")),
@@ -725,7 +653,7 @@ class UploadSyncCoordinatorTest {
         servicioExtraId: String? = null,
         reversaPagoId: String? = null,
         fecha: String = "2026-09-30",
-    ) = com.example.optoapp.data.Pago(
+    ) = Pago(
         id = id, dispensacionId = dispensacionId, servicioExtraId = servicioExtraId, tipo = tipo, monto = monto,
         metodoPago = "Efectivo", fecha = LocalDate.parse(fecha), opticaId = "optica-test",
         reversaPagoId = reversaPagoId,
@@ -736,20 +664,8 @@ class UploadSyncCoordinatorTest {
         uploadedChunks: MutableList<List<PagoRemoto>>,
         failMultiRowChunks: Boolean = false,
     ): UploadSyncCoordinator {
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
-        return object : UploadSyncCoordinator(
-            repository = repository,
-            supabase = supabase,
-            database = database,
-            syncStateTracker = syncStateTracker,
-            mergeHandler = mergeHandler,
-            networkRetryHelper = networkRetryHelper,
-            costoProductoDao = costoProductoDao,
-            costoBiseladoDao = costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        stubRetryPassThrough()
+        return object : TestUploadCoordinator() {
             override suspend fun fetchRemotePagosForLookup(opticaId: String) = remotos
             override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
                 setOf("disp-1") to setOf("serv-1", "serv-2")
@@ -895,9 +811,7 @@ class UploadSyncCoordinatorTest {
             pago("abono-1", "Abono", monto = 200.0, dispensacionId = "d-anul"),
             pago("rev-1", "Reverso", monto = 200.0, dispensacionId = "d-anul", reversaPagoId = "abono-1"),
         )
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
+        stubRetryPassThrough()
         val captured = mutableListOf<DispensacionRemota>()
 
         val uploaded = createDispensacionCaptureCoordinator(emptyList(), captured).uploadDispensaciones(opticaId)
@@ -956,12 +870,6 @@ class UploadSyncCoordinatorTest {
     }
 
     // ── Losing offline claim ──────────────────────────────────────────
-
-    private fun stubRetryPassThrough() {
-        coEvery { networkRetryHelper.retryNetwork(any(), any()) } coAnswers {
-            secondArg<suspend () -> Unit>().invoke()
-        }
-    }
 
     @Test
     fun `losing replacement with the winner OT is quarantined instead of adopting the winner id`() = runTest {
@@ -1063,6 +971,87 @@ class UploadSyncCoordinatorTest {
         coVerify(exactly = 0) { syncStateTracker.markError(opticaId, "dispensacion", "local-repl", any()) }
     }
 
+    private fun movimiento(id: String, referenciaId: String, nota: String) = MonturaMovimiento(
+        id = id, monturaId = "M1", tipo = "SALIDA_VENTA", cantidad = 1, stockPrevio = 3, stockNuevo = 2,
+        referenciaId = referenciaId, nota = nota, opticaId = "optica-test",
+    )
+
+    private suspend fun renumberedClaim(movimientos: List<MonturaMovimiento>, coordinatorFactory: () -> UploadSyncCoordinator) {
+        val opticaId = "optica-test"
+        val (original, replacement) = claimPair(opticaId)
+        coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
+        coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns movimientos
+        stubRetryPassThrough()
+        coordinatorFactory().uploadDispensaciones(opticaId)
+    }
+
+    private fun collidingRemotes() = listOf(DispensacionRemotaLookup(id = "unrelated", ot = "2026-0042-R1"))
+
+    @Test
+    fun `renumbering a claim replacement rewrites the old OT only in its own movimiento notes`() = runTest {
+        val claimSale = movimiento("m1", "local-repl", "Venta por reclamo de OT 2026-0042-R1")
+        val claimSaleChild = movimiento("m2", "local-repl:regalo", "Venta por reclamo de OT 2026-0042-R1")
+        val otherOrder = movimiento("m3", "other-order", "Venta por reclamo de OT 2026-0042-R1")
+        val originalOtOnly = movimiento("m4", "local-repl", "Crédito por reclamo de OT 2026-0042")
+        val longerToken = movimiento("m5", "local-repl", "Venta por reclamo de OT 2026-0042-R12")
+        val capturedUpserts = mutableListOf<MonturaMovimiento>()
+        coEvery { repository.upsertMonturaMovimiento(capture(capturedUpserts)) } returns Unit
+
+        renumberedClaim(listOf(claimSale, claimSaleChild, otherOrder, originalOtOnly, longerToken)) {
+            createDispensacionCaptureCoordinator(collidingRemotes(), mutableListOf())
+        }
+
+        assertEquals(setOf("m1", "m2"), capturedUpserts.map { it.id }.toSet())
+        assertEquals(2, capturedUpserts.size)
+        capturedUpserts.forEach {
+            assertEquals("Venta por reclamo de OT 2026-0042-R2", it.nota)
+            assertFalse("the rewrite must reach the next inventario upload", it.updatedAt.isNullOrBlank())
+        }
+        coVerify(exactly = 0) { repository.insertPago(any()) }
+    }
+
+    @Test
+    fun `the OT update and the movimiento note rewrite share one transaction`() = runTest {
+        var inTransaction = false
+        val writesInTransaction = mutableMapOf<String, Boolean>()
+        coEvery { repository.updateDispensacion(any()) } coAnswers {
+            writesInTransaction["dispensacion"] = inTransaction
+        }
+        coEvery { repository.upsertMonturaMovimiento(any()) } coAnswers {
+            writesInTransaction["movimiento"] = inTransaction
+        }
+        val sale = movimiento("m1", "local-repl", "Venta por reclamo de OT 2026-0042-R1")
+
+        renumberedClaim(listOf(sale)) {
+            object : TestUploadCoordinator() {
+                override suspend fun <T> runInTransaction(block: suspend () -> T): T {
+                    inTransaction = true
+                    return try {
+                        block()
+                    } finally {
+                        inTransaction = false
+                    }
+                }
+                override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) = collidingRemotes()
+                override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) = Unit
+            }
+        }
+
+        assertEquals(mapOf("dispensacion" to true, "movimiento" to true), writesInTransaction)
+    }
+
+    @Test
+    fun `a replacement that keeps its OT leaves every movimiento note alone`() = runTest {
+        val sale = movimiento("m1", "local-repl", "Venta por reclamo de OT 2026-0042-R1")
+
+        renumberedClaim(listOf(sale)) {
+            createDispensacionCaptureCoordinator(emptyList(), mutableListOf())
+        }
+
+        coVerify(exactly = 0) { repository.upsertMonturaMovimiento(any()) }
+    }
+
     @Test
     fun `replacement OT collision without a determinable base stays quarantined`() = runTest {
         val opticaId = "optica-test"
@@ -1115,11 +1104,7 @@ class UploadSyncCoordinatorTest {
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
         stubRetryPassThrough()
         val accepted = mutableListOf<DispensacionRemota>()
-        val testCoordinator = object : UploadSyncCoordinator(
-            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
-            costoProductoDao, costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        val testCoordinator = object : TestUploadCoordinator() {
             override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
                 listOf(DispensacionRemotaLookup(id = "local-orig", ot = "2026-0042"))
             override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
@@ -1148,11 +1133,7 @@ class UploadSyncCoordinatorTest {
         coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original)
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
         stubRetryPassThrough()
-        val testCoordinator = object : UploadSyncCoordinator(
-            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
-            costoProductoDao, costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        val testCoordinator = object : TestUploadCoordinator() {
             override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) =
                 emptyList<DispensacionRemotaLookup>()
             override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
@@ -1202,11 +1183,7 @@ class UploadSyncCoordinatorTest {
         )
         stubRetryPassThrough()
         val accepted = mutableListOf<PagoRemoto>()
-        val testCoordinator = object : UploadSyncCoordinator(
-            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
-            costoProductoDao, costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        val testCoordinator = object : TestUploadCoordinator() {
             override suspend fun fetchRemotePagosForLookup(opticaId: String) = emptyList<PagoRemotoLookup>()
             override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
                 setOf("disp-1") to emptySet()
@@ -1259,11 +1236,11 @@ class UploadSyncCoordinatorTest {
             DispensacionItem(id = "item-ok", dispensacionId = "local-orig", opticaId = opticaId),
         )
         coEvery { repository.getRegalosSnapshotForOptica(opticaId) } returns listOf(
-            com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity(
+            RegaloDispensacionEntity(
                 id = "regalo-loser", dispensacionId = "local-repl", productoId = "prod-1", cantidad = 1,
                 costoUnitario = 5.0, descripcion = "Estuche", opticaId = opticaId,
             ),
-            com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity(
+            RegaloDispensacionEntity(
                 id = "regalo-ok", dispensacionId = "local-orig", productoId = "prod-1", cantidad = 1,
                 costoUnitario = 5.0, descripcion = "Estuche", opticaId = opticaId,
             ),
@@ -1271,11 +1248,7 @@ class UploadSyncCoordinatorTest {
         stubRetryPassThrough()
         val items = mutableListOf<DispensacionItemRemota>()
         val regalos = mutableListOf<RegaloDispensacionRemota>()
-        val testCoordinator = object : UploadSyncCoordinator(
-            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
-            costoProductoDao, costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        val testCoordinator = object : TestUploadCoordinator() {
             override suspend fun upsertDispensacionItemsChunk(chunk: List<DispensacionItemRemota>) {
                 items.addAll(chunk)
             }
@@ -1299,11 +1272,7 @@ class UploadSyncCoordinatorTest {
         remotos: List<DispensacionRemotaLookup>,
         chunks: MutableList<List<String>>,
         failWhen: (List<DispensacionRemota>) -> Exception? = { null },
-    ): UploadSyncCoordinator = object : UploadSyncCoordinator(
-        repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
-        costoProductoDao, costoBiseladoDao,
-    ) {
-        override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+    ): UploadSyncCoordinator = object : TestUploadCoordinator() {
         override suspend fun fetchRemoteDispensacionesForLookup(opticaId: String) = remotos
         override suspend fun upsertDispensacionesChunk(chunk: List<DispensacionRemota>) {
             failWhen(chunk)?.let { throw it }
@@ -1382,7 +1351,7 @@ class UploadSyncCoordinatorTest {
         assertEquals(listOf(listOf("local-orig", "local-repl")), chunks)
     }
 
-    private fun claimLedgerPagos(): List<com.example.optoapp.data.Pago> = listOf(
+    private fun claimLedgerPagos(): List<Pago> = listOf(
         pago("rv-claim", "Reverso", dispensacionId = "disp-1", reversaPagoId = "ab-1"),
         pago("comp-claim", "Abono", dispensacionId = "disp-1")
             .copy(nota = "Compensación de Reembolso rb000001 por reclamo"),
@@ -1403,11 +1372,7 @@ class UploadSyncCoordinatorTest {
 
     private fun claimPagoCoordinator(remoteDispIds: Set<String>, uploaded: MutableList<String>): UploadSyncCoordinator {
         stubRetryPassThrough()
-        return object : UploadSyncCoordinator(
-            repository, supabase, database, syncStateTracker, mergeHandler, networkRetryHelper,
-            costoProductoDao, costoBiseladoDao,
-        ) {
-            override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
+        return object : TestUploadCoordinator() {
             override suspend fun fetchRemotePagosForLookup(opticaId: String) = emptyList<PagoRemotoLookup>()
             override suspend fun fetchRemoteParentIds(opticaId: String): Pair<Set<String>, Set<String>> =
                 remoteDispIds to emptySet()

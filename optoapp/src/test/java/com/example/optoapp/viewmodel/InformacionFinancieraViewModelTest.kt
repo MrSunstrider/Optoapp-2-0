@@ -266,17 +266,6 @@ class InformacionFinancieraViewModelTest {
     }
 
     @Test
-    fun `save rejects montoTotal zero or less`() = runTest {
-        val vm = createViewModel()
-        vm.loadFinanciera(dispId)
-        vm.updateMontoTotal("0")
-
-        vm.save {}
-
-        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
-    }
-
-    @Test
     fun `save persists a zero total for a claim replacement`() = runTest {
         coEvery { repository.obtenerDispensacion(dispId, any()) } returns
             Resource.Success(testDispensacion.copy(montoTotal = 0.0, reclamoOrigenId = "disp-origen"))
@@ -297,6 +286,20 @@ class InformacionFinancieraViewModelTest {
         val vm = createViewModel()
         vm.loadFinanciera(dispId)
         vm.updateMontoTotal("0")
+
+        var completed = false
+        vm.save { completed = true }
+
+        coVerify(exactly = 0) { repository.actualizarMontoTotal(any(), any(), any()) }
+        assertEquals(false, completed)
+        assertEquals(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO, vm.uiState.value.error)
+    }
+
+    @Test
+    fun `save rejects a negative total for an ordinary dispensacion and writes nothing`() = runTest {
+        val vm = createViewModel()
+        vm.loadFinanciera(dispId)
+        vm.updateMontoTotal("-1")
 
         var completed = false
         vm.save { completed = true }

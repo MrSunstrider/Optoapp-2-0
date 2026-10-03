@@ -523,6 +523,78 @@ class DiscardLosingClaimUseCaseTest {
         assertTrue(pagosOf(origId).none { it.reversaPagoId == "a3" })
     }
 
+    private suspend fun heldPagosNotices() = db.syncEntityStateDao().getByStatus(opticaId, "error")
+        .filter { it.entityType == "reclamo_descartado" && it.entityId == "$origId:credito_pendiente" }
+
+    @Test
+    fun pagosHeldByALocalQuarantine_tellTheUserTheCreditIsPendingOnce() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        val notice = heldPagosNotices().single()
+        assertEquals(
+            "El crédito del reclamo de la OT 2026-0042 queda pendiente hasta resolver los pagos en espera.",
+            notice.lastError,
+        )
+        assertFalse(notice.lastError.startsWith("quarantine:"))
+        assertEquals(setOf(origId), pendingCreditMarkers())
+    }
+
+    @Test
+    fun pagosDownloadFailedByNetwork_doesNotTellTheUserTheCreditIsPending() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markError(opticaId, "download_pago", "batch", "timeout")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertTrue(heldPagosNotices().isEmpty())
+    }
+
+    @Test
+    fun pagosHeldLocallyWithoutAPendingCredit_tellTheUserNothing() = runTest {
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+
+        assertEquals(0, discarder().transferResidualCredit(opticaId))
+
+        assertTrue(heldPagosNotices().isEmpty())
+    }
+
+    @Test
+    fun pendingCreditNotice_isClearedWhenTheTransferRuns() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+        discarder().transferResidualCredit(opticaId)
+        assertEquals(1, heldPagosNotices().size)
+
+        tracker.clear(opticaId, "download_pago_blocked", "batch")
+        downloadWinner()
+        assertEquals(1, discarder().transferResidualCredit(opticaId))
+
+        assertTrue(heldPagosNotices().isEmpty())
+        assertEquals(1, db.syncEntityStateDao().getByStatus(opticaId, "error").count { it.entityId == "$origId:credito" })
+    }
+
+    @Test
+    fun pendingCreditNotice_isClearedWhenTheOriginalIsGone() = runTest {
+        seedClaimedOriginal(unsyncedCredit = true)
+        discarder()(opticaId)
+        tracker.markSynced(opticaId, "download_pago_blocked", "batch")
+        discarder().transferResidualCredit(opticaId)
+        db.dispensacionDao().deleteById(origId, opticaId)
+        tracker.markSynced(opticaId, "download_pago", "batch")
+
+        discarder().transferResidualCredit(opticaId)
+
+        assertTrue(heldPagosNotices().isEmpty())
+        assertTrue(pendingCreditMarkers().isEmpty())
+    }
+
     @Test
     fun adoptedWinnerWithoutLocalCredit_needsNoTransfer() = runTest {
         seedClaimedOriginal()
