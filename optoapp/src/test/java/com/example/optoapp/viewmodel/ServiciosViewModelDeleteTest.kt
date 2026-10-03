@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.domain.CancelServicioExtraUseCase
@@ -122,13 +123,56 @@ class ServiciosViewModelDeleteTest {
     }
 
     @Test
-    fun `confirmAnular on an already cancelled servicio is a silent no-op`() = runTest(testDispatcher) {
+    fun `confirmAnular on an already cancelled servicio informs the user and stays on screen`() = runTest(testDispatcher) {
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } returns LifecycleOutcome.AlreadyTerminal("Anulado")
+        var completions = 0
+
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Este servicio ya fue anulado", viewModel.infoMessage.value)
+        assertEquals(0, completions)
+        assertNull(viewModel.deleteError.value)
+        assertFalse(viewModel.showDeleteDialog.value)
+        assertNull(viewModel.servicioToDelete.value)
+        assertFalse(viewModel.anulando.value)
+    }
+
+    @Test
+    fun `confirmAnular on an already cancelled servicio reloads the open form so it turns read-only`() = runTest(testDispatcher) {
+        every { repository.getPagosByServicioExtra(servId, "optica-test") } returns flowOf(emptyList())
+        coEvery { repository.getServicioById(servId, "optica-test") } returns Resource.Success(testServicio)
+        viewModel.loadServicio(servId)
+        testDispatcher.scheduler.advanceUntilIdle()
+        coEvery { repository.getServicioById(servId, "optica-test") } returns
+            Resource.Success(testServicio.copy(estado = "Anulado"))
         coEvery { cancelServicioExtraUseCase(any(), any(), any()) } returns LifecycleOutcome.AlreadyTerminal("Anulado")
 
         confirm("Error de registro")
 
-        assertNull(viewModel.deleteError.value)
-        assertFalse(viewModel.showDeleteDialog.value)
+        assertEquals("Anulado", viewModel.uiState.value.estado)
+        assertTrue(viewModel.uiState.value.isReadOnly)
+    }
+
+    @Test
+    fun `clearInfoMessage resets the info message`() = runTest(testDispatcher) {
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } returns LifecycleOutcome.AlreadyTerminal("Anulado")
+        confirm("Error de registro")
+
+        viewModel.clearInfoMessage()
+
+        assertNull(viewModel.infoMessage.value)
+    }
+
+    @Test
+    fun `applied cancel completes without an info message`() = runTest(testDispatcher) {
+        var completions = 0
+
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, completions)
+        assertNull(viewModel.infoMessage.value)
     }
 
     @Test
@@ -159,6 +203,32 @@ class ServiciosViewModelDeleteTest {
         testDispatcher.scheduler.runCurrent()
 
         assertEquals(emptySet<String>(), viewModel.cancelableServicioIds.value)
+    }
+
+    @Test
+    fun `double tap on the cancel confirmation cancels once`() = runTest(testDispatcher) {
+        var completions = 0
+
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { cancelServicioExtraUseCase(servId, "optica-test", "Error de registro") }
+        assertEquals(1, completions)
+        assertFalse(viewModel.anulando.value)
+    }
+
+    @Test
+    fun `a failed cancel releases the guard and skips completion`() = runTest(testDispatcher) {
+        coEvery { cancelServicioExtraUseCase(any(), any(), any()) } throws IllegalStateException("Stock insuficiente")
+        var completions = 0
+
+        viewModel.confirmAnular("Error de registro") { completions++ }
+        assertTrue(viewModel.anulando.value)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(0, completions)
+        assertFalse(viewModel.anulando.value)
     }
 
     @Test
