@@ -1,23 +1,28 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Resource
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegaloDispensacionViewModelTest {
@@ -57,8 +62,18 @@ class RegaloDispensacionViewModelTest {
         coEvery {
             stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
         } returns Result.success(1)
+        coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers {
+            firstArg<suspend () -> Any?>().invoke()
+        }
+        givenParentEstado("Pendiente")
 
         viewModel = RegaloDispensacionViewModel(repository, stockHelper)
+    }
+
+    private fun givenParentEstado(estado: String) {
+        coEvery { repository.getDispensacionById(dispId, opticaId) } returns Resource.Success(
+            DispensacionOptica(id = dispId, ot = "OT-1", pacienteId = "pac-1", fecha = LocalDate.of(2026, 9, 1), opticaId = opticaId, estadoEntrega = estado),
+        )
     }
 
     @After
@@ -125,6 +140,58 @@ class RegaloDispensacionViewModelTest {
                 "Reversión por eliminación de regalo",
             )
         }
+    }
+
+    @Test
+    fun `saveRegaloAndDeductStock on Anulado order writes nothing and emits error`() = runTest {
+        givenParentEstado("Anulado")
+
+        viewModel.saveRegaloAndDeductStock(testRegalo, opticaId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.insertRegalo(any()) }
+        coVerify(exactly = 0) { stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) }
+        assertEquals("La orden está anulada y no se puede modificar regalos.", viewModel.error.value)
+    }
+
+    @Test
+    fun `removeRegaloAndRestoreStock on Anulado order writes nothing and emits error`() = runTest {
+        givenParentEstado("Anulado")
+
+        viewModel.removeRegaloAndRestoreStock(testRegalo, opticaId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { repository.deleteRegaloById(any(), any()) }
+        coVerify(exactly = 0) { stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) }
+        assertEquals("La orden está anulada y no se puede modificar regalos.", viewModel.error.value)
+    }
+
+    @Test
+    fun `saveRegaloAndDeductStock on Entregado order inserts regalo inside one transaction`() = runTest {
+        givenParentEstado("Entregado")
+
+        viewModel.saveRegaloAndDeductStock(testRegalo, opticaId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerifyOrder {
+            repository.withTransaction(any<suspend () -> Any?>())
+            repository.getDispensacionById(dispId, opticaId)
+            repository.insertRegalo(testRegalo)
+            stockHelper.adjustStockAndRegistrarMovimiento("prod-1", opticaId, -2, "SALIDA_VENTA", "reg-1", "Salida por regalo")
+        }
+        assertNull(viewModel.error.value)
+    }
+
+    @Test
+    fun `saveRegaloAndDeductStock reports insufficient stock as error instead of crashing`() = runTest {
+        coEvery {
+            stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
+        } returns Result.failure(IllegalStateException("sin stock"))
+
+        viewModel.saveRegaloAndDeductStock(testRegalo, opticaId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Stock insuficiente para regalo: Estuche", viewModel.error.value)
     }
 
     @Test
