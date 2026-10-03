@@ -3,6 +3,8 @@
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
+import com.example.optoapp.data.ServicioExtra
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -14,6 +16,8 @@ import java.time.LocalDate
  * from SyncFinanzasUseCase into SyncFinanzasDto.kt.
  */
 class SyncFinanzasDtoTest {
+
+    private val lenientJson = Json { ignoreUnknownKeys = true }
 
     @Test
     fun normalizedOtForUnique_trimsAndUppercases() {
@@ -189,6 +193,90 @@ class SyncFinanzasDtoTest {
         assertEquals(original.montoPagado, remoto.montoPagado, 0.001)
         assertEquals("AR,FOT", remoto.tratamientos)
         assertEquals("2025-06-15", remoto.fechaVencimientoGarantia)
+    }
+
+    @Test
+    fun dispensacionOptica_toRemoto_carriesClaimLinkageAndCancellationMetadata() {
+        val original = DispensacionOptica(
+            id = "r1", ot = "2026-0042-R1", pacienteId = "p1",
+            fecha = LocalDate.of(2026, 9, 30), opticaId = "test-optica",
+            estadoEntrega = "Reclamada",
+            reclamoOrigenId = "o1",
+            motivoAnulacion = "Lente rayado",
+            fechaAnulacion = LocalDate.of(2026, 9, 29),
+        )
+        val remoto = original.toRemoto()
+        assertEquals("o1", remoto.reclamoOrigenId)
+        assertEquals("Lente rayado", remoto.motivoAnulacion)
+        assertEquals("2026-09-29", remoto.fechaAnulacion)
+
+        val restored = remoto.toEntity()
+        assertEquals("o1", restored.reclamoOrigenId)
+        assertEquals("Lente rayado", restored.motivoAnulacion)
+        assertEquals(LocalDate.of(2026, 9, 29), restored.fechaAnulacion)
+    }
+
+    @Test
+    fun dispensacionOptica_toRemoto_withoutMetadata_sendsNulls() {
+        val remoto = DispensacionOptica(
+            id = "d1", pacienteId = "p1", fecha = LocalDate.of(2026, 9, 30), opticaId = "test-optica",
+        ).toRemoto()
+        assertNull(remoto.reclamoOrigenId)
+        assertNull(remoto.motivoAnulacion)
+        assertNull(remoto.fechaAnulacion)
+    }
+
+    @Test
+    fun dispensacionRemota_jsonWithoutNewKeys_deserializesToNullFields() {
+        val json = """{"id":"d1","paciente_id":"p1","fecha":"2026-09-30","optica_id":"o1"}"""
+        val entity = lenientJson.decodeFromString(DispensacionRemota.serializer(), json).toEntity()
+        assertNull(entity.reclamoOrigenId)
+        assertNull(entity.motivoAnulacion)
+        assertNull(entity.fechaAnulacion)
+    }
+
+    @Test
+    fun dispensacionRemota_jsonWithNewKeys_deserializesMetadata() {
+        val json = """{"id":"d1","paciente_id":"p1","fecha":"2026-09-30","optica_id":"o1",""" +
+            """"reclamo_origen_id":"o9","motivo_anulacion":"Cliente desistió","fecha_anulacion":"2026-09-28"}"""
+        val entity = lenientJson.decodeFromString(DispensacionRemota.serializer(), json).toEntity()
+        assertEquals("o9", entity.reclamoOrigenId)
+        assertEquals("Cliente desistió", entity.motivoAnulacion)
+        assertEquals(LocalDate.of(2026, 9, 28), entity.fechaAnulacion)
+    }
+
+    @Test
+    fun servicioExtra_toRemoto_roundTripsCancellationMetadata() {
+        val original = ServicioExtra(
+            id = "s1", descripcion = "Reparación", montoTotal = 80.0, estado = "Anulado",
+            fecha = LocalDate.of(2026, 9, 1), opticaId = "test-optica",
+            motivoAnulacion = "Pieza no disponible",
+            fechaAnulacion = LocalDate.of(2026, 9, 30),
+        )
+        val remoto = original.toRemoto()
+        assertEquals("Pieza no disponible", remoto.motivoAnulacion)
+        assertEquals("2026-09-30", remoto.fechaAnulacion)
+
+        val restored = remoto.toEntity()
+        assertEquals("Pieza no disponible", restored.motivoAnulacion)
+        assertEquals(LocalDate.of(2026, 9, 30), restored.fechaAnulacion)
+    }
+
+    @Test
+    fun servicioRemoto_jsonWithoutNewKeys_deserializesToNullFields() {
+        val json = """{"id":"s1","fecha":"2026-09-30","optica_id":"o1"}"""
+        val entity = lenientJson.decodeFromString(ServicioRemoto.serializer(), json).toEntity()
+        assertNull(entity.motivoAnulacion)
+        assertNull(entity.fechaAnulacion)
+    }
+
+    @Test
+    fun servicioExtra_defaultsCancellationMetadataToNull() {
+        val servicio = ServicioExtra(
+            id = "s1", descripcion = "x", montoTotal = 1.0, estado = "Pendiente", fecha = LocalDate.of(2026, 9, 30),
+        )
+        assertNull(servicio.motivoAnulacion)
+        assertNull(servicio.fechaAnulacion)
     }
 
     @Test

@@ -109,6 +109,27 @@ class SyncInventarioUseCaseUploadTest {
     }
 
     @Test
+    fun uploadMovimientos_reconcilesCancelReversalToRemoteIdInsteadOfUploadingDuplicate() = runTest {
+        stubMonturasUploadEmpty()
+        val local = mov(id = "local-anul", referenciaId = "disp-1:anul:item-1").copy(tipo = "AJUSTE")
+        val remote = local.copy(id = "remote-anul")
+
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(local)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } returns MovimientoUploadPlan(
+            safeIds = listOf(local.id),
+            remoteByKey = mapOf(Triple(local.referenciaId, local.tipo, local.monturaId) to remote),
+            conflictedIds = emptyList(),
+        )
+
+        val result = createUseCase().invoke(opticaId, downloadAfterUpload = false)
+
+        assertTrue(uploadedBatches.isEmpty())
+        coVerify(exactly = 1) { repository.upsertMonturaMovimiento(local.copy(id = "remote-anul")) }
+        coVerify(exactly = 1) { repository.deleteMonturaMovimiento("local-anul", opticaId) }
+        assertEquals(1, result.data?.reconciledMovimientos)
+    }
+
+    @Test
     fun uploadMovimientos_failsClosed_whenRemoteFetchFails() = runTest {
         stubMonturasUploadEmpty()
         val local = mov(id = "uuid-new")
@@ -225,6 +246,29 @@ class SyncInventarioUseCaseUploadTest {
         }
 
         useCase.invoke(opticaId, downloadAfterUpload = false)
+    }
+
+    @Test
+    fun uploadMovimientos_skipsMovimientosOfALosingClaimReplacement() = runTest {
+        stubMonturasUploadEmpty()
+        coEvery { syncStateTracker.quarantineReasons(opticaId, "dispensacion") } returns
+            mapOf("repl-loser" to "quarantine:reclamo_duplicate:orig-1")
+        val sale = mov(id = "mov-sale", referenciaId = "repl-loser")
+        val restock = mov(id = "mov-restock", referenciaId = "repl-loser:anul:item-1").copy(tipo = "ENTRADA")
+        val unrelated = mov(id = "mov-ok", referenciaId = "repl-loser-2")
+        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns listOf(sale, restock, unrelated)
+        coEvery { conflictHelper.filterConflictMovimientos(opticaId, any()) } answers {
+            MovimientoUploadPlan(
+                safeIds = secondArg<List<MonturaMovimiento>>().map { it.id },
+                remoteByKey = emptyMap(),
+                conflictedIds = emptyList(),
+            )
+        }
+
+        createUseCase().invoke(opticaId, downloadAfterUpload = false)
+
+        assertEquals(listOf("mov-ok"), uploadedBatches.flatten().map { it.id })
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "montura_movimiento", "mov-sale") }
     }
 
     @Test

@@ -1477,6 +1477,16 @@ val MIGRATION_53_54 = object : Migration(53, 54) {
     }
 }
 
+// Nullable, no default: legacy Anulado rows keep null reason/date ("Sin motivo registrado").
+val MIGRATION_54_55 = object : Migration(54, 55) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN motivoAnulacion TEXT")
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN fechaAnulacion TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN motivoAnulacion TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN fechaAnulacion TEXT")
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """

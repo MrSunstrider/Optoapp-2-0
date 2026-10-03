@@ -45,7 +45,7 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 
 ## Testing
 
-- **JUnit 4 + MockK** — no Robolectric for new tests
+- **JUnit 4 + MockK** — no Robolectric for new tests, except real-Room tests (DAOs, `withTransaction` atomicity/rollback) where in-memory Room needs it
 - `kotlinx-coroutines-test` (`runTest`) for coroutines
 - Room DAOs tested with `Room.inMemoryDatabaseBuilder(...).allowMainThreadQueries().build()`
 - Tests mirror main source in `optoapp/src/test/java/com/example/optoapp/`

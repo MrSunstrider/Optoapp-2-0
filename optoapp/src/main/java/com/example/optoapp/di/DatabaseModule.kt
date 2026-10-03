@@ -224,6 +224,10 @@ object DatabaseModule {
     )
 
     @Provides
+    fun provideDatabaseTransactionRunner(database: OptoDatabase): DatabaseTransactionRunner =
+        RoomTransactionRunner(database)
+
+    @Provides
     fun provideMonturaInventoryCoordinator(
         monturaDao: MonturaDao,
         monturaMovimientoDao: MonturaMovimientoDao,
