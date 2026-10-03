@@ -981,7 +981,7 @@ class UploadSyncCoordinatorTest {
         val (original, replacement) = claimPair(opticaId)
         coEvery { repository.getDispensacionesSnapshotForOptica(opticaId) } returns listOf(original, replacement)
         coEvery { repository.getPagosSnapshotForOptica(opticaId) } returns emptyList()
-        coEvery { repository.getMovimientosMonturaSnapshotForOptica(opticaId) } returns movimientos
+        coEvery { repository.getMovimientosForDispensacion(replacement.id, opticaId) } returns movimientos
         stubRetryPassThrough()
         coordinatorFactory().uploadDispensaciones(opticaId)
     }
@@ -989,19 +989,19 @@ class UploadSyncCoordinatorTest {
     private fun collidingRemotes() = listOf(DispensacionRemotaLookup(id = "unrelated", ot = "2026-0042-R1"))
 
     @Test
-    fun `renumbering a claim replacement rewrites the old OT only in its own movimiento notes`() = runTest {
+    fun `renumbering a claim replacement rewrites the old OT only in its own movimiento notes and never loads the whole optica`() = runTest {
         val claimSale = movimiento("m1", "local-repl", "Venta por reclamo de OT 2026-0042-R1")
         val claimSaleChild = movimiento("m2", "local-repl:regalo", "Venta por reclamo de OT 2026-0042-R1")
-        val otherOrder = movimiento("m3", "other-order", "Venta por reclamo de OT 2026-0042-R1")
         val originalOtOnly = movimiento("m4", "local-repl", "Crédito por reclamo de OT 2026-0042")
         val longerToken = movimiento("m5", "local-repl", "Venta por reclamo de OT 2026-0042-R12")
         val capturedUpserts = mutableListOf<MonturaMovimiento>()
         coEvery { repository.upsertMonturaMovimiento(capture(capturedUpserts)) } returns Unit
 
-        renumberedClaim(listOf(claimSale, claimSaleChild, otherOrder, originalOtOnly, longerToken)) {
+        renumberedClaim(listOf(claimSale, claimSaleChild, originalOtOnly, longerToken)) {
             createDispensacionCaptureCoordinator(collidingRemotes(), mutableListOf())
         }
 
+        coVerify(exactly = 0) { repository.getMovimientosMonturaSnapshotForOptica(any()) }
         assertEquals(setOf("m1", "m2"), capturedUpserts.map { it.id }.toSet())
         assertEquals(2, capturedUpserts.size)
         capturedUpserts.forEach {

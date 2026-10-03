@@ -90,9 +90,10 @@ class DiscardLosingClaimUseCase @Inject constructor(
      * download failure is left in place so it stays visible until a later fetch succeeds.
      *
      * An incomplete download caused by a local quarantine or pending deletion is something the user
-     * can resolve, so each pending original gets one notice that the transfer is waiting; a network
-     * failure already surfaces as a sync error and gets none. The notice is dropped once the
-     * transfer is attempted on a complete download.
+     * can resolve, so each pending original that still holds residual credit gets one notice that the
+     * transfer is waiting; a network failure already surfaces as a sync error and gets none. On a
+     * complete download the notice is dropped only once the pending-credit marker is resolved; while
+     * the transfer still waits for the claimed order it is refreshed so the user is never left silent.
      */
     suspend fun transferResidualCredit(opticaId: String): Int {
         if (!syncStateTracker.isSynced(opticaId, DOWNLOAD_PAGOS, "batch")) {
@@ -102,22 +103,40 @@ class DiscardLosingClaimUseCase @Inject constructor(
             return 0
         }
         syncStateTracker.clear(opticaId, DOWNLOAD_PAGOS, "batch")
-        return syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).sumOf { localOrigenId ->
-            repository.withTransaction { settle(opticaId, localOrigenId) }
-                .also { syncStateTracker.clear(opticaId, NOTICE, pendingCreditNoticeId(localOrigenId)) }
+        val pending = syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT)
+        val transferred = pending.sumOf { localOrigenId -> repository.withTransaction { settle(opticaId, localOrigenId) } }
+        val unresolved = syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT)
+        (pending - unresolved).forEach { syncStateTracker.clear(opticaId, NOTICE, pendingCreditNoticeId(it)) }
+        unresolved.forEach { origenId ->
+            syncCreditNotice(opticaId, origenId) { ot ->
+                "El crédito del reclamo de la OT $ot queda pendiente hasta recibir la orden reclamada."
+            }
         }
+        return transferred
     }
 
     private suspend fun noticeCreditPending(opticaId: String) {
         syncStateTracker.awaitingRemoteIds(opticaId, PENDING_CREDIT).forEach { origenId ->
-            val ot = repository.getDispensacionById(origenId, opticaId).data?.ot?.takeIf { it.isNotBlank() }
-                ?: return@forEach
-            syncStateTracker.markError(
-                opticaId, NOTICE, pendingCreditNoticeId(origenId),
-                "El crédito del reclamo de la OT $ot queda pendiente hasta resolver los pagos en espera.",
-            )
+            syncCreditNotice(opticaId, origenId) { ot ->
+                "El crédito del reclamo de la OT $ot queda pendiente hasta resolver los pagos en espera."
+            }
         }
     }
+
+    /** Posts [message] while the original still has residual credit to move; otherwise drops the notice. */
+    private suspend fun syncCreditNotice(opticaId: String, origenId: String, message: (ot: String) -> String) {
+        val noticeId = pendingCreditNoticeId(origenId)
+        val ot = repository.getDispensacionById(origenId, opticaId).data?.ot?.takeIf { it.isNotBlank() }
+        if (ot == null || residualCredits(opticaId, origenId).isEmpty()) {
+            syncStateTracker.clear(opticaId, NOTICE, noticeId)
+            return
+        }
+        syncStateTracker.markError(opticaId, NOTICE, noticeId, message(ot))
+    }
+
+    private suspend fun residualCredits(opticaId: String, origenId: String): List<Pago> =
+        ledgerSnapshot(pagoDao.getPagosByParent(origenId, opticaId)).unreversedCredits
+            .filterNot(::isClaimReversalPago)
 
     private fun pendingCreditNoticeId(origenId: String) = "$origenId:credito_pendiente"
 
@@ -179,8 +198,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
     private suspend fun transferToWinner(opticaId: String, origenId: String, winner: DispensacionOptica): Int? {
         val original = repository.getDispensacionById(origenId, opticaId).data ?: return null
         if (original.estadoEntrega.trim() != OrderStatusPolicy.RECLAMADA) return null
-        val residual = ledgerSnapshot(pagoDao.getPagosByParent(origenId, opticaId)).unreversedCredits
-            .filterNot(::isClaimReversalPago)
+        val residual = residualCredits(opticaId, origenId)
         if (residual.isEmpty()) return 0
         residual.forEach { credit ->
             repository.insertPago(buildReverso(credit, origenId, opticaId, forDispensacion = true))
@@ -213,8 +231,7 @@ class DiscardLosingClaimUseCase @Inject constructor(
         val replacement = repository.getDispensacionById(replacementId, opticaId).data
         val original = repository.getDispensacionById(origenId, opticaId).data
 
-        movimientoDao.getMovimientosListByOptica(opticaId)
-            .filter { it.referenciaId == replacementId || it.referenciaId.startsWith("$replacementId:") }
+        movimientoDao.getMovimientosForDispensacion(replacementId, opticaId)
             .forEach { undoMovimiento(opticaId, replacementId, it) }
 
         pagoDao.getPagosByParent(origenId, opticaId)
@@ -262,7 +279,6 @@ class DiscardLosingClaimUseCase @Inject constructor(
             }
         }
     }
-
 }
 
 /** Rows a claim writes on its original: Reversos and the Abonos compensating its legacy debits. */

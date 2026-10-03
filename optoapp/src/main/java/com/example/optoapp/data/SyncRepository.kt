@@ -15,4 +15,7 @@ class SyncRepository(
     suspend fun getMonturasSnapshotForOptica(opticaId: String): List<Montura> = monturaDao.getMonturasListByOptica(opticaId)
 
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String): List<MonturaMovimiento> = monturaMovimientoDao.getMovimientosListByOptica(opticaId)
+
+    suspend fun getMovimientosForDispensacion(dispensacionId: String, opticaId: String): List<MonturaMovimiento> =
+        monturaMovimientoDao.getMovimientosForDispensacion(dispensacionId, opticaId)
 }

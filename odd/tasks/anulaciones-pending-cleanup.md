@@ -55,3 +55,40 @@ Branch pushed, PR to `main` titled `fix(anulaciones): close pending technical de
 ## Next step
 
 Open the PR to `main`; the user decides the merge.
+
+## Judgment Day round 1
+
+Target: `git diff d1d60f7c 9402d195` (PR #167). Branch `fix/jd-anulaciones-cleanup-findings` from `main` at `9402d195` (rollback boundary). All findings authorized by the user. One atomic work-unit commit per finding, tests with behavior.
+
+### Ledger and fixes
+
+| ID | Severity | Status | Commit | Fix |
+|----|----------|--------|--------|-----|
+| F1 | WARNING | fixed | `2020ff31` | `noticeCreditPending` posts only when the original still has residual credit (`residualCredits`, the same computation `transferToWinner` uses, excluding claim reversal rows); otherwise it drops any stale notice. |
+| F2 | SUGGESTION | fixed | `5e32234c` | Shared `syncCreditNotice`: the notice is cleared when the original is gone or has no residual credit. After a complete download it is cleared only for markers that were resolved; unresolved markers get a refreshed notice ("queda pendiente hasta recibir la orden reclamada."). |
+| F3 | SUGGESTION | fixed | `a1b6f51c` | New `MonturaMovimientoDao.getMovimientosForDispensacion` (`referenciaId = :id OR LIKE :id || ':%'`, scoped by `opticaId`) exposed through `SyncRepository`, `SyncSnapshotCoordinator` and `OptoRepository`; `rewriteClaimSaleNotes` uses it instead of loading and filtering the whole optica. |
+| F4 | SUGGESTION | fixed | `03c9df23` | `downloadMovimientos` skips a remote row when the local copy wins `ConflictHelper.isLocalNewerOrEqual` (the upload filter's last-write-wins rule, so equal timestamps in any format keep the local row); a missing timestamp on either side keeps the server copy authoritative. Conflicted ids are still excluded and the returned count is unchanged. The remote fetches became `internal open` seams. |
+| F5 | SUGGESTION | fixed | `a3b95f9e` | `persistRemoteRows` takes `trackLocalBlock` (only `persistPagos` opts in), so the dead `download_<entity>_blocked` rows are no longer written. `fetchRemoteRows` still clears the marker for every entity, which removes rows the previous version wrote on the next fetch of that entity. |
+
+### RED / GREEN evidence
+
+- F1 RED (2 failures, expected reasons: notice posted without residual credit): `pagosHeldLocallyWithAMarkerButNoResidualCredit_tellTheUserNothing`, `pendingCreditNotice_isDroppedWhenNoResidualCreditRemainsWhileThePagosStayBlocked`. GREEN: `DiscardLosingClaimUseCaseTest` (28 tests).
+- F2 RED (2 failures): `pendingCreditNotice_isClearedWhenTheOriginalIsGoneWhileThePagosStayBlocked`, `completeDownloadThatCannotSettleTheCredit_keepsTheUserInformedUntilItDoes`. Characterization (passed first): `completeDownloadThatCannotSettleWithoutResidualCredit_postsNoNotice`. GREEN: `DiscardLosingClaimUseCaseTest` (31 tests).
+- F3 RED: compile failure, unresolved reference `getMovimientosForDispensacion` from `MonturaMovimientoDaoTest` and `UploadSyncCoordinatorTest` (the DAO method cannot be stubbed). GREEN: `MonturaMovimientoDaoTest.getMovimientosForDispensacion_returnsOnlyTheOrderAndItsChildRefsOfThatOptica` (real Room: `d1` vs `d10`, child refs, other optica), `UploadSyncCoordinatorTest` (asserts the whole-optica snapshot is never loaded), `ReplaceOtTokenTest`.
+- F4 RED (2 failures): `a download-only pass keeps a local movimiento that is newer than the server copy`, `equal timestamps in different formats follow the local-wins convention of the upload filter`. Characterization (passed first): older local replaced, absent local downloaded, missing timestamp keeps the server copy, skipped rows still counted. GREEN: all `SyncInventarioUseCase*` tests.
+- F5 RED (1 failure): `entities without a consumer never write a blocked marker`. Characterization with real Room (passed first): quarantined pago blocks the batch, a later network failure leaves no stale pagos block (state asserted, not only the `clear` call), a legacy `download_dispensacion_blocked` row is removed on the next fetch. GREEN: `DownloadSyncCoordinator*`, `SyncFinanzasUseCase*`.
+
+### Notes
+
+- F1 limits: while the pagos download is blocked the winner's Reversos may not be local yet, so the residual computation can still count credit the winner already reversed. It is the same view the transfer uses, so the notice is never stricter than the transfer.
+- GGA: all five commits passed with no observations (the F3 commit failed once with an unreadable report and passed on the identical retry).
+- Full suite `./gradlew :optoapp:testDebugUnitTest --rerun` at `a3b95f9e`: BUILD SUCCESSFUL, 2714 tests, 0 failures, 0 errors, 3 skipped.
+
+### Zero-debt follow-ups
+
+- `e72216f8`: `DiscardLosingClaimUseCase.discard` uses `getMovimientosForDispensacion` instead of loading every movimiento of the optica. The dispensacion ref match in `getMovimientosForDispensacion` and `countForDispensacion` changed from `LIKE :id || ':%'` (ASCII case-insensitive, `_`/`%` wildcards) to an exact case-sensitive prefix comparison (`substr(referenciaId, 1, length(:id) + 1) = :id || ':'`), matching the previous Kotlin filter. RED: `dispensacionRefMatching_isCaseSensitiveAndTreatsWildcardCharactersLiterally` (1 failure). GREEN: full suite.
+- `a52a5712`: corrected the stale `withTransaction` comment in `OptoRepository.kt` and the `MonturaMovimientoDaoTest` KDoc; removed a stray blank line GGA noted.
+
+## Judgment Day round 2 (scoped re-judgment)
+
+Frozen ledger F1–F5 plus fix delta `9402d195..a52a5712` (sha256 `113B00A7…1317`). Both blind judges: F1–F5 RESOLVED, no new findings. Verdict: APPROVED. Non-blocking note from both: the prefix predicate cannot use an index, the same cost class as the previous `LIKE`; rows are no longer materialized in memory.

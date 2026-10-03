@@ -49,8 +49,8 @@ open class OptoRepository(
         database.runInTransaction(block)
     }
 
-    // Room's withTransaction is not a suspend function — this adapter bridges the gap
-    // so sync state writes can be atomic with entity writes inside coroutines.
+    // Exposed so callers outside the data layer can make sync state writes atomic with
+    // entity writes without depending on OptoDatabase directly.
     suspend fun <T> withTransaction(block: suspend () -> T): T = database.withTransaction(block)
 
     fun pacientesFlowForOptica(opticaId: String) = pacienteRepo.pacientesFlowForOptica(opticaId)
@@ -248,6 +248,8 @@ open class OptoRepository(
     suspend fun getServiciosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getServiciosSnapshotForOptica(opticaId)
     suspend fun getMonturasSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMonturasSnapshotForOptica(opticaId)
     suspend fun getMovimientosMonturaSnapshotForOptica(opticaId: String) = snapshotCoordinator.getMovimientosMonturaSnapshotForOptica(opticaId)
+    suspend fun getMovimientosForDispensacion(dispensacionId: String, opticaId: String) =
+        snapshotCoordinator.getMovimientosForDispensacion(dispensacionId, opticaId)
     suspend fun getRegalosSnapshotForOptica(opticaId: String) = snapshotCoordinator.getRegalosSnapshotForOptica(opticaId)
     suspend fun getServicioExtraItemsSnapshotForOptica(opticaId: String) =
         snapshotCoordinator.getServicioExtraItemsSnapshotForOptica(opticaId)

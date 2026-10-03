@@ -225,9 +225,7 @@ open class SyncInventarioUseCase @Inject constructor(
             emptySet()
         }
 
-        val remotos = supabase.postgrest[TABLE_MONTURAS]
-            .select { filter { eq("optica_id", opticaId) } }
-            .decodeList<MonturaRemota>()
+        val remotos = fetchAllRemoteMonturas(opticaId)
         remotos.forEach { r ->
             if (r.id in conflictedIds) return@forEach
             try {
@@ -254,8 +252,10 @@ open class SyncInventarioUseCase @Inject constructor(
         }
 
         val remotos = fetchAllRemoteMovimientos(opticaId)
+        val localById = repository.getMovimientosMonturaSnapshotForOptica(opticaId).associateBy { it.id }
         remotos.forEach { r ->
             if (r.id in conflictedIds) return@forEach
+            if (localCopyWins(localById[r.id], r)) return@forEach
             try {
                 repository.upsertMonturaMovimiento(r.toEntity())
             } catch (e: CancellationException) {
@@ -271,7 +271,23 @@ open class SyncInventarioUseCase @Inject constructor(
         return remotos.size
     }
 
-    private suspend fun fetchAllRemoteMovimientos(opticaId: String): List<MonturaMovimientoRemoto> {
+    /**
+     * A download-only pass runs without the upload that would push a locally rewritten row, so a
+     * stale server copy must not overwrite it. Same last-write-wins rule as the upload filter; a row
+     * missing a timestamp on either side keeps the server copy authoritative.
+     */
+    private fun localCopyWins(local: MonturaMovimiento?, remote: MonturaMovimientoRemoto): Boolean {
+        val localTs = local?.updatedAt ?: return false
+        val remoteTs = remote.updatedAt ?: return false
+        return ConflictHelper.isLocalNewerOrEqual(localTs, remoteTs)
+    }
+
+    internal open suspend fun fetchAllRemoteMonturas(opticaId: String): List<MonturaRemota> =
+        supabase.postgrest[TABLE_MONTURAS]
+            .select { filter { eq("optica_id", opticaId) } }
+            .decodeList<MonturaRemota>()
+
+    internal open suspend fun fetchAllRemoteMovimientos(opticaId: String): List<MonturaMovimientoRemoto> {
         val all = mutableListOf<MonturaMovimientoRemoto>()
         var offset = 0L
         while (true) {

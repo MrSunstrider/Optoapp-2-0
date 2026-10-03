@@ -44,12 +44,23 @@ interface MonturaMovimientoDao {
         SELECT COUNT(*) FROM montura_movimientos
         WHERE opticaId = :opticaId AND (
           referenciaId = :dispensacionId
-          OR referenciaId LIKE :dispensacionId || ':%'
+          OR substr(referenciaId, 1, length(:dispensacionId) + 1) = :dispensacionId || ':'
           OR referenciaId IN (:regaloIds)
         )
         """,
     )
     suspend fun countForDispensacion(dispensacionId: String, regaloIds: List<String>, opticaId: String): Int
+
+    @Query(
+        """
+        SELECT * FROM montura_movimientos
+        WHERE opticaId = :opticaId AND (
+          referenciaId = :dispensacionId
+          OR substr(referenciaId, 1, length(:dispensacionId) + 1) = :dispensacionId || ':'
+        )
+        """,
+    )
+    suspend fun getMovimientosForDispensacion(dispensacionId: String, opticaId: String): List<MonturaMovimiento>
 
     @Query("SELECT * FROM montura_movimientos WHERE opticaId = :opticaId AND fecha >= :since")
     suspend fun getMovimientosDesde(opticaId: String, since: java.time.LocalDate): List<MonturaMovimiento>

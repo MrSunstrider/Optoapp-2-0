@@ -329,8 +329,7 @@ open class UploadSyncCoordinator @Inject constructor(
      */
     private suspend fun rewriteClaimSaleNotes(replacement: DispensacionOptica, newOt: String) {
         val stamp = Instant.now().toString()
-        repository.getMovimientosMonturaSnapshotForOptica(replacement.opticaId)
-            .filter { it.referenciaId == replacement.id || it.referenciaId.startsWith("${replacement.id}:") }
+        repository.getMovimientosForDispensacion(replacement.id, replacement.opticaId)
             .forEach { movimiento ->
                 val nota = replaceOtToken(movimiento.nota, replacement.ot, newOt)
                 if (nota != movimiento.nota) {
