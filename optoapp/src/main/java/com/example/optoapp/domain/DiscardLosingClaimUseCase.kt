@@ -279,7 +279,6 @@ class DiscardLosingClaimUseCase @Inject constructor(
             }
         }
     }
-
 }
 
 /** Rows a claim writes on its original: Reversos and the Abonos compensating its legacy debits. */
