@@ -1,36 +1,37 @@
-﻿package com.example.optoapp.domain
+package com.example.optoapp.domain
 
+import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.OptoRepository
+import com.example.optoapp.data.Resource
+import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.data.SyncStateTracker
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.data.resumendiario.ResumenDiarioDao
+import io.github.jan.supabase.SupabaseClient
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.coVerifyOrder
+import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
-import org.junit.Ignore
 import org.junit.Test
+import java.time.LocalDate
 
-/**
- * Characterization tests for DownloadSyncCoordinator.
- *
- * Verifies: class structure, entity types handled, method contracts,
- * error handling patterns, deletion skip logic.
- */
 class DownloadSyncCoordinatorTest {
 
     @Test
-    fun class_exists() {
-        val clazz = DownloadSyncCoordinator::class.java
-        assertNotNull(clazz)
-        assertEquals("DownloadSyncCoordinator", clazz.simpleName)
-    }
-
-    @Test
-    fun constructor_takesFiveDependencies() {
+    fun constructor_takesNineDependencies() {
         val constructors = DownloadSyncCoordinator::class.java.declaredConstructors
         assertEquals(1, constructors.size)
-        val params = constructors[0].parameterTypes
-        assertEquals(9, params.size)
+        assertEquals(9, constructors[0].parameterTypes.size)
     }
 
     @Test
     fun injectAnnotation_isPresent() {
-        val ann = DownloadSyncCoordinator::class.java.annotations
-        val classHasInject = ann.any {
+        val classHasInject = DownloadSyncCoordinator::class.java.annotations.any {
             it.annotationClass.qualifiedName?.contains("Inject") == true
         }
         val constructorHasInject = DownloadSyncCoordinator::class.java.declaredConstructors
@@ -40,46 +41,18 @@ class DownloadSyncCoordinatorTest {
     }
 
     @Test
-    fun handlesDispensacionItems() {
-        // downloadDispensacionItems method exists
-        val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
-        assertTrue(
-            "Debe tener método downloadDispensacionItems",
-            "downloadDispensacionItems" in methods,
-        )
-    }
-
-    @Test
-    fun handlesDispensaciones() {
-        val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
-        assertTrue(
-            "Debe tener método downloadDispensaciones",
-            "downloadDispensaciones" in methods,
-        )
-    }
-
-    @Test
-    fun handlesServicios() {
-        val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
-        assertTrue(
-            "Debe tener método downloadServicios",
-            "downloadServicios" in methods,
-        )
-    }
-
-    @Test
-    fun handlesPagos() {
-        val methods = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
-        assertTrue(
-            "Debe tener método downloadPagos",
-            "downloadPagos" in methods,
-        )
+    fun publicMethods_haveCorrectNames() {
+        val methodNames = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
+        assertTrue("Debe tener downloadDispensacionItems", "downloadDispensacionItems" in methodNames)
+        assertTrue("Debe tener downloadDispensaciones", "downloadDispensaciones" in methodNames)
+        assertTrue("Debe tener downloadServicios", "downloadServicios" in methodNames)
+        assertTrue("Debe tener downloadPagos", "downloadPagos" in methodNames)
     }
 
     @Test
     fun downloadMethods_existWithOpticaIdParam() {
-        val methods = DownloadSyncCoordinator::class.java.declaredMethods
-        val downloadMethods = methods.filter { it.name.startsWith("download") }
+        val downloadMethods = DownloadSyncCoordinator::class.java.declaredMethods
+            .filter { it.name.startsWith("download") }
         assertTrue("Debe haber al menos un método download", downloadMethods.isNotEmpty())
         for (m in downloadMethods) {
             assertTrue(
@@ -90,18 +63,7 @@ class DownloadSyncCoordinatorTest {
     }
 
     @Test
-    fun publicMethods_haveCorrectNames() {
-        val methodNames = DownloadSyncCoordinator::class.java.declaredMethods.map { it.name }
-        assertTrue("Debe tener downloadDispensacionItems", "downloadDispensacionItems" in methodNames)
-        assertTrue("Debe tener downloadDispensaciones", "downloadDispensaciones" in methodNames)
-        assertTrue("Debe tener downloadServicios", "downloadServicios" in methodNames)
-        assertTrue("Debe tener downloadPagos", "downloadPagos" in methodNames)
-        // All methods are suspend — compiled to accept a Continuation parameter
-    }
-
-    @Test
     fun companion_hasTableConstants() {
-        // Companion object fields become static final fields on the enclosing class
         val allFields = DownloadSyncCoordinator::class.java.declaredFields.map { it.name }
         val expected = listOf("TABLE_DISPENSACIONES", "TABLE_DISPENSACION_ITEMS", "TABLE_SERVICIOS", "TABLE_PAGOS")
         for (expectedName in expected) {
@@ -112,51 +74,197 @@ class DownloadSyncCoordinatorTest {
         }
     }
 
-    @Test
-    fun tableNames_areCorrect() {
-        // Verify table names match Supabase schema
-        val dispensaciones = "dispensaciones"
-        val dispensacionItems = "dispensacion_items"
-        val servicios = "servicios_extra"
-        val pagos = "pagos"
+    // ── Local terminal estado wins over remote non-terminal ───────────
 
-        assertEquals("dispensaciones", dispensaciones)
-        assertEquals("dispensacion_items", dispensacionItems)
-        assertEquals("servicios_extra", servicios)
-        assertEquals("pagos", pagos)
+    private val opticaId = "o1"
+    private val repository = mockk<OptoRepository>(relaxed = true)
+    private val syncStateTracker = mockk<SyncStateTracker>(relaxed = true)
+    private val deletionSyncHelper = mockk<DeletionSyncHelper>(relaxed = true)
+    private val networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true)
+    private val coordinator = DownloadSyncCoordinator(
+        repository = repository,
+        supabase = mockk<SupabaseClient>(relaxed = true),
+        syncStateTracker = syncStateTracker,
+        deletionSyncHelper = deletionSyncHelper,
+        networkRetryHelper = networkRetryHelper,
+        resumenDiarioDao = mockk<ResumenDiarioDao>(relaxed = true),
+        configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
+        costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
+        costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true),
+    )
+
+    private fun stubSyncInfra() {
+        coEvery { deletionSyncHelper.deletedIds(opticaId) } returns emptySet()
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, any()) } returns emptySet()
+        coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers {
+            firstArg<suspend () -> Any?>().invoke()
+        }
+    }
+
+    private fun localDisp(estado: String, motivo: String? = null, fecha: LocalDate? = null) = DispensacionOptica(
+        id = "d1", ot = "2026-0042", pacienteId = "p1", fecha = LocalDate.of(2026, 9, 1), opticaId = opticaId,
+        estadoEntrega = estado, motivoAnulacion = motivo, fechaAnulacion = fecha,
+    )
+
+    private fun remoteDisp(estado: String?, motivo: String? = null, fecha: String? = null) = DispensacionRemota(
+        id = "d1", ot = "2026-0042", pacienteId = "p1", fecha = "2026-09-01", opticaId = opticaId,
+        estadoEntrega = estado, motivoAnulacion = motivo, fechaAnulacion = fecha,
+    )
+
+    private fun localServicio(estado: String) = ServicioExtra(
+        id = "s1", ot = "S-001", descripcion = "Biselado", montoTotal = 50.0, aCuenta = 0.0, estado = estado,
+        fecha = LocalDate.of(2026, 9, 1), opticaId = opticaId,
+        motivoAnulacion = "Cliente desistió", fechaAnulacion = LocalDate.of(2026, 9, 30),
+    )
+
+    private fun remoteServicio(estado: String) = ServicioRemoto(
+        id = "s1", ot = "S-001", descripcion = "Biselado", montoTotal = 50.0, estado = estado,
+        fecha = "2026-09-01", opticaId = opticaId,
+    )
+
+    @Test
+    fun remotePendiente_doesNotRevertLocalAnuladoDispensacion() = runTest {
+        stubSyncInfra()
+        coEvery { repository.getDispensacionById("d1", opticaId) } returns
+            Resource.Success(localDisp("Anulado", "Cliente desistió", LocalDate.of(2026, 9, 30)))
+
+        val persisted = coordinator.persistDispensaciones(opticaId, listOf(remoteDisp("Pendiente")))
+
+        assertEquals(0, persisted)
+        coVerify(exactly = 0) { repository.upsertDispensacionFromRemote(any()) }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "d1") }
     }
 
     @Test
-    fun deletionSkipLogic_usesDeletedIds() {
-        // Methods that use deletionSyncHelper have skipIds parameter
-        // downloadDispensaciones, downloadServicios, downloadPagos
-        val methods = listOf("downloadDispensaciones", "downloadServicios", "downloadPagos")
-        assertEquals(3, methods.size)
+    fun remoteEntregado_doesNotRevertLocalReclamadaDispensacion() = runTest {
+        stubSyncInfra()
+        coEvery { repository.getDispensacionById("d1", opticaId) } returns
+            Resource.Success(localDisp("Reclamada", "Lente rayado", LocalDate.of(2026, 9, 25)))
+
+        val persisted = coordinator.persistDispensaciones(opticaId, listOf(remoteDisp("Entregado")))
+
+        assertEquals(0, persisted)
+        coVerify(exactly = 0) { repository.upsertDispensacionFromRemote(any()) }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "dispensacion", "d1") }
     }
 
     @Test
-    fun dispensacionItems_hasNoDeletionSkip() {
-        // downloadDispensacionItems does NOT use deletionSyncHelper (no skipIds)
-        val skipMethods = setOf("downloadDispensaciones", "downloadServicios", "downloadPagos")
-        assertFalse("downloadDispensacionItems" in skipMethods)
+    fun remoteAnulado_appliesOverLocalNonTerminalWithItsMetadata() = runTest {
+        stubSyncInfra()
+        coEvery { repository.getDispensacionById("d1", opticaId) } returns Resource.Success(localDisp("Entregado"))
+        val upserted = slot<DispensacionOptica>()
+        coEvery { repository.upsertDispensacionFromRemote(capture(upserted)) } returns Unit
+
+        val persisted = coordinator.persistDispensaciones(
+            opticaId,
+            listOf(remoteDisp("Anulado", "Error de registro", "2026-09-29")),
+        )
+
+        assertEquals(1, persisted)
+        assertEquals("Anulado", upserted.captured.estadoEntrega)
+        assertEquals("Error de registro", upserted.captured.motivoAnulacion)
+        assertEquals(LocalDate.of(2026, 9, 29), upserted.captured.fechaAnulacion)
+        coVerify { syncStateTracker.markSynced(opticaId, "dispensacion", "d1") }
     }
 
     @Test
-    @Ignore("Not yet implemented — requires code review of try-catch patterns")
-    fun errorHandling_usesTryCatchWithLogging() {
-        // All download methods follow pattern: CancellationException rethrow,
-        // IOException log + markError, Exception log + markError
+    fun missingLocalDispensacion_isUpserted() = runTest {
+        stubSyncInfra()
+        coEvery { repository.getDispensacionById("d1", opticaId) } returns Resource.Error("Dispensación no encontrada")
+
+        val persisted = coordinator.persistDispensaciones(opticaId, listOf(remoteDisp("Pendiente")))
+
+        assertEquals(1, persisted)
+        coVerify { repository.upsertDispensacionFromRemote(match { it.id == "d1" && it.estadoEntrega == "Pendiente" }) }
     }
 
     @Test
-    @Ignore("Not yet implemented — requires code review of error patterns")
-    fun errorHandling_cancellationException_isRethrown() {
-        // Pattern: catch (e: CancellationException) { throw e }
+    fun remoteEntregado_doesNotRevertLocalAnuladoServicio() = runTest {
+        stubSyncInfra()
+        coEvery { repository.getServicioById("s1", opticaId) } returns Resource.Success(localServicio("Anulado"))
+
+        val persisted = coordinator.persistServicios(opticaId, listOf(remoteServicio("Entregado")))
+
+        assertEquals(0, persisted)
+        coVerify(exactly = 0) { repository.upsertServicioFromRemote(any()) }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "servicio_extra", "s1") }
     }
 
     @Test
-    @Ignore("Not yet implemented — requires code review of error patterns")
-    fun errorHandling_ioException_isLoggedAndMarked() {
-        // Pattern: catch (e: IOException) { Log.e(TAG, ..., e); markError(...) }
+    fun remoteServicioSameTerminalEstado_isAppliedNormally() = runTest {
+        stubSyncInfra()
+        coEvery { repository.getServicioById("s1", opticaId) } returns Resource.Success(localServicio("Anulado"))
+
+        val persisted = coordinator.persistServicios(opticaId, listOf(remoteServicio("Anulado")))
+
+        assertEquals(1, persisted)
+        coVerify { repository.upsertServicioFromRemote(match { it.id == "s1" && it.estado == "Anulado" }) }
+    }
+
+    @Test
+    fun successfulPagosFetch_marksTheDownloadBatchSynced() = runTest {
+        stubSyncInfra()
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerifyOrder {
+            syncStateTracker.clear(opticaId, "download_pago", "batch")
+            syncStateTracker.markSynced(opticaId, "download_pago", "batch")
+        }
+    }
+
+    private fun remotePago(id: String) = PagoRemoto(id = id, dispensacionId = "d1", fecha = "2026-09-01", tipo = "Reverso", monto = 10.0, opticaId = opticaId)
+
+    @Test
+    fun everyPagoPersisted_marksTheDownloadBatchComplete() = runTest {
+        stubSyncInfra()
+
+        assertEquals(2, coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2"))))
+
+        coVerify { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun pagoPersistFailureAfterASuccessfulFetch_leavesTheBatchIncomplete() = runTest {
+        stubSyncInfra()
+        coEvery { repository.upsertPagoFromRemote(match { it.id == "p2" }) } throws IllegalStateException("constraint")
+
+        assertEquals(1, coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2"))))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun quarantinedOrPendingDeletionPago_leavesTheBatchIncomplete() = runTest {
+        stubSyncInfra()
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns setOf("p1")
+        coordinator.persistPagos(opticaId, listOf(remotePago("p1")))
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns emptySet()
+        coEvery { deletionSyncHelper.deletedIds(opticaId) } returns setOf("p2")
+        coordinator.persistPagos(opticaId, listOf(remotePago("p2")))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun failedPagosFetch_leavesTheDownloadBatchInError() = runTest {
+        stubSyncInfra()
+        coEvery { networkRetryHelper.retryNetwork(any(), any()) } throws java.io.IOException("timeout")
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerify { syncStateTracker.markError(opticaId, "download_pago", "batch", "timeout") }
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago", "batch") }
+    }
+
+    @Test
+    fun pendingLocalDeletion_skipsRemoteDispensacion() = runTest {
+        stubSyncInfra()
+        coEvery { deletionSyncHelper.deletedIds(opticaId) } returns setOf("d1")
+
+        val persisted = coordinator.persistDispensaciones(opticaId, listOf(remoteDisp("Pendiente")))
+
+        assertEquals(0, persisted)
+        coVerify(exactly = 0) { repository.upsertDispensacionFromRemote(any()) }
     }
 }

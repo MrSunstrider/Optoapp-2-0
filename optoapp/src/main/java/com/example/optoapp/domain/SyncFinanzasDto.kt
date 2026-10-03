@@ -5,6 +5,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
+import com.example.optoapp.data.baseOtForReclamo
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
@@ -501,6 +502,7 @@ internal data class ServicioRemotoLookup(
 internal data class DispensacionRemotaLookup(
     val id: String,
     val ot: String? = null,
+    @SerialName("reclamo_origen_id") val reclamoOrigenId: String? = null,
 )
 
 @Serializable
@@ -511,6 +513,8 @@ internal data class PagoRemotoLookup(
     val monto: Double = 0.0,
     @SerialName("metodo_pago") val metodoPago: String = "",
     val fecha: String = "",
+    @SerialName("servicio_extra_id") val servicioExtraId: String? = null,
+    @SerialName("reversa_pago_id") val reversaPagoId: String? = null,
 )
 
 fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRemota = DispensacionRemota(
@@ -593,3 +597,11 @@ internal fun String.remotoServicioExtraMetodoToLocal(): String = if (this == Fin
 internal fun String.remotoOtServicioExtraToLocal(): String = if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
 internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
+
+/** Lowest `<base>-R<n>` whose normalized OT is not taken; null when the OT has no base to number from. */
+internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): String? {
+    val base = baseOtForReclamo(ot).ifBlank { return null }
+    return generateSequence(1) { it + 1 }
+        .map { "$base-R$it" }
+        .first { normalizedOtForUnique(it) !in takenNormalizedOts }
+}

@@ -6,6 +6,12 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.util.AppLogger
 import javax.inject.Inject
 
+/** Terminal estados are irreversible: a stale remote non-terminal row must not revert them. */
+internal fun keepLocalTerminal(localEstado: String?, remoteEstado: String): Boolean =
+    localEstado != null &&
+        OrderStatusPolicy.isTerminal(localEstado) &&
+        !OrderStatusPolicy.isTerminal(remoteEstado)
+
 class DispensacionMergeHandler @Inject constructor(
     private val repository: OptoRepository,
     private val syncStateTracker: SyncStateTracker,
@@ -19,6 +25,11 @@ class DispensacionMergeHandler @Inject constructor(
         canonical: DispensacionOptica,
         duplicate: DispensacionOptica,
     ) {
+        val terminalSide = when {
+            OrderStatusPolicy.isTerminal(canonical.estadoEntrega) -> canonical
+            OrderStatusPolicy.isTerminal(duplicate.estadoEntrega) -> duplicate
+            else -> null
+        }
         val merged = canonical.copy(
             ot = canonical.ot.ifBlank { duplicate.ot },
             monturaId = canonical.monturaId.ifBlank { duplicate.monturaId },
@@ -37,14 +48,14 @@ class DispensacionMergeHandler @Inject constructor(
             montoTotal = maxOf(canonical.montoTotal, duplicate.montoTotal),
             metodoPago = canonical.metodoPago.ifBlank { duplicate.metodoPago },
             montoPagado = maxOf(canonical.montoPagado, duplicate.montoPagado),
-            estadoEntrega = canonical.estadoEntrega.ifBlank { duplicate.estadoEntrega },
+            estadoEntrega = terminalSide?.estadoEntrega ?: canonical.estadoEntrega.ifBlank { duplicate.estadoEntrega },
             fechaVencimientoGarantia = canonical.fechaVencimientoGarantia ?: duplicate.fechaVencimientoGarantia,
             distanciaLente = canonical.distanciaLente.ifBlank { duplicate.distanciaLente },
             altura = canonical.altura.ifBlank { duplicate.altura },
             subTipoBifocal = canonical.subTipoBifocal.ifBlank { duplicate.subTipoBifocal },
             reclamoOrigenId = canonical.reclamoOrigenId ?: duplicate.reclamoOrigenId,
-            motivoAnulacion = canonical.motivoAnulacion ?: duplicate.motivoAnulacion,
-            fechaAnulacion = canonical.fechaAnulacion ?: duplicate.fechaAnulacion,
+            motivoAnulacion = terminalSide?.motivoAnulacion ?: canonical.motivoAnulacion ?: duplicate.motivoAnulacion,
+            fechaAnulacion = terminalSide?.fechaAnulacion ?: canonical.fechaAnulacion ?: duplicate.fechaAnulacion,
         )
         var movedPagos = 0
         var movedItems = 0
