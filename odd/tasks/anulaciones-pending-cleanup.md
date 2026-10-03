@@ -81,6 +81,14 @@ Target: `git diff d1d60f7c 9402d195` (PR #167). Branch `fix/jd-anulaciones-clean
 ### Notes
 
 - F1 limits: while the pagos download is blocked the winner's Reversos may not be local yet, so the residual computation can still count credit the winner already reversed. It is the same view the transfer uses, so the notice is never stricter than the transfer.
-- GGA: all five commits passed with no observations (the F3 commit failed once with an unreadable report and passed on the identical retry; two pre-existing inaccurate comments it mentioned, in `OptoRepository.kt` and the `MonturaMovimientoDaoTest` class KDoc, are outside this round).
-- Out of scope, same pattern not flagged: `DiscardLosingClaimUseCase.discard` still loads every movimiento of the optica before filtering.
+- GGA: all five commits passed with no observations (the F3 commit failed once with an unreadable report and passed on the identical retry).
 - Full suite `./gradlew :optoapp:testDebugUnitTest --rerun` at `a3b95f9e`: BUILD SUCCESSFUL, 2714 tests, 0 failures, 0 errors, 3 skipped.
+
+### Zero-debt follow-ups
+
+- `e72216f8`: `DiscardLosingClaimUseCase.discard` uses `getMovimientosForDispensacion` instead of loading every movimiento of the optica. The dispensacion ref match in `getMovimientosForDispensacion` and `countForDispensacion` changed from `LIKE :id || ':%'` (ASCII case-insensitive, `_`/`%` wildcards) to an exact case-sensitive prefix comparison (`substr(referenciaId, 1, length(:id) + 1) = :id || ':'`), matching the previous Kotlin filter. RED: `dispensacionRefMatching_isCaseSensitiveAndTreatsWildcardCharactersLiterally` (1 failure). GREEN: full suite.
+- `a52a5712`: corrected the stale `withTransaction` comment in `OptoRepository.kt` and the `MonturaMovimientoDaoTest` KDoc; removed a stray blank line GGA noted.
+
+## Judgment Day round 2 (scoped re-judgment)
+
+Frozen ledger F1–F5 plus fix delta `9402d195..a52a5712` (sha256 `113B00A7…1317`). Both blind judges: F1–F5 RESOLVED, no new findings. Verdict: APPROVED. Non-blocking note from both: the prefix predicate cannot use an index, the same cost class as the previous `LIKE`; rows are no longer materialized in memory.
