@@ -16,6 +16,8 @@ import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
 
+internal fun downloadBlockedEntityType(entityType: String) = "download_${entityType}_blocked"
+
 /**
  * Extracted from [SyncFinanzasUseCase] so finanzas sync can download each entity type
  * independently while sharing retry, skip-deletion, and tracking logic.
@@ -73,6 +75,7 @@ class DownloadSyncCoordinator @Inject constructor(
         entityType: String,
     ): List<T>? = try {
         syncStateTracker.clear(opticaId, "download_$entityType", "batch")
+        syncStateTracker.clear(opticaId, downloadBlockedEntityType(entityType), "batch")
         var result: List<T> = emptyList()
         networkRetryHelper.retryNetwork("download:$tableName") {
             result = supabase.postgrest[tableName]
@@ -96,6 +99,8 @@ class DownloadSyncCoordinator @Inject constructor(
      * `download_<entity>`/`batch` is marked synced only when every fetched row is now local: a row
      * that failed, or was skipped for a local quarantine or pending deletion, leaves the table
      * incomplete. Residual claim credit relies on this to see every remote Reverso before paying.
+     * A skip for a local quarantine or pending deletion also marks [downloadBlockedEntityType], so a
+     * wait the user can resolve is told apart from a network or persistence failure.
      */
     private suspend inline fun <T> persistRemoteRows(
         opticaId: String,
@@ -110,11 +115,13 @@ class DownloadSyncCoordinator @Inject constructor(
         val quarantineIds = syncStateTracker.quarantinedEntityIds(opticaId, entityType)
         var persisted = 0
         var complete = true
+        var blockedLocally = false
         remotos.forEach { r ->
             val id = getId(r)
             // Narrow skip: only quarantine: errors — PRD LWW otherwise.
             if ((skipDeletions && id in skipIds) || id in quarantineIds) {
                 complete = false
+                blockedLocally = true
                 return@forEach
             }
             try {
@@ -141,6 +148,7 @@ class DownloadSyncCoordinator @Inject constructor(
             }
         }
         if (complete) syncStateTracker.markSynced(opticaId, "download_$entityType", "batch")
+        if (blockedLocally) syncStateTracker.markSynced(opticaId, downloadBlockedEntityType(entityType), "batch")
         return persisted
     }
 

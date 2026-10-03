@@ -247,6 +247,54 @@ class DownloadSyncCoordinatorTest {
     }
 
     @Test
+    fun pagoSkippedForALocalQuarantine_marksTheBatchBlockedLocally() = runTest {
+        stubSyncInfra()
+        coEvery { syncStateTracker.quarantinedEntityIds(opticaId, "pago") } returns setOf("p1")
+
+        coordinator.persistPagos(opticaId, listOf(remotePago("p1")))
+
+        coVerify { syncStateTracker.markSynced(opticaId, "download_pago_blocked", "batch") }
+    }
+
+    @Test
+    fun pagoSkippedForAPendingLocalDeletion_marksTheBatchBlockedLocally() = runTest {
+        stubSyncInfra()
+        coEvery { deletionSyncHelper.deletedIds(opticaId) } returns setOf("p2")
+
+        coordinator.persistPagos(opticaId, listOf(remotePago("p2")))
+
+        coVerify { syncStateTracker.markSynced(opticaId, "download_pago_blocked", "batch") }
+    }
+
+    @Test
+    fun pagoPersistFailure_doesNotMarkTheBatchBlockedLocally() = runTest {
+        stubSyncInfra()
+        coEvery { repository.upsertPagoFromRemote(match { it.id == "p2" }) } throws IllegalStateException("constraint")
+
+        coordinator.persistPagos(opticaId, listOf(remotePago("p1"), remotePago("p2")))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago_blocked", "batch") }
+    }
+
+    @Test
+    fun everyPagoPersisted_doesNotMarkTheBatchBlockedLocally() = runTest {
+        stubSyncInfra()
+
+        coordinator.persistPagos(opticaId, listOf(remotePago("p1")))
+
+        coVerify(exactly = 0) { syncStateTracker.markSynced(opticaId, "download_pago_blocked", "batch") }
+    }
+
+    @Test
+    fun pagosFetch_clearsAStaleLocalBlockBeforeDownloading() = runTest {
+        stubSyncInfra()
+
+        coordinator.downloadPagos(opticaId)
+
+        coVerify { syncStateTracker.clear(opticaId, "download_pago_blocked", "batch") }
+    }
+
+    @Test
     fun failedPagosFetch_leavesTheDownloadBatchInError() = runTest {
         stubSyncInfra()
         coEvery { networkRetryHelper.retryNetwork(any(), any()) } throws java.io.IOException("timeout")
