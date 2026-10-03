@@ -21,7 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -66,7 +66,7 @@ class DispensacionViewModelCreateSaveTest {
 
     @After
     fun tearDown() {
-        runBlocking { delay(200) }
+        Thread.sleep(200)
         Dispatchers.resetMain()
     }
 
@@ -110,7 +110,7 @@ class DispensacionViewModelCreateSaveTest {
                 },
             )
         }
-        runBlocking {
+        withContext(Dispatchers.Default) {
             withTimeout(5_000) {
                 while (viewModel.uiState.value.isLoading) {
                     delay(10)
@@ -169,7 +169,7 @@ class DispensacionViewModelCreateSaveTest {
                 },
             )
         }
-        runBlocking { withTimeout(5_000) { while (viewModel.uiState.value.isLoading) delay(10) } }
+        withContext(Dispatchers.Default) { withTimeout(5_000) { while (viewModel.uiState.value.isLoading) delay(10) } }
         assertNull(viewModel.uiState.value.error)
     }
 

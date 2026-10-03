@@ -5,7 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.pago.PagoDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -51,7 +51,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun insertPago_and_getById_returnsCorrectPago() = runBlocking {
+    fun insertPago_and_getById_returnsCorrectPago() = runTest {
         pacienteDao.insertPaciente(
             Paciente(
                 id = "p_dummy",
@@ -90,13 +90,13 @@ class PagoDaoTest {
     }
 
     @Test
-    fun getPagoById_withUnknownId_returnsNull() = runBlocking {
+    fun getPagoById_withUnknownId_returnsNull() = runTest {
         val retrieved = dao.getPagoByIdForOptica("nonexistent", "optica1")
         assertNull(retrieved)
     }
 
     @Test
-    fun getPagosByDispensacion_returnsPaymentsForDispensacion() = runBlocking {
+    fun getPagosByDispensacion_returnsPaymentsForDispensacion() = runTest {
         pacienteDao.insertPaciente(
             Paciente(
                 id = "p_dummy",
@@ -162,7 +162,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun getPagosByServicioExtra_returnsPaymentsForServicio() = runBlocking {
+    fun getPagosByServicioExtra_returnsPaymentsForServicio() = runTest {
         servicioExtraDao.insertServicio(
             ServicioExtra(
                 id = "se1",
@@ -203,7 +203,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun getPagosByDateRange_returnsPaymentsInRange() = runBlocking {
+    fun getPagosByDateRange_returnsPaymentsInRange() = runTest {
         val pago1 = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-03-01"),
@@ -242,7 +242,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun getPagosByDateRange_outsideRange_returnsEmpty() = runBlocking {
+    fun getPagosByDateRange_outsideRange_returnsEmpty() = runTest {
         val pago = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-01-01"),
@@ -263,7 +263,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun updatePago_modifiesExistingRecord() = runBlocking {
+    fun updatePago_modifiesExistingRecord() = runTest {
         pacienteDao.insertPaciente(
             Paciente(
                 id = "p_dummy",
@@ -312,7 +312,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun deletePago_removesRecord() = runBlocking {
+    fun deletePago_removesRecord() = runTest {
         val pago = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-01-15"),
@@ -329,7 +329,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun deleteAll_removesAllRecords() = runBlocking {
+    fun deleteAll_removesAllRecords() = runTest {
         val p1 = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-01-15"),
@@ -355,7 +355,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun `getPagoByIdForOptica respects opticaId filter`() = runBlocking {
+    fun `getPagoByIdForOptica respects opticaId filter`() = runTest {
         val pago = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-07-05"),
@@ -366,14 +366,12 @@ class PagoDaoTest {
         )
         dao.insertPago(pago)
 
-        // Same ID with correct opticaId → found
         assertNotNull(dao.getPagoByIdForOptica("p1", "opticaX"))
-        // Same ID with wrong opticaId → NOT found (cross-tenant isolation)
         assertNull(dao.getPagoByIdForOptica("p1", "opticaY"))
     }
 
     @Test
-    fun getPagosListByOptica_filtersByOptica() = runBlocking {
+    fun getPagosListByOptica_filtersByOptica() = runTest {
         val pago1 = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-01-15"),
@@ -400,7 +398,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun reassignFromLegacyMiOpticaBase_updatesOpticaId() = runBlocking {
+    fun reassignFromLegacyMiOpticaBase_updatesOpticaId() = runTest {
         val pago = Pago(
             id = "p1",
             fecha = LocalDate.parse("2026-01-15"),
@@ -419,7 +417,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun reassignDispensacionId_updatesDispensacionReference() = runBlocking {
+    fun reassignDispensacionId_updatesDispensacionReference() = runTest {
         pacienteDao.insertPaciente(
             Paciente(
                 id = "p_dummy",
@@ -465,7 +463,7 @@ class PagoDaoTest {
     }
 
     @Test
-    fun countByDispensacion_countsEveryTipoOfThatOrderInThatOptica() = runBlocking {
+    fun countByDispensacion_countsEveryTipoOfThatOrderInThatOptica() = runTest {
         pacienteDao.insertPaciente(
             Paciente(id = "pac", nombreCompleto = "P", edad = 0, telefono = "0", fechaCreacion = LocalDate.parse("2026-01-15"), opticaId = "o1"),
         )

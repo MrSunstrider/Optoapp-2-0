@@ -16,6 +16,7 @@ import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
+import com.example.optoapp.domain.OrigenMontura
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
@@ -71,6 +72,7 @@ data class DispensacionUiState(
 
     val isLoading: Boolean = false,
     val error: String? = null,
+    val infoMessage: String? = null,
 
     val pagos: List<Pago> = emptyList(),
     val pagosToDelete: List<Pago> = emptyList(),
@@ -634,7 +636,7 @@ class DispensacionViewModel @Inject constructor(
     /** Claims the loading flag before launching so a second tap queued behind the first is ignored. */
     private fun tryStartAction(): Boolean {
         if (_uiState.value.isLoading) return false
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(isLoading = true, error = null, infoMessage = null) }
         return true
     }
 
@@ -676,7 +678,7 @@ class DispensacionViewModel @Inject constructor(
                         onCreated(outcome.replacementId)
                     }
                     is ReclamoOutcome.AlreadyTerminal ->
-                        _uiState.update { it.copy(isLoading = false, error = "Esta orden ya fue reclamada") }
+                        _uiState.update { it.copy(isLoading = false, infoMessage = "Esta orden ya fue reclamada") }
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 _uiState.update { it.copy(isLoading = false) }
@@ -688,11 +690,13 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
-    suspend fun metodoReembolsoSugerido(originalDispensacionId: String): String {
+    suspend fun metodoReembolsoSugerido(originalDispensacionId: String): String = runCatching {
         val opticaId = sessionManager.opticaId.first()
-        val pagos = repository.getPagosByDispensacion(originalDispensacionId, opticaId).first()
-        return lastCreditMetodo(pagos) ?: METODO_REEMBOLSO_POR_DEFECTO
-    }
+        lastCreditMetodo(repository.getPagosByDispensacion(originalDispensacionId, opticaId).first())
+    }.onFailure { e ->
+        if (e is kotlinx.coroutines.CancellationException) throw e
+        Log.e(TAG, "suggested refund method lookup failed", e)
+    }.getOrNull() ?: METODO_REEMBOLSO_POR_DEFECTO
 
     fun anularDispensacion(dispensacionId: String, motivo: String, onComplete: () -> Unit) {
         if (!tryStartAction()) return
@@ -701,14 +705,16 @@ class DispensacionViewModel @Inject constructor(
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "anular dispensación")
                 val opticaId = sessionManager.opticaId.first()
-                val outcome = anularDispensacionUseCase(dispensacionId, opticaId, motivo)
-                val rejectedReclamada = outcome is LifecycleOutcome.AlreadyTerminal &&
-                    outcome.estado == OrderStatusPolicy.RECLAMADA
-                if (rejectedReclamada) {
-                    _uiState.update { it.copy(isLoading = false, error = "No se puede anular una orden reclamada") }
-                    return@launch
+                when (val outcome = anularDispensacionUseCase(dispensacionId, opticaId, motivo)) {
+                    LifecycleOutcome.Applied -> _uiState.update { it.copy(isLoading = false) }
+                    is LifecycleOutcome.AlreadyTerminal -> {
+                        if (outcome.estado == OrderStatusPolicy.RECLAMADA) {
+                            _uiState.update { it.copy(isLoading = false, error = "No se puede anular una orden reclamada") }
+                            return@launch
+                        }
+                        _uiState.update { it.copy(isLoading = false, infoMessage = "Esta orden ya fue anulada") }
+                    }
                 }
-                _uiState.update { it.copy(isLoading = false) }
                 onComplete()
             } catch (e: kotlinx.coroutines.CancellationException) {
                 _uiState.update { it.copy(isLoading = false) }
@@ -721,12 +727,10 @@ class DispensacionViewModel @Inject constructor(
     }
 
     private fun normalizeOrigenMontura(value: String): String = when (value.trim()) {
-        ORIGEN_TIENDA_LEGACY -> ORIGEN_TIENDA
+        OrigenMontura.TIENDA_LEGACY -> OrigenMontura.TIENDA
         ORIGEN_PACIENTE_LEGACY -> ORIGEN_PACIENTE
         else -> value.trim()
     }
-
-    private fun isOrigenTienda(value: String): Boolean = value == ORIGEN_TIENDA || value == ORIGEN_TIENDA_LEGACY
 
     fun loadEvaluacionesDisponibles(pacienteId: String) {
         viewModelScope.launch {
@@ -882,9 +886,7 @@ class DispensacionViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "DispensacionVM"
-        private const val ORIGEN_TIENDA = "Tienda"
         private const val ORIGEN_PACIENTE = "Paciente"
-        private const val ORIGEN_TIENDA_LEGACY = "Nueva de Tienda"
         private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
         private const val METODO_REEMBOLSO_POR_DEFECTO = "Efectivo"
 

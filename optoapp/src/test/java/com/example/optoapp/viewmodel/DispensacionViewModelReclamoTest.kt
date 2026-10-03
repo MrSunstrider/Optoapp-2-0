@@ -14,10 +14,12 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -112,8 +114,24 @@ class DispensacionViewModelReclamoTest {
         val navigatedTo = reclamarAndAwait()
 
         assertNull(navigatedTo)
-        assertEquals("Esta orden ya fue reclamada", viewModel.uiState.value.error)
+        assertEquals("Esta orden ya fue reclamada", viewModel.uiState.value.infoMessage)
+        assertNull(viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `a new claim attempt clears the previous info message`() = runTest {
+        coEvery { reclamar(originalId, opticaId, any(), any(), any()) } returns ReclamoOutcome.AlreadyTerminal("Reclamada")
+        reclamarAndAwait()
+        val gate = CompletableDeferred<ReclamoOutcome>()
+        coEvery { reclamar(originalId, opticaId, any(), any(), any()) } coAnswers { gate.await() }
+
+        viewModel.crearReclamo(originalId, "Lente rayado", 250.0, "Tarjeta") {}
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.infoMessage)
+        gate.complete(ReclamoOutcome.Created("repl-1", "OT-1-R1"))
+        testDispatcher.scheduler.advanceUntilIdle()
     }
 
     @Test
@@ -219,6 +237,20 @@ class DispensacionViewModelReclamoTest {
         every { repository.getPagosByDispensacion(originalId, opticaId) } returns flowOf(emptyList())
 
         assertEquals("Efectivo", viewModel.metodoReembolsoSugerido(originalId))
+    }
+
+    @Test
+    fun `suggested refund method falls back to Efectivo when reading the payments fails`() = runTest {
+        every { repository.getPagosByDispensacion(originalId, opticaId) } returns flow { throw IllegalStateException("db closed") }
+
+        assertEquals("Efectivo", viewModel.metodoReembolsoSugerido(originalId))
+    }
+
+    @Test(expected = CancellationException::class)
+    fun `suggested refund method propagates cancellation`() = runTest {
+        every { repository.getPagosByDispensacion(originalId, opticaId) } returns flow { throw CancellationException("cancelled") }
+
+        viewModel.metodoReembolsoSugerido(originalId)
     }
 
     private fun givenOrder(order: DispensacionOptica, id: String = originalId) {

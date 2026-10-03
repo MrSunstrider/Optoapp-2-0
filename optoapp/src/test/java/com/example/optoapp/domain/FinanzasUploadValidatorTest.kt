@@ -104,4 +104,26 @@ class FinanzasUploadValidatorTest {
         assertEquals("quarantine:negative_monto", poison)
         assertEquals(79, valid.count { it.second == null })
     }
+
+    @Test
+    fun `only claim and reverso unique violations are isolatable among 23505`() {
+        val claim = "duplicate key value violates unique constraint \"dispensaciones_reclamo_origen_uidx\" Code: 23505"
+        val reverso = "duplicate key value violates unique constraint \"pagos_reversa_pago_id_uidx\" Code: 23505"
+        val other = "duplicate key value violates unique constraint \"dispensaciones_ot_key\" Code: 23505"
+
+        assertTrue(FinanzasUploadValidator.isIsolatableUploadFailure(claim))
+        assertTrue(FinanzasUploadValidator.isIsolatableUploadFailure(reverso))
+        assertFalse(FinanzasUploadValidator.isIsolatableUploadFailure(other))
+        assertEquals(FinanzasUploadValidator.CLAIM_UNIQUE_VIOLATION, FinanzasUploadValidator.poisonReason(claim))
+        assertEquals(FinanzasUploadValidator.REVERSO_UNIQUE_VIOLATION, FinanzasUploadValidator.poisonReason(reverso))
+    }
+
+    @Test
+    fun `reclamo duplicate reason round trips the original id`() {
+        val reason = FinanzasUploadValidator.reclamoDuplicateReason("orig-1")
+
+        assertEquals("quarantine:reclamo_duplicate:orig-1", reason)
+        assertEquals("orig-1", FinanzasUploadValidator.reclamoOrigenIdOf(reason))
+        assertNull(FinanzasUploadValidator.reclamoOrigenIdOf("quarantine:parent_missing:dispensacion:orig-1"))
+    }
 }
