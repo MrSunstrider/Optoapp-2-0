@@ -312,8 +312,8 @@ INSERT INTO public.pacientes (id, nombre_completo, fecha_creacion, optica_id) VA
 INSERT INTO public.dispensaciones (id, paciente_id, fecha, optica_id, monto_total) VALUES
     ('zzt_cms_disp', 'zzt_cms_pac', DATE '2026-01-10', 'zzt_cms_o1', 500);
 
-INSERT INTO public.servicios_extra (id, optica_id, descripcion) VALUES
-    ('zzt_cms_se_legacy', 'zzt_cms_o1', 'ZZT servicio legacy');
+INSERT INTO public.servicios_extra (id, optica_id, descripcion, fecha, metodo_pago) VALUES
+    ('zzt_cms_se_legacy', 'zzt_cms_o1', 'ZZT servicio legacy', DATE '2026-01-10', 'Efectivo');
 
 INSERT INTO public.servicio_extra_items (id, servicio_extra_id, optica_id) VALUES
     ('zzt_cms_sei_legacy', 'zzt_cms_se_legacy', 'zzt_cms_o1');
