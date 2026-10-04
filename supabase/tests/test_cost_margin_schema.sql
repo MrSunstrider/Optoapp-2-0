@@ -302,4 +302,215 @@ BEGIN
 END;
 $$;
 
+-- ----------------------------------------------------------------------------
+-- Fixtures for the column additions. Rows are inserted with the OLD column
+-- shape (no new columns) so every insert doubles as an old-client probe.
+-- ----------------------------------------------------------------------------
+INSERT INTO public.pacientes (id, nombre_completo, fecha_creacion, optica_id) VALUES
+    ('zzt_cms_pac', 'ZZT Paciente', DATE '2026-01-01', 'zzt_cms_o1');
+
+INSERT INTO public.dispensaciones (id, paciente_id, fecha, optica_id, monto_total) VALUES
+    ('zzt_cms_disp', 'zzt_cms_pac', DATE '2026-01-10', 'zzt_cms_o1', 500);
+
+INSERT INTO public.servicios_extra (id, optica_id, descripcion) VALUES
+    ('zzt_cms_se_legacy', 'zzt_cms_o1', 'ZZT servicio legacy');
+
+INSERT INTO public.servicio_extra_items (id, servicio_extra_id, optica_id) VALUES
+    ('zzt_cms_sei_legacy', 'zzt_cms_se_legacy', 'zzt_cms_o1');
+
+INSERT INTO public.dispensacion_items (id, dispensacion_id, optica_id) VALUES
+    ('zzt_cms_di_legacy', 'zzt_cms_disp', 'zzt_cms_o1');
+
+INSERT INTO public.gastos_operativos (id, optica_id, categoria, monto) VALUES
+    ('a1000000-0000-4000-8000-0000000000a1', 'zzt_cms_o1', 'alquiler', 100);
+
+INSERT INTO public.costos_lc (optica_id, tipo_lc, material_lc, modalidad, costo_unitario)
+VALUES ('zzt_cms_o1', 'cosmetico', 'zzt_material', 'diario', 2);
+
+INSERT INTO public.costos_productos (optica_id, material, tipo_lente, stock_o_fabricacion, costo_unitario)
+VALUES ('zzt_cms_o1', 'zzt_resina', 'zzt_monofocal', 'stock', 10);
+
+INSERT INTO public.costos_biselado (optica_id, material, tipo_aro, stock_o_fabricacion, costo_por_par)
+VALUES ('zzt_cms_o1', 'zzt_resina', 'aro_completo', 'stock', 4);
+
+-- ----------------------------------------------------------------------------
+-- SV1: servicios_extra executor and cost columns. Legacy rows keep their
+--      description and get NULL type/executor and cost 0.
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE v RECORD; v_bad TEXT;
+BEGIN
+    SELECT string_agg(e.col, ', ') INTO v_bad
+    FROM (VALUES
+        ('servicio_tipo_id', 'text', 'YES'),
+        ('realizado_por', 'text', 'YES'),
+        ('realizado_por_nombre', 'text', 'YES'),
+        ('costo_real', 'numeric', 'NO')
+    ) AS e(col, typ, nullable)
+    LEFT JOIN information_schema.columns c
+        ON c.table_schema = 'public' AND c.table_name = 'servicios_extra' AND c.column_name = e.col
+    WHERE c.column_name IS NULL OR c.data_type <> e.typ OR c.is_nullable <> e.nullable;
+    ASSERT v_bad IS NULL, 'SV1a FAIL: unexpected servicios_extra column shape for: ' || COALESCE(v_bad, 'none');
+
+    SELECT * INTO v FROM public.servicios_extra WHERE id = 'zzt_cms_se_legacy';
+    ASSERT v.servicio_tipo_id IS NULL AND v.realizado_por IS NULL AND v.realizado_por_nombre IS NULL,
+        'SV1b FAIL: legacy servicio must have NULL type and executor';
+    ASSERT v.costo_real = 0, 'SV1c FAIL: legacy servicio costo_real must be 0';
+    ASSERT v.descripcion = 'ZZT servicio legacy', 'SV1d FAIL: descripcion must stay untouched';
+    RAISE NOTICE 'SV1 PASS: servicios_extra columns and legacy defaults';
+END;
+$$;
+
+DO $$
+BEGIN
+    UPDATE public.servicios_extra
+    SET servicio_tipo_id = 'zzt_cms_st_o1_biselado', realizado_por = 'tercero',
+        realizado_por_nombre = 'Taller externo', costo_real = 12
+    WHERE id = 'zzt_cms_se_legacy';
+    ASSERT (SELECT realizado_por FROM public.servicios_extra WHERE id = 'zzt_cms_se_legacy') = 'tercero',
+        'SV2a FAIL: realizado_por tercero must be accepted';
+
+    BEGIN
+        UPDATE public.servicios_extra SET realizado_por = 'otro' WHERE id = 'zzt_cms_se_legacy';
+        RAISE EXCEPTION 'SV2b FAIL: realizado_por = otro accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
+    BEGIN
+        UPDATE public.servicios_extra SET costo_real = -1 WHERE id = 'zzt_cms_se_legacy';
+        RAISE EXCEPTION 'SV2c FAIL: negative servicio costo_real accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
+
+    DELETE FROM public.servicio_tipos WHERE id = 'zzt_cms_st_o1_biselado';
+    ASSERT EXISTS (SELECT 1 FROM public.servicios_extra WHERE id = 'zzt_cms_se_legacy'),
+        'SV2d FAIL: deleting a type must not delete the servicio';
+    ASSERT (SELECT servicio_tipo_id FROM public.servicios_extra WHERE id = 'zzt_cms_se_legacy') IS NULL,
+        'SV2e FAIL: deleting a type must null the servicio reference (ON DELETE SET NULL)';
+    ASSERT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE schemaname = 'public' AND tablename = 'servicios_extra' AND indexname = 'idx_servicios_extra_servicio_tipo'
+    ), 'SV2f FAIL: servicio_tipo_id index missing';
+    RAISE NOTICE 'SV2 PASS: executor CHECKs, cost CHECK, FK set null, index';
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- SI1: servicio_extra_items.costo_real — frame cost snapshot, NOT NULL, >= 0.
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+    ASSERT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'servicio_extra_items' AND column_name = 'costo_real'
+          AND data_type = 'numeric' AND is_nullable = 'NO'
+    ), 'SI1a FAIL: servicio_extra_items.costo_real must be numeric NOT NULL';
+    ASSERT (SELECT costo_real FROM public.servicio_extra_items WHERE id = 'zzt_cms_sei_legacy') = 0,
+        'SI1b FAIL: an insert omitting costo_real must get 0';
+    BEGIN
+        INSERT INTO public.servicio_extra_items (id, servicio_extra_id, optica_id, costo_real)
+        VALUES ('zzt_cms_sei_neg', 'zzt_cms_se_legacy', 'zzt_cms_o1', -1);
+        RAISE EXCEPTION 'SI1c FAIL: negative item costo_real accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
+    RAISE NOTICE 'SI1 PASS: servicio_extra_items.costo_real';
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- DI1: dispensacion_items.costo_origen — nullable, four allowed values.
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE v_origen TEXT;
+BEGIN
+    ASSERT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'dispensacion_items' AND column_name = 'costo_origen'
+          AND data_type = 'text' AND is_nullable = 'YES' AND column_default IS NULL
+    ), 'DI1a FAIL: costo_origen must be nullable text without default';
+    ASSERT (SELECT costo_origen FROM public.dispensacion_items WHERE id = 'zzt_cms_di_legacy') IS NULL,
+        'DI1b FAIL: legacy items must keep costo_origen NULL';
+
+    FOREACH v_origen IN ARRAY ARRAY['matriz', 'manual', 'mixto', 'faltante'] LOOP
+        UPDATE public.dispensacion_items SET costo_origen = v_origen WHERE id = 'zzt_cms_di_legacy';
+        ASSERT (SELECT costo_origen FROM public.dispensacion_items WHERE id = 'zzt_cms_di_legacy') = v_origen,
+            'DI1c FAIL: costo_origen ' || v_origen || ' must be accepted';
+    END LOOP;
+
+    BEGIN
+        UPDATE public.dispensacion_items SET costo_origen = 'otro' WHERE id = 'zzt_cms_di_legacy';
+        RAISE EXCEPTION 'DI1d FAIL: costo_origen = otro accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
+    RAISE NOTICE 'DI1 PASS: costo_origen domain';
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- GA1: gastos_operativos.tipo_gasto — nullable, no default, no backfill.
+-- ----------------------------------------------------------------------------
+DO $$
+BEGIN
+    ASSERT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'gastos_operativos' AND column_name = 'tipo_gasto'
+          AND data_type = 'text' AND is_nullable = 'YES' AND column_default IS NULL
+    ), 'GA1a FAIL: tipo_gasto must be nullable text without default';
+    ASSERT (SELECT tipo_gasto FROM public.gastos_operativos
+            WHERE id = 'a1000000-0000-4000-8000-0000000000a1') IS NULL,
+        'GA1b FAIL: a gasto written without tipo_gasto must stay NULL';
+
+    UPDATE public.gastos_operativos SET tipo_gasto = 'fijo' WHERE id = 'a1000000-0000-4000-8000-0000000000a1';
+    UPDATE public.gastos_operativos SET tipo_gasto = 'variable' WHERE id = 'a1000000-0000-4000-8000-0000000000a1';
+    UPDATE public.gastos_operativos SET tipo_gasto = NULL WHERE id = 'a1000000-0000-4000-8000-0000000000a1';
+    BEGIN
+        UPDATE public.gastos_operativos SET tipo_gasto = 'otro' WHERE id = 'a1000000-0000-4000-8000-0000000000a1';
+        RAISE EXCEPTION 'GA1c FAIL: tipo_gasto = otro accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
+    RAISE NOTICE 'GA1 PASS: tipo_gasto domain';
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- MA1: matrix audit columns on the three cost matrices (last-write-wins sync).
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE v_tbl TEXT; v_id UUID; v_at TIMESTAMPTZ;
+BEGIN
+    FOREACH v_tbl IN ARRAY ARRAY['costos_lc', 'costos_productos', 'costos_biselado'] LOOP
+        ASSERT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = v_tbl AND column_name = 'updated_at'
+              AND data_type = 'timestamp with time zone' AND is_nullable = 'NO' AND column_default LIKE 'now()%'
+        ), 'MA1a FAIL: ' || v_tbl || '.updated_at must be timestamptz NOT NULL DEFAULT now()';
+        ASSERT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = v_tbl AND column_name = 'updated_by'
+              AND data_type = 'text' AND is_nullable = 'YES'
+        ), 'MA1b FAIL: ' || v_tbl || '.updated_by must be nullable text';
+        ASSERT EXISTS (
+            SELECT 1 FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid
+            WHERE t.tgrelid = ('public.' || v_tbl)::regclass AND NOT t.tgisinternal
+              AND t.tgname = 'trg_' || v_tbl || '_set_updated_audit'
+              AND p.proname = 'set_updated_audit_fields'
+        ), 'MA1c FAIL: ' || v_tbl || ' audit trigger missing';
+
+        EXECUTE format('SELECT id FROM public.%I WHERE optica_id = %L', v_tbl, 'zzt_cms_o1') INTO v_id;
+        EXECUTE format('SELECT updated_at FROM public.%I WHERE id = %L', v_tbl, v_id) INTO v_at;
+        ASSERT v_at IS NOT NULL, 'MA1d FAIL: ' || v_tbl || ' old-shape insert must get updated_at';
+
+        EXECUTE format('UPDATE public.%I SET updated_at = %L WHERE id = %L',
+                       v_tbl, TIMESTAMPTZ '2026-02-01 00:00:00+00', v_id);
+        EXECUTE format('SELECT updated_at FROM public.%I WHERE id = %L', v_tbl, v_id) INTO v_at;
+        ASSERT v_at = TIMESTAMPTZ '2026-02-01 00:00:00+00',
+            'MA1e FAIL: ' || v_tbl || ' must preserve a client-supplied updated_at';
+
+        EXECUTE format('UPDATE public.%I SET updated_at = NULL WHERE id = %L', v_tbl, v_id);
+        EXECUTE format('SELECT updated_at FROM public.%I WHERE id = %L', v_tbl, v_id) INTO v_at;
+        ASSERT v_at IS NOT NULL, 'MA1f FAIL: ' || v_tbl || ' trigger must fill a NULL updated_at';
+    END LOOP;
+    RAISE NOTICE 'MA1 PASS: matrix audit columns and triggers';
+END;
+$$;
+
 ROLLBACK;
