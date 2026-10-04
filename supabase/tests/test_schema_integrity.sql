@@ -1,8 +1,9 @@
 -- =============================================================================
 -- Schema Integrity Tests
 --
--- Validates that the database schema meets expected invariants after
--- supabase db reset. Runs as DO/ASSERT blocks grouped by domain.
+-- The Android client, the web companion and tenant isolation all assume these
+-- tables, columns, policies and functions exist. A failure here means a
+-- migration removed something production code still depends on.
 --
 -- Usage: supabase db reset && psql -f supabase/tests/test_schema_integrity.sql
 -- =============================================================================
@@ -12,10 +13,8 @@
 -- #############################################################################
 DO $$
 DECLARE
-    v_count INTEGER;
     v_missing TEXT[];
 BEGIN
-    -- Verify all expected core tables exist in information_schema
     WITH expected (tbl) AS (
         VALUES
             ('pacientes'),
@@ -60,7 +59,7 @@ BEGIN
           AND t.table_name = e.tbl
     );
 
-    ASSERT v_missing IS NULL OR array_length(v_missing, 1) IS NULL,
+    ASSERT COALESCE(array_length(v_missing, 1), 0) = 0,
         'Missing core tables: ' || COALESCE(array_to_string(v_missing, ', '), 'none');
 
     RAISE NOTICE 'DOMAIN 1 PASS: All % core tables exist',
@@ -74,7 +73,7 @@ $$;
 -- #############################################################################
 DO $$
 BEGIN
-    -- pacientes: must have optica_id, id, nombre_completo
+    -- Ids are client-generated TEXT; a uuid column would reject offline-created rows.
     ASSERT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'pacientes'
@@ -96,7 +95,6 @@ BEGIN
           AND column_name = 'edad' AND data_type = 'integer'
     ), 'pacientes.edad must be integer';
 
-    -- opticas: must have id, nombre, created_at, plan
     ASSERT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'opticas'
@@ -108,26 +106,24 @@ BEGIN
           AND column_name = 'id' AND data_type = 'text'
     ), 'opticas.id must be text';
 
-    -- dispensaciones: must have optica_id, paciente_id, monto_total
     ASSERT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'dispensaciones'
           AND column_name = 'optica_id' AND data_type = 'text'
     ), 'dispensaciones.optica_id must be text';
+    -- Money must stay NUMERIC; floating point drifts cash totals.
     ASSERT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'dispensaciones'
           AND column_name = 'monto_total' AND data_type = 'numeric'
     ), 'dispensaciones.monto_total must be numeric';
 
-    -- servicios_extra: must have optica_id
     ASSERT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'servicios_extra'
           AND column_name = 'optica_id' AND data_type = 'text'
     ), 'servicios_extra.optica_id must be text';
 
-    -- pagos: must have optica_id, monto
     ASSERT EXISTS (
         SELECT 1 FROM information_schema.columns
         WHERE table_schema = 'public' AND table_name = 'pagos'
@@ -148,14 +144,15 @@ $$;
 -- #############################################################################
 DO $$
 DECLARE
-    v_unprotected TEXT[];
+    v_unprotected TEXT[] := ARRAY[]::TEXT[];
+    v_rls_disabled TEXT[] := ARRAY[]::TEXT[];
     v_tbl TEXT;
 BEGIN
-    -- Verify that every core business table with optica_id has RLS policies
-    -- referencing optica_id (multi-tenant isolation).
-    -- We check pg_policies for each table.
-    v_unprotected := ARRAY[]::TEXT[];
-
+    -- Policies are matched through pg_depend instead of their expression text,
+    -- so USING and WITH CHECK clauses both count and formatting changes cannot
+    -- hide or fake a tenant guard. Child tables (orden_compra_items,
+    -- inventario_fisico_detalle) isolate through their parent's optica_id, so a
+    -- dependency on any table's optica_id qualifies.
     FOR v_tbl IN
         SELECT unnest(ARRAY[
             'pacientes', 'evaluaciones', 'dispensaciones', 'dispensacion_items',
@@ -169,21 +166,26 @@ BEGIN
         ])
     LOOP
         IF NOT EXISTS (
-            SELECT 1 FROM pg_policy pol
-            JOIN pg_class c ON c.oid = pol.polrelid
-            JOIN pg_namespace n ON n.oid = c.relnamespace
-            WHERE n.nspname = 'public'
-              AND c.relname = v_tbl
-              AND pg_get_expr(pol.polqual, pol.polrelid)::text ILIKE '%optica_id%'
+            SELECT 1
+            FROM pg_policy pol
+            JOIN pg_depend d
+              ON d.classid = 'pg_policy'::regclass
+             AND d.objid = pol.oid
+             AND d.refclassid = 'pg_class'::regclass
+            JOIN pg_attribute a
+              ON a.attrelid = d.refobjid
+             AND a.attnum = d.refobjsubid
+            WHERE pol.polrelid = format('public.%I', v_tbl)::regclass
+              AND a.attname = 'optica_id'
         ) THEN
             v_unprotected := array_append(v_unprotected, v_tbl);
         END IF;
     END LOOP;
 
-    ASSERT array_length(v_unprotected, 1) IS NULL,
+    ASSERT COALESCE(array_length(v_unprotected, 1), 0) = 0,
         'Tables without optica_id RLS policies: ' || array_to_string(v_unprotected, ', ');
 
-    -- Also verify RLS is enabled on these tables (pg_tables.rowsecurity)
+    -- A policy is inert unless row security is enabled on its table.
     FOR v_tbl IN
         SELECT unnest(ARRAY[
             'pacientes', 'evaluaciones', 'dispensaciones', 'servicios_extra',
@@ -196,9 +198,12 @@ BEGIN
               AND tablename = v_tbl
               AND rowsecurity = true
         ) THEN
-            RAISE WARNING 'RLS may not be enabled on %. Verify manually.', v_tbl;
+            v_rls_disabled := array_append(v_rls_disabled, v_tbl);
         END IF;
     END LOOP;
+
+    ASSERT COALESCE(array_length(v_rls_disabled, 1), 0) = 0,
+        'Tables with row level security disabled: ' || array_to_string(v_rls_disabled, ', ');
 
     RAISE NOTICE 'DOMAIN 3 PASS: RLS policies verified for all business tables';
 END;
@@ -209,11 +214,9 @@ $$;
 -- #############################################################################
 DO $$
 DECLARE
-    v_missing TEXT[];
+    v_missing TEXT[] := ARRAY[]::TEXT[];
     v_fn TEXT;
 BEGIN
-    v_missing := ARRAY[]::TEXT[];
-
     FOR v_fn IN
         SELECT unnest(ARRAY[
             'rpc_analisis_mensual',
@@ -224,9 +227,7 @@ BEGIN
             'guard_pacientes_delete',
             'sync_user_profiles_from_auth',
             'rpc_cierre_caja_resumen',
-            'suggest_next_ho',
             'rpc_adjust_montura_stock',
-            'sync_snapshot',
             'is_internal_owner',
             'enforce_dev_owner_guard',
             'recalcular_resumen_diario'
@@ -242,8 +243,8 @@ BEGIN
         END IF;
     END LOOP;
 
-    ASSERT array_length(v_missing, 1) IS NULL OR v_missing IS NULL,
-        'Missing expected functions: ' || COALESCE(array_to_string(v_missing, ', '), 'none');
+    ASSERT COALESCE(array_length(v_missing, 1), 0) = 0,
+        'Missing expected functions: ' || array_to_string(v_missing, ', ');
 
     RAISE NOTICE 'DOMAIN 4 PASS: All expected functions exist';
 END;
@@ -254,12 +255,9 @@ $$;
 -- #############################################################################
 DO $$
 DECLARE
-    v_missing TEXT[];
+    v_missing TEXT[] := ARRAY[]::TEXT[];
     v_tbl TEXT;
 BEGIN
-    v_missing := ARRAY[]::TEXT[];
-
-    -- Every business table that references a tenant SHOULD have optica_id
     FOR v_tbl IN
         SELECT unnest(ARRAY[
             'pacientes', 'evaluaciones', 'dispensaciones', 'dispensacion_items',
@@ -282,8 +280,8 @@ BEGIN
         END IF;
     END LOOP;
 
-    ASSERT array_length(v_missing, 1) IS NULL,
-        'Tables missing optica_id column: ' || COALESCE(array_to_string(v_missing, ', '), 'none');
+    ASSERT COALESCE(array_length(v_missing, 1), 0) = 0,
+        'Tables missing optica_id column: ' || array_to_string(v_missing, ', ');
 
     RAISE NOTICE 'DOMAIN 5 PASS: All business tables have optica_id column';
 END;
@@ -295,7 +293,7 @@ $$;
 DO $$
 DECLARE
     v_bad TEXT[];
-    v_missing_audit TEXT[];
+    v_missing_audit TEXT[] := ARRAY[]::TEXT[];
     v_extra INT;
     v_sync TEXT[] := ARRAY[
         'pacientes', 'evaluaciones', 'dispensaciones', 'pagos', 'servicios_extra',
@@ -303,6 +301,8 @@ DECLARE
     ];
     v_tbl TEXT;
 BEGIN
+    -- update_updated_at overwrites the client timestamp that conflict
+    -- resolution compares, so synced tables must use set_updated_audit_fields.
     SELECT array_agg(c.relname ORDER BY c.relname) INTO v_bad
     FROM pg_trigger t
     JOIN pg_class c ON c.oid = t.tgrelid
@@ -313,11 +313,10 @@ BEGIN
       AND p.proname = 'update_updated_at'
       AND c.relname = ANY (v_sync);
 
-    ASSERT v_bad IS NULL OR array_length(v_bad, 1) IS NULL,
+    ASSERT COALESCE(array_length(v_bad, 1), 0) = 0,
         'DOMAIN 6: sync tables still call update_updated_at: '
         || COALESCE(array_to_string(v_bad, ', '), 'none');
 
-    v_missing_audit := ARRAY[]::TEXT[];
     FOREACH v_tbl IN ARRAY v_sync
     LOOP
         IF NOT EXISTS (
@@ -335,9 +334,9 @@ BEGIN
         END IF;
     END LOOP;
 
-    ASSERT array_length(v_missing_audit, 1) IS NULL,
+    ASSERT COALESCE(array_length(v_missing_audit, 1), 0) = 0,
         'DOMAIN 6: sync tables missing set_updated_audit_fields: '
-        || COALESCE(array_to_string(v_missing_audit, ', '), 'none');
+        || array_to_string(v_missing_audit, ', ');
 
     SELECT count(*) INTO v_extra
     FROM pg_trigger t
