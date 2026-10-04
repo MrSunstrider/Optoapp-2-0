@@ -48,6 +48,7 @@ BEGIN
             ('gastos_operativos'),
             ('margen_por_categoria'),
             ('resumen_diario'),
+            ('servicio_tipos'),
             ('pacientes_delete_audit')
     )
     SELECT array_agg(tbl) INTO v_missing
@@ -164,7 +165,7 @@ BEGIN
             'cierres_caja', 'optica_settings', 'invitaciones',
             'regalos_dispensacion', 'costos_productos',
             'configuracion_financiera', 'gastos_operativos',
-            'margen_por_categoria', 'resumen_diario'
+            'margen_por_categoria', 'resumen_diario', 'servicio_tipos'
         ])
     LOOP
         IF NOT EXISTS (
@@ -268,7 +269,7 @@ BEGIN
             'cierres_caja', 'optica_settings', 'invitaciones',
             'regalos_dispensacion', 'costos_productos',
             'configuracion_financiera', 'gastos_operativos',
-            'margen_por_categoria', 'resumen_diario'
+            'margen_por_categoria', 'resumen_diario', 'servicio_tipos'
         ])
     LOOP
         IF NOT EXISTS (
