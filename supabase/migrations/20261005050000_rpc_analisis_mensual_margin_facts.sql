@@ -1,9 +1,58 @@
--- costos-margenes-reales / S2 step 1: verbatim copy of the body from 20260915085336 so the margin-facts
--- edit lands as a reviewable diff on top of this file. Behavior is unchanged in this commit.
--- JD reportes-cluster S5+I4:
--- Restore R23 stock_estancado (real ultima_venta / dias_sin_venta, no low-stock filter)
--- and NULL-safe proyeccion_caja so egresos_programados survive when unpaid ventas are empty.
--- Base body: 20260815010805; stock CTE from 20260709000003.
+-- Additive change: existing keys keep their names and types, so older clients keep working.
+-- The previous body is restorable from supabase/rollback/.
+
+-- Kotlin mirrors these coverage classes; both sides are tested against the same vectors.
+CREATE OR REPLACE FUNCTION app_private.cobertura_clase_item(
+    p_costo_origen TEXT,
+    p_costo_total NUMERIC
+) RETURNS TEXT
+LANGUAGE sql IMMUTABLE
+SET search_path = ''
+AS $$
+    SELECT CASE
+        WHEN p_costo_origen = 'faltante' THEN 'faltante'
+        WHEN p_costo_origen IN ('manual', 'matriz', 'mixto') THEN 'real'
+        WHEN p_costo_origen IS NULL AND COALESCE(p_costo_total, 0) > 0 THEN 'estimado'
+        ELSE 'faltante'
+    END;
+$$;
+
+CREATE OR REPLACE FUNCTION app_private.cobertura_clase_servicio(
+    p_realizado_por TEXT,
+    p_costo_real NUMERIC,
+    p_servicio_tipo_id TEXT
+) RETURNS TEXT
+LANGUAGE sql IMMUTABLE
+SET search_path = ''
+AS $$
+    SELECT CASE
+        WHEN p_realizado_por IS NOT NULL
+             AND (COALESCE(p_costo_real, 0) > 0 OR p_servicio_tipo_id IS NOT NULL) THEN 'real'
+        ELSE 'faltante'
+    END;
+$$;
+
+-- gastos_operativos.tipo_gasto is nullable and never backfilled, so the effective type is
+-- resolved here in exactly one place: the explicit value, else the category default.
+CREATE OR REPLACE FUNCTION app_private.gasto_tipo_efectivo(
+    p_tipo TEXT,
+    p_categoria TEXT
+) RETURNS TEXT
+LANGUAGE sql IMMUTABLE
+SET search_path = ''
+AS $$
+    SELECT COALESCE(p_tipo, CASE
+        WHEN p_categoria IN ('alquiler', 'servicios', 'personal', 'impuestos') THEN 'fijo'
+        ELSE 'variable'
+    END);
+$$;
+
+REVOKE EXECUTE ON FUNCTION app_private.cobertura_clase_item(TEXT, NUMERIC) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION app_private.cobertura_clase_servicio(TEXT, NUMERIC, TEXT) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION app_private.gasto_tipo_efectivo(TEXT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION app_private.cobertura_clase_item(TEXT, NUMERIC) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION app_private.cobertura_clase_servicio(TEXT, NUMERIC, TEXT) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION app_private.gasto_tipo_efectivo(TEXT, TEXT) TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.rpc_analisis_mensual(
     p_optica_id TEXT,
@@ -30,6 +79,18 @@ DECLARE
     v_stock_estancado jsonb;
     v_valor_inventario NUMERIC;
     v_egresos_programados NUMERIC;
+    v_costos_por_linea jsonb;
+    v_margen_servicios jsonb;
+    v_cobertura jsonb;
+    v_gastos_por_categoria jsonb;
+    v_gastos_fijos NUMERIC;
+    v_gastos_variables NUMERIC;
+    v_margen_bruto NUMERIC;
+    v_margen_contribucion NUMERIC;
+    v_margen_contribucion_pct NUMERIC;
+    v_punto_equilibrio NUMERIC;
+    v_margen_neto_objetivo NUMERIC;
+    v_serie_6m jsonb;
 BEGIN
     IF NOT app_private.is_optica_member(auth.uid(), p_optica_id) THEN
         RAISE EXCEPTION 'Access denied';
@@ -80,18 +141,154 @@ BEGIN
     FROM public.resumen_diario
     WHERE optica_id = p_optica_id;
 
-    SELECT COALESCE(jsonb_agg(jsonb_build_object(
-        'categoria', cat.nombre,
-        'ventas', COALESCE(mc.ventas_totales, 0),
-        'costos', COALESCE(mc.costo_total, 0),
-        'margen_pct', COALESCE(mc.margen_porcentaje, 0)
-    )), '[]'::jsonb) INTO v_margen_categoria
-    FROM public.categorias_producto cat
-    LEFT JOIN public.margen_por_categoria mc
-        ON mc.categoria_producto_id = cat.id
-        AND mc.optica_id = p_optica_id
-        AND mc.periodo = to_char(p_mes, 'YYYY-MM')
-        AND mc.tipo_periodo = 'mensual';
+    -- Same exclusions as recalcular_resumen_diario (Anulado / Reclamada), so the per-line and
+    -- per-category costs converge with costo_mes. Category mapping is that of 20260709000003.
+    -- The legacy margen_por_categoria table is no longer read: nothing writes to it.
+    WITH ot AS (
+        SELECT d.id,
+               CASE
+                   WHEN d.tipo_lente = 'Progresivo' THEN 'lente_progresivo'
+                   WHEN d.tipo_lente = 'Bifocal' THEN 'lente_bifocal'
+                   WHEN d.tipo_lente = 'Monofocal' AND d.material_lente = 'Resina' THEN 'lente_monofocal'
+                   ELSE 'lente_otro'
+               END AS categoria_id,
+               d.monto_total AS ventas
+        FROM public.dispensaciones d
+        WHERE d.optica_id = p_optica_id
+          AND d.fecha >= p_mes AND d.fecha < p_mes + INTERVAL '1 month'
+          AND d.estado_entrega IS DISTINCT FROM 'Anulado'
+          AND d.estado_entrega IS DISTINCT FROM 'Reclamada'
+    ),
+    ot_item AS (
+        SELECT di.dispensacion_id AS ot_id,
+               COALESCE(di.costo_real_od, 0) + COALESCE(di.costo_real_oi, 0) AS lentes,
+               COALESCE(di.costo_real_montura, 0) AS montura,
+               COALESCE(di.costo_real_lc, 0) AS lc,
+               COALESCE(di.costo_real_biselado, 0) AS biselado,
+               di.costo_origen
+        FROM public.dispensacion_items di
+        JOIN ot ON ot.id = di.dispensacion_id
+    ),
+    ot_costo AS (
+        SELECT ot.categoria_id, ot.ventas,
+               COALESCE(SUM(oi.lentes), 0) AS lentes,
+               COALESCE(SUM(oi.montura), 0) AS montura,
+               COALESCE(SUM(oi.lc), 0) AS lc,
+               COALESCE(SUM(oi.biselado), 0) AS biselado,
+               COALESCE(MAX(rg.regalo), 0) AS regalo
+        FROM ot
+        LEFT JOIN ot_item oi ON oi.ot_id = ot.id
+        LEFT JOIN LATERAL (
+            SELECT SUM(rd.cantidad * rd.costo_unitario::numeric) AS regalo
+            FROM public.regalos_dispensacion rd
+            WHERE rd.dispensacion_id = ot.id
+        ) rg ON true
+        GROUP BY ot.id, ot.categoria_id, ot.ventas
+    ),
+    sv AS (
+        SELECT se.id, se.monto_total AS ventas, se.realizado_por, se.servicio_tipo_id, se.costo_real,
+               CASE se.realizado_por
+                   WHEN 'propio' THEN 'propios'
+                   WHEN 'tercero' THEN 'tercerizados'
+                   ELSE 'sin_clasificar'
+               END AS bucket
+        FROM public.servicios_extra se
+        WHERE se.optica_id = p_optica_id
+          AND se.fecha >= p_mes AND se.fecha < p_mes + INTERVAL '1 month'
+          AND se.estado IS DISTINCT FROM 'Anulado'
+    ),
+    sv_costo AS (
+        SELECT sv.bucket, sv.ventas,
+               sv.costo_real + COALESCE((
+                   SELECT SUM(sei.costo_real) FROM public.servicio_extra_items sei
+                   WHERE sei.servicio_extra_id = sv.id), 0) AS costo_servicio,
+               COALESCE((
+                   SELECT SUM(rse.cantidad * rse.costo_unitario) FROM public.regalos_servicio_extra rse
+                   WHERE rse.servicio_extra_id = sv.id), 0) AS regalo
+        FROM sv
+    ),
+    cat_agg AS (
+        SELECT x.categoria_id, SUM(x.ventas) AS ventas, SUM(x.costo) AS costo
+        FROM (
+            SELECT oc.categoria_id, oc.ventas, oc.lentes + oc.montura + oc.lc + oc.biselado + oc.regalo AS costo
+            FROM ot_costo oc
+            UNION ALL
+            SELECT 'servicio_extra', sc.ventas, sc.costo_servicio + sc.regalo
+            FROM sv_costo sc
+        ) x
+        GROUP BY x.categoria_id
+    ),
+    sv_bucket AS (
+        SELECT sc.bucket, COUNT(*) AS cantidad, SUM(sc.ventas) AS ventas, SUM(sc.costo_servicio) AS costo
+        FROM sv_costo sc
+        GROUP BY sc.bucket
+    ),
+    linea_costo AS (
+        SELECT COALESCE(SUM(oc.lentes), 0) AS lentes,
+               COALESCE(SUM(oc.montura), 0) AS montura,
+               COALESCE(SUM(oc.lc), 0) AS lc,
+               COALESCE(SUM(oc.biselado), 0) AS biselado,
+               COALESCE(SUM(oc.regalo), 0) + COALESCE((SELECT SUM(sc.regalo) FROM sv_costo sc), 0) AS regalos
+        FROM ot_costo oc
+    ),
+    clase AS (
+        SELECT app_private.cobertura_clase_item(
+                   oi.costo_origen, oi.lentes + oi.montura + oi.lc + oi.biselado) AS clase
+        FROM ot_item oi
+        UNION ALL
+        SELECT app_private.cobertura_clase_servicio(sv.realizado_por, sv.costo_real, sv.servicio_tipo_id)
+        FROM sv
+    ),
+    cobertura AS (
+        SELECT COUNT(*) AS total,
+               COUNT(*) FILTER (WHERE clase = 'real') AS reales,
+               COUNT(*) FILTER (WHERE clase = 'estimado') AS estimadas,
+               COUNT(*) FILTER (WHERE clase = 'faltante') AS faltantes
+        FROM clase
+    )
+    SELECT
+        (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                    'categoria', cat.nombre,
+                    'ventas', ROUND(COALESCE(ca.ventas, 0), 2),
+                    'costos', ROUND(COALESCE(ca.costo, 0), 2),
+                    'margen', ROUND(COALESCE(ca.ventas, 0) - COALESCE(ca.costo, 0), 2),
+                    'margen_pct', CASE WHEN COALESCE(ca.ventas, 0) > 0
+                        THEN ROUND((ca.ventas - ca.costo) / ca.ventas * 100, 2) END
+                ) ORDER BY cat.orden), '[]'::jsonb)
+         FROM public.categorias_producto cat
+         LEFT JOIN cat_agg ca ON ca.categoria_id = cat.id),
+        (SELECT jsonb_build_object(
+                    'lentes', ROUND(lco.lentes, 2),
+                    'montura', ROUND(lco.montura, 2),
+                    'lc', ROUND(lco.lc, 2),
+                    'biselado', ROUND(lco.biselado, 2),
+                    'servicios_propios', ROUND(COALESCE((
+                        SELECT b.costo FROM sv_bucket b WHERE b.bucket = 'propios'), 0), 2),
+                    'servicios_tercerizados', ROUND(COALESCE((
+                        SELECT b.costo FROM sv_bucket b WHERE b.bucket = 'tercerizados'), 0), 2),
+                    'servicios_sin_clasificar', ROUND(COALESCE((
+                        SELECT b.costo FROM sv_bucket b WHERE b.bucket = 'sin_clasificar'), 0), 2),
+                    'regalos', ROUND(lco.regalos, 2))
+         FROM linea_costo lco),
+        (SELECT jsonb_object_agg(bk.bucket, jsonb_build_object(
+                    'ventas', ROUND(COALESCE(sb.ventas, 0), 2),
+                    'costos', ROUND(COALESCE(sb.costo, 0), 2),
+                    'margen', ROUND(COALESCE(sb.ventas, 0) - COALESCE(sb.costo, 0), 2),
+                    'margen_pct', CASE WHEN COALESCE(sb.ventas, 0) > 0
+                        THEN ROUND((sb.ventas - sb.costo) / sb.ventas * 100, 2) END,
+                    'cantidad', COALESCE(sb.cantidad, 0)))
+         FROM (VALUES ('propios'), ('tercerizados'), ('sin_clasificar')) AS bk(bucket)
+         LEFT JOIN sv_bucket sb ON sb.bucket = bk.bucket),
+        (SELECT jsonb_build_object(
+                    'lineas_total', cb.total,
+                    'lineas_reales', cb.reales,
+                    'lineas_estimadas', cb.estimadas,
+                    'lineas_faltantes', cb.faltantes,
+                    'pct_real', CASE WHEN cb.total > 0 THEN ROUND(cb.reales::numeric / cb.total * 100, 2) ELSE 0 END,
+                    'pct_estimado', CASE WHEN cb.total > 0 THEN ROUND(cb.estimadas::numeric / cb.total * 100, 2) ELSE 0 END,
+                    'pct_faltante', CASE WHEN cb.total > 0 THEN ROUND(cb.faltantes::numeric / cb.total * 100, 2) ELSE 0 END)
+         FROM cobertura cb)
+    INTO v_margen_categoria, v_costos_por_linea, v_margen_servicios, v_cobertura;
 
     SELECT jsonb_build_object(
         'cantidad', COUNT(*),
@@ -183,6 +380,83 @@ BEGIN
     FROM public.monturas
     WHERE optica_id = p_optica_id AND activo = true;
 
+    -- Totals use every gasto row so gastos_fijos + variables always equals gastos_mes; only the
+    -- per-category list drops non-positive categories.
+    WITH g AS (
+        SELECT gx.categoria, gx.monto,
+               app_private.gasto_tipo_efectivo(gx.tipo_gasto, gx.categoria) AS tipo
+        FROM public.gastos_operativos gx
+        WHERE gx.optica_id = p_optica_id
+          AND gx.fecha >= p_mes AND gx.fecha < p_mes + INTERVAL '1 month'
+    ),
+    por_categoria AS (
+        SELECT g.categoria,
+               SUM(g.monto) AS monto,
+               COALESCE(SUM(g.monto) FILTER (WHERE g.tipo = 'fijo'), 0) AS fijo,
+               COALESCE(SUM(g.monto) FILTER (WHERE g.tipo = 'variable'), 0) AS variable
+        FROM g
+        GROUP BY g.categoria
+    )
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                'categoria', pc.categoria,
+                'monto', ROUND(pc.monto, 2),
+                'tipo_predominante', CASE WHEN pc.fijo >= pc.variable THEN 'fijo' ELSE 'variable' END
+           ) ORDER BY pc.monto DESC, pc.categoria) FILTER (WHERE pc.monto > 0), '[]'::jsonb),
+           COALESCE(SUM(pc.fijo), 0),
+           COALESCE(SUM(pc.variable), 0)
+    INTO v_gastos_por_categoria, v_gastos_fijos, v_gastos_variables
+    FROM por_categoria pc;
+
+    v_margen_bruto := v_ventas_mes - v_costo_mes;
+    v_margen_contribucion := v_ventas_mes - v_costo_mes - v_gastos_variables;
+    v_margen_contribucion_pct := CASE WHEN v_ventas_mes > 0
+        THEN v_margen_contribucion / v_ventas_mes * 100 ELSE 0 END;
+    v_punto_equilibrio := CASE WHEN v_margen_contribucion_pct > 0
+        THEN ROUND(v_gastos_fijos / (v_margen_contribucion_pct / 100), 2) END;
+
+    SELECT COALESCE(
+        (SELECT cf.margen_neto_objetivo FROM public.configuracion_financiera cf
+         WHERE cf.optica_id = p_optica_id),
+        15.0)
+    INTO v_margen_neto_objetivo;
+
+    WITH meses AS (
+        SELECT (date_trunc('month', p_mes::timestamp) - make_interval(months => n))::date AS mes
+        FROM generate_series(0, 5) AS n
+    ),
+    ventas AS (
+        SELECT date_trunc('month', rd.fecha::timestamp)::date AS mes,
+               SUM(rd.ventas_monto_total) AS ventas,
+               SUM(rd.ventas_costo_total) AS costo
+        FROM public.resumen_diario rd
+        WHERE rd.optica_id = p_optica_id
+          AND rd.fecha >= (SELECT MIN(mes) FROM meses)
+          AND rd.fecha < (SELECT MAX(mes) FROM meses) + INTERVAL '1 month'
+        GROUP BY 1
+    ),
+    gastos AS (
+        SELECT date_trunc('month', gx.fecha::timestamp)::date AS mes, SUM(gx.monto) AS gastos
+        FROM public.gastos_operativos gx
+        WHERE gx.optica_id = p_optica_id
+          AND gx.fecha >= (SELECT MIN(mes) FROM meses)
+          AND gx.fecha < (SELECT MAX(mes) FROM meses) + INTERVAL '1 month'
+        GROUP BY 1
+    )
+    SELECT jsonb_agg(jsonb_build_object(
+               'mes', to_char(m.mes, 'YYYY-MM'),
+               'ventas', ROUND(COALESCE(v.ventas, 0), 2),
+               'costo', ROUND(COALESCE(v.costo, 0), 2),
+               'gastos', ROUND(COALESCE(g.gastos, 0), 2),
+               'margen', ROUND(COALESCE(v.ventas, 0) - COALESCE(v.costo, 0) - COALESCE(g.gastos, 0), 2),
+               'margen_neto_pct', CASE WHEN COALESCE(v.ventas, 0) > 0
+                   THEN ROUND((v.ventas - COALESCE(v.costo, 0) - COALESCE(g.gastos, 0)) / v.ventas * 100, 2)
+                   ELSE 0 END
+           ) ORDER BY m.mes)
+    INTO v_serie_6m
+    FROM meses m
+    LEFT JOIN ventas v ON v.mes = m.mes
+    LEFT JOIN gastos g ON g.mes = m.mes;
+
     RETURN jsonb_build_object(
         'ventas_mes', v_ventas_mes,
         'cobros_mes', v_cobros_mes,
@@ -201,13 +475,30 @@ BEGIN
         'deudores', v_deudores_resumen,
         'proyeccion_caja', v_proyeccion,
         'stock_estancado', v_stock_estancado,
-        'valor_inventario', v_valor_inventario
+        'valor_inventario', v_valor_inventario,
+        'margen_bruto', ROUND(v_margen_bruto, 2),
+        'margen_bruto_pct', CASE WHEN v_ventas_mes > 0
+            THEN ROUND(v_margen_bruto / v_ventas_mes * 100, 2) ELSE 0 END,
+        'costos_por_linea', v_costos_por_linea,
+        'margen_servicios', v_margen_servicios,
+        'cobertura', v_cobertura,
+        'gastos_por_categoria', v_gastos_por_categoria,
+        'gastos_por_tipo', jsonb_build_object(
+            'fijo', ROUND(v_gastos_fijos, 2),
+            'variable', ROUND(v_gastos_variables, 2)),
+        'gastos_fijos', ROUND(v_gastos_fijos, 2),
+        'margen_contribucion', ROUND(v_margen_contribucion, 2),
+        'margen_contribucion_pct', ROUND(v_margen_contribucion_pct, 2),
+        'punto_equilibrio', v_punto_equilibrio,
+        'margen_neto_objetivo', ROUND(v_margen_neto_objetivo, 2),
+        'brecha_margen_neto_pp', ROUND(v_margen_neto_pct - v_margen_neto_objetivo, 2),
+        'serie_6m', v_serie_6m
     );
 END;
 $$;
 
 COMMENT ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) IS
-  'Monthly BI JSON. stock_estancado uses real sales dates (R23); proyeccion_caja keeps egresos_programados when unpaid ventas are empty.';
+  'Monthly BI JSON. stock_estancado uses real sales dates (R23); proyeccion_caja keeps egresos_programados when unpaid ventas are empty; margen_por_categoria and the MarginFacts keys (costos_por_linea, cobertura, gastos_*, serie_6m) are computed from real costs.';
 
 REVOKE EXECUTE ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.rpc_analisis_mensual(TEXT, DATE) TO authenticated, service_role;
