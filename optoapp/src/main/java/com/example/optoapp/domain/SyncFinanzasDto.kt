@@ -8,6 +8,7 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.baseOtForReclamo
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
@@ -458,6 +459,36 @@ data class CostoBiseladoRemoto(
     )
 }
 
+@Serializable
+data class CostoLcRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("tipo_lc") val tipoLc: String,
+    @SerialName("material_lc") val materialLc: String,
+    val modalidad: String,
+    @SerialName("radio_base") val radioBase: String? = null,
+    val diametro: String? = null,
+    @SerialName("laboratorio_id") val laboratorioId: String? = null,
+    @SerialName("costo_unitario") val costoUnitario: Double,
+    @SerialName("vigente_desde") val vigenteDesde: String,
+    @SerialName("vigente_hasta") val vigenteHasta: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+) {
+    fun toEntity() = CostoLcEntity(
+        id = id, opticaId = opticaId, tipoLc = tipoLc, materialLc = materialLc,
+        modalidad = modalidad, radioBase = radioBase, diametro = diametro,
+        laboratorioId = laboratorioId, costoUnitario = costoUnitario,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
+    )
+}
+
+fun CostoLcEntity.toRemoto(): CostoLcRemoto = CostoLcRemoto(
+    id = id, opticaId = opticaId, tipoLc = tipoLc, materialLc = materialLc,
+    modalidad = modalidad, radioBase = radioBase, diametro = diametro,
+    laboratorioId = laboratorioId, costoUnitario = costoUnitario,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
+)
+
 fun CostoProductoEntity.toRemoto(): CostoProductoRemoto = CostoProductoRemoto(
     id = id, opticaId = opticaId, material = material,
     tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
@@ -483,6 +514,7 @@ data class FinanzasSyncResult(
     val uploadedRegalos: Int = 0,
     val uploadedCostosProductos: Int = 0,
     val uploadedCostosBiselado: Int = 0,
+    val uploadedCostosLc: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
@@ -493,6 +525,7 @@ data class FinanzasSyncResult(
     val downloadedGastosOperativos: Int = 0,
     val downloadedCostosProductos: Int = 0,
     val downloadedCostosBiselado: Int = 0,
+    val downloadedCostosLc: Int = 0,
 )
 
 @Serializable

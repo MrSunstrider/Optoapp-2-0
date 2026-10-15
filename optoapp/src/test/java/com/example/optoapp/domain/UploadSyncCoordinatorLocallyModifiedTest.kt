@@ -62,6 +62,7 @@ class UploadSyncCoordinatorLocallyModifiedTest {
             networkRetryHelper = networkRetryHelper,
             costoProductoDao = db.costoProductoDao(),
             costoBiseladoDao = db.costoBiseladoDao(),
+            costoLcDao = db.costoLcDao(),
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
 
@@ -91,6 +92,7 @@ class UploadSyncCoordinatorLocallyModifiedTest {
             configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
             costoProductoDao = db.costoProductoDao(),
             costoBiseladoDao = db.costoBiseladoDao(),
+            costoLcDao = db.costoLcDao(),
         )
     }
 

@@ -50,6 +50,7 @@ class UploadSyncCoordinatorTest {
         networkRetryHelper = networkRetryHelper,
         costoProductoDao = costoProductoDao,
         costoBiseladoDao = costoBiseladoDao,
+        costoLcDao = mockk(relaxed = true),
     ) {
         override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
     }

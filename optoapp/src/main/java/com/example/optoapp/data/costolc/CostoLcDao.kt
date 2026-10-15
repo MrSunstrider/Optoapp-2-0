@@ -15,7 +15,7 @@ interface CostoLcDao {
           AND tipo_lc = :tipoLc
           AND material_lc = :materialLc
           AND modalidad = :modalidad
-          AND (laboratorio_id IS NULL AND :laboratorioId IS NULL OR laboratorio_id = :laboratorioId)
+          AND ((laboratorio_id IS NULL AND :laboratorioId IS NULL) OR laboratorio_id = :laboratorioId)
           AND vigente_hasta IS NULL
         LIMIT 1
     """,
@@ -47,6 +47,13 @@ interface CostoLcDao {
     """,
     )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoLcEntity>
+
+    // Closed versions are included because closing a row is itself an edit the server must receive.
+    @Query("SELECT * FROM costos_lc WHERE optica_id = :opticaId")
+    suspend fun getAllByOpticaIdList(opticaId: String): List<CostoLcEntity>
+
+    @Query("SELECT * FROM costos_lc WHERE id = :id")
+    suspend fun getById(id: String): CostoLcEntity?
 
     @Upsert
     suspend fun upsertAll(entities: List<CostoLcEntity>)

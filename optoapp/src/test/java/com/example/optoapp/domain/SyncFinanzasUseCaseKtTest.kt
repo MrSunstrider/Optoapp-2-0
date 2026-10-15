@@ -217,6 +217,7 @@ class SyncFinanzasUseCaseKtTest {
         stubServicioExtraChildUploads(uploadCoordinator)
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
@@ -263,6 +264,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
@@ -610,6 +612,26 @@ class SyncFinanzasUseCaseKtTest {
             uploadCoordinator.uploadPagos("optica-test")
             downloadCoordinator.downloadDispensaciones("optica-test")
         }
+    }
+
+    @Test
+    fun syncFinanzas_syncsCostosLcRightAfterCostosBiseladoInBothPhases() = runTest {
+        val (useCase, uploadCoordinator, downloadCoordinator) = relaxedSync(mockk(relaxed = true))
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 2
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 3
+
+        val result = useCase("optica-test") as com.example.optoapp.data.Resource.Success
+
+        coVerifyOrder {
+            uploadCoordinator.uploadCostosBiselado("optica-test")
+            uploadCoordinator.uploadCostosLc("optica-test")
+            uploadCoordinator.uploadPagos("optica-test")
+            downloadCoordinator.downloadCostosBiselado("optica-test")
+            downloadCoordinator.downloadCostosLc("optica-test")
+            downloadCoordinator.downloadPagos("optica-test")
+        }
+        assertEquals(2, result.data!!.uploadedCostosLc)
+        assertEquals(3, result.data!!.downloadedCostosLc)
     }
 
     @Test

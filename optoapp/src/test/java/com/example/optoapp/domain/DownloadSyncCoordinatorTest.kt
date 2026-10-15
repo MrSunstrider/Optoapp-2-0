@@ -23,10 +23,10 @@ import java.time.LocalDate
 class DownloadSyncCoordinatorTest {
 
     @Test
-    fun constructor_takesNineDependencies() {
+    fun constructor_takesTenDependencies() {
         val constructors = DownloadSyncCoordinator::class.java.declaredConstructors
         assertEquals(1, constructors.size)
-        assertEquals(9, constructors[0].parameterTypes.size)
+        assertEquals(10, constructors[0].parameterTypes.size)
     }
 
     @Test
@@ -91,6 +91,7 @@ class DownloadSyncCoordinatorTest {
         configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
         costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
         costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true),
+        costoLcDao = mockk(relaxed = true),
     )
 
     private fun stubSyncInfra() {

@@ -55,6 +55,7 @@ class DownloadSyncCoordinatorLwwTest {
             configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
             costoProductoDao = db.costoProductoDao(),
             costoBiseladoDao = db.costoBiseladoDao(),
+            costoLcDao = db.costoLcDao(),
         )
     }
 

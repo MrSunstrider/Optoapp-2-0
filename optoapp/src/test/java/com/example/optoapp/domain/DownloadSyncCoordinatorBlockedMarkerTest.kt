@@ -52,6 +52,7 @@ class DownloadSyncCoordinatorBlockedMarkerTest {
             configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
             costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
             costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true),
+            costoLcDao = mockk(relaxed = true),
         )
     }
 
