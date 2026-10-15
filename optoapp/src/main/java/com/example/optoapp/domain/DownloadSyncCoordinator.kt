@@ -7,6 +7,7 @@ import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
+import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
@@ -35,6 +36,7 @@ class DownloadSyncCoordinator @Inject constructor(
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
     private val costoLcDao: CostoLcDao,
+    private val servicioTipoDao: ServicioTipoDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -51,6 +53,7 @@ class DownloadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val TABLE_COSTOS_LC = "costos_lc"
+        private const val TABLE_SERVICIO_TIPOS = "servicio_tipos"
     }
 
     private suspend inline fun <reified T : Any> downloadTable(
@@ -258,7 +261,7 @@ class DownloadSyncCoordinator @Inject constructor(
     }
 
     suspend fun downloadResumenDiario(opticaId: String): Int = try {
-        // Trigger server-side recalculation so downloaded data is always fresh
+        // resumen_diario is derived server-side and goes stale after other devices write finanzas rows.
         try {
             val today = LocalDate.now().toString()
             val params = buildJsonObject {
@@ -390,6 +393,25 @@ class DownloadSyncCoordinator @Inject constructor(
             },
         ) { r ->
             costoLcDao.upsertAll(listOf(r.toEntity()))
+        }
+
+    suspend fun downloadServicioTipos(opticaId: String): Int {
+        val remotos = fetchRemoteRows<ServicioTipoRemota>(opticaId, TABLE_SERVICIO_TIPOS, "servicio_tipo") ?: return 0
+        return persistServicioTipos(opticaId, remotos)
+    }
+
+    internal suspend fun persistServicioTipos(opticaId: String, remotos: List<ServicioTipoRemota>): Int =
+        persistRemoteRows(
+            opticaId,
+            "servicio_tipo",
+            skipDeletions = false,
+            remotos = remotos,
+            getId = { it.id },
+            shouldSkip = { r ->
+                keepPendingLocalEdit(opticaId, "servicio_tipo", r.id, servicioTipoDao.getById(r.id, opticaId)?.updatedAt, r.updatedAt)
+            },
+        ) { r ->
+            servicioTipoDao.upsert(r.toEntity())
         }
 
     // A pending edit survives only when strictly newer, so equal timestamps converge on the server copy.

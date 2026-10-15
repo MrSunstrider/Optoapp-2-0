@@ -7,6 +7,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.domain.sync.LEGACY_NULL_UPDATED_AT
 import com.example.optoapp.domain.sync.RemoteTimestamp
@@ -35,6 +36,7 @@ open class UploadSyncCoordinator @Inject constructor(
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
     private val costoLcDao: CostoLcDao,
+    private val servicioTipoDao: ServicioTipoDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -49,6 +51,7 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_PRODUCTOS = "costos_productos"
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val TABLE_COSTOS_LC = "costos_lc"
+        private const val TABLE_SERVICIO_TIPOS = "servicio_tipos"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -844,6 +847,10 @@ open class UploadSyncCoordinator @Inject constructor(
         supabase.postgrest[TABLE_COSTOS_LC].upsert(chunk)
     }
 
+    internal open suspend fun upsertServicioTiposChunk(chunk: List<ServicioTipoRemota>) {
+        supabase.postgrest[TABLE_SERVICIO_TIPOS].upsert(chunk)
+    }
+
     internal open suspend fun selectRemoteUpdatedAtChunk(
         tableName: String,
         opticaId: String,
@@ -952,4 +959,16 @@ open class UploadSyncCoordinator @Inject constructor(
         toRemoto = { row, updatedAt -> row.toRemoto().copy(opticaId = opticaId.trim(), updatedAt = updatedAt) },
         remoteId = { it.id },
     ) { upsertCostosLcChunk(it) }
+
+    suspend fun uploadServicioTipos(opticaId: String): Int = uploadLocallyModified(
+        opticaId,
+        TABLE_SERVICIO_TIPOS,
+        "servicio_tipo",
+        "upload_servicio_tipos",
+        servicioTipoDao.getByOpticaIdList(opticaId),
+        localId = { it.id },
+        localUpdatedAt = { it.updatedAt },
+        toRemoto = { row, updatedAt -> row.toRemoto().copy(opticaId = opticaId.trim(), updatedAt = updatedAt) },
+        remoteId = { it.id },
+    ) { upsertServicioTiposChunk(it) }
 }

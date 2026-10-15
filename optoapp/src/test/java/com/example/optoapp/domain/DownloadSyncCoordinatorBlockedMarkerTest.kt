@@ -23,6 +23,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 
+// Robolectric because Room.inMemoryDatabaseBuilder needs an Android Context (AGENTS.md real-Room exception).
 @RunWith(RobolectricTestRunner::class)
 class DownloadSyncCoordinatorBlockedMarkerTest {
 
@@ -53,6 +54,7 @@ class DownloadSyncCoordinatorBlockedMarkerTest {
             costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
             costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true),
             costoLcDao = mockk(relaxed = true),
+            servicioTipoDao = mockk(relaxed = true),
         )
     }
 

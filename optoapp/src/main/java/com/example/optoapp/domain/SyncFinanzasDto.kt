@@ -13,6 +13,7 @@ import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
@@ -99,6 +100,10 @@ data class ServicioRemoto(
     @SerialName("updated_by") val updatedBy: String? = null,
     @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
     @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
+    @SerialName("servicio_tipo_id") val servicioTipoId: String? = null,
+    @SerialName("realizado_por") val realizadoPor: String? = null,
+    @SerialName("realizado_por_nombre") val realizadoPorNombre: String? = null,
+    @SerialName("costo_real") val costoReal: Double = 0.0,
 ) {
     fun toEntity() = ServicioExtra(
         id = id,
@@ -117,8 +122,36 @@ data class ServicioRemoto(
         fechaEntrega = fechaEntrega?.let(LocalDate::parse),
         motivoAnulacion = motivoAnulacion,
         fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
+        servicioTipoId = servicioTipoId.normalizeOptionalFk(),
+        realizadoPor = realizadoPor,
+        realizadoPorNombre = realizadoPorNombre,
+        costoReal = costoReal,
     )
 }
+
+@Serializable
+data class ServicioTipoRemota(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val nombre: String,
+    @SerialName("costo_propio") val costoPropio: Double = 0.0,
+    @SerialName("costo_tercero") val costoTercero: Double = 0.0,
+    val activo: Boolean = true,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null,
+) {
+    fun toEntity() = ServicioTipoEntity(
+        id = id, opticaId = opticaId, nombre = nombre,
+        costoPropio = costoPropio, costoTercero = costoTercero, activo = activo,
+        updatedAt = updatedAt, updatedBy = updatedBy,
+    )
+}
+
+fun ServicioTipoEntity.toRemoto(): ServicioTipoRemota = ServicioTipoRemota(
+    id = id, opticaId = opticaId, nombre = nombre,
+    costoPropio = costoPropio, costoTercero = costoTercero, activo = activo,
+    updatedAt = updatedAt, updatedBy = updatedBy,
+)
 
 @Serializable
 data class PagoRemoto(
@@ -292,6 +325,7 @@ data class ServicioExtraItemRemota(
     @SerialName("optica_id") val opticaId: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("costo_real") val costoReal: Double = 0.0,
 ) {
     fun toEntity() = com.example.optoapp.data.servicio.ServicioExtraItem(
         id = id,
@@ -302,6 +336,7 @@ data class ServicioExtraItemRemota(
         opticaId = opticaId,
         updatedAt = updatedAt,
         updatedBy = updatedBy,
+        costoReal = costoReal,
     )
 }
 
@@ -314,6 +349,7 @@ fun com.example.optoapp.data.servicio.ServicioExtraItem.toRemoto(): ServicioExtr
     opticaId = opticaId,
     updatedAt = updatedAt,
     updatedBy = updatedBy,
+    costoReal = costoReal,
 )
 
 @Serializable
@@ -509,6 +545,7 @@ data class FinanzasSyncResult(
     val uploadedDispensaciones: Int,
     val uploadedDispensacionItems: Int = 0,
     val uploadedServicios: Int,
+    val uploadedServicioTipos: Int = 0,
     val uploadedPagos: Int,
     val uploadedGastosOperativos: Int = 0,
     val uploadedRegalos: Int = 0,
@@ -518,6 +555,7 @@ data class FinanzasSyncResult(
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
+    val downloadedServicioTipos: Int = 0,
     val downloadedPagos: Int,
     val downloadedRegalos: Int = 0,
     val downloadedResumenesDiarios: Int = 0,
@@ -624,6 +662,10 @@ fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = Servi
     fechaEntrega = fechaEntrega?.toString(),
     motivoAnulacion = motivoAnulacion,
     fechaAnulacion = fechaAnulacion?.toString(),
+    servicioTipoId = servicioTipoId.normalizeOptionalFk(),
+    realizadoPor = realizadoPor,
+    realizadoPorNombre = realizadoPorNombre,
+    costoReal = costoReal,
 )
 
 internal fun String?.normalizeOptionalFk(): String? = this?.trim()?.takeIf { it.isNotBlank() }

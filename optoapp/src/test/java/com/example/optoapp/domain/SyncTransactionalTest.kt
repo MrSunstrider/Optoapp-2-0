@@ -11,7 +11,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
+import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -19,9 +19,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-/**
- * Tests for REQ-SYNC-003: Transactional markSynced on Upload.
- */
 class SyncTransactionalTest {
 
     private val repository = mockk<OptoRepository>(relaxed = true)
@@ -47,6 +44,7 @@ class SyncTransactionalTest {
             costoProductoDao = costoProductoDao,
             costoBiseladoDao = costoBiseladoDao,
             costoLcDao = mockk(relaxed = true),
+            servicioTipoDao = mockk(relaxed = true),
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         }
@@ -54,7 +52,7 @@ class SyncTransactionalTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        unmockkStatic("android.util.Log")
     }
 
     @Test

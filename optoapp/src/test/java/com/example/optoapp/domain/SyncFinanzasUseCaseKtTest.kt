@@ -32,12 +32,14 @@ class SyncFinanzasUseCaseKtTest {
         every { Log.e(any(), any<String>(), any()) } returns 0
     }
 
-    private fun stubServicioExtraChildUploads(uploadCoordinator: UploadSyncCoordinator) {
+    private fun stubServicioCatalogAndChildUploads(uploadCoordinator: UploadSyncCoordinator) {
+        coEvery { uploadCoordinator.uploadServicioTipos(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicioExtraItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalosServicioExtra(any()) } returns 0
     }
 
-    private fun stubServicioExtraChildDownloads(downloadCoordinator: DownloadSyncCoordinator) {
+    private fun stubServicioCatalogAndChildDownloads(downloadCoordinator: DownloadSyncCoordinator) {
+        coEvery { downloadCoordinator.downloadServicioTipos(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicioExtraItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalosServicioExtra(any()) } returns 0
     }
@@ -117,7 +119,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -151,7 +153,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
@@ -184,7 +186,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -214,7 +216,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
-        stubServicioExtraChildUploads(uploadCoordinator)
+        stubServicioCatalogAndChildUploads(uploadCoordinator)
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
@@ -248,13 +250,13 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
-        stubServicioExtraChildUploads(uploadCoordinator)
+        stubServicioCatalogAndChildUploads(uploadCoordinator)
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -351,7 +353,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -398,7 +400,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -437,7 +439,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -498,7 +500,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -529,7 +531,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0

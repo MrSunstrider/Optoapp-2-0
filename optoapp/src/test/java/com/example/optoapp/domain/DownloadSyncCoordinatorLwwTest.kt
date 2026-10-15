@@ -24,7 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-// Real-Room DAO test: in-memory Room needs Robolectric for its Android context, the AGENTS.md exception.
+// Robolectric because Room.inMemoryDatabaseBuilder needs an Android Context (AGENTS.md real-Room exception).
 @RunWith(RobolectricTestRunner::class)
 class DownloadSyncCoordinatorLwwTest {
 
@@ -56,6 +56,7 @@ class DownloadSyncCoordinatorLwwTest {
             costoProductoDao = db.costoProductoDao(),
             costoBiseladoDao = db.costoBiseladoDao(),
             costoLcDao = db.costoLcDao(),
+            servicioTipoDao = db.servicioTipoDao(),
         )
     }
 

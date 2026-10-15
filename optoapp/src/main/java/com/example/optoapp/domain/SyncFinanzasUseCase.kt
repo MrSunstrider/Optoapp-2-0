@@ -43,6 +43,7 @@ open class SyncFinanzasUseCase @Inject constructor(
         var dispUp = 0
         var itemsUp = 0
         var servUp = 0
+        var tiposUp = 0
         var costosUp = 0
         var biseladoUp = 0
         var lcUp = 0
@@ -59,6 +60,9 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r2 = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
             itemsUp = r2.count; hadPartialUpload = hadPartialUpload || r2.partial
             AppLogger.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
+            val r2b = safeUpload("servicio_tipos") { uploadSyncCoordinator.uploadServicioTipos(opticaId) }
+            tiposUp = r2b.count; hadPartialUpload = hadPartialUpload || r2b.partial
+            AppLogger.d(TAG, "Finanzas: upload servicio_tipos=$tiposUp")
             val r3 = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
             servUp = r3.count; hadPartialUpload = hadPartialUpload || r3.partial
             AppLogger.d(TAG, "Finanzas: upload servicios_extra=$servUp")
@@ -91,6 +95,7 @@ open class SyncFinanzasUseCase @Inject constructor(
         val dispDown: Int
         val itemsDown: Int
         val servDown: Int
+        val tiposDown: Int
         val pagosDown: Int
         val regalosDown: Int
         val costosDown: Int
@@ -104,6 +109,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download dispensaciones=$dispDown")
             itemsDown = safeDownload("dispensacion_items") { downloadSyncCoordinator.downloadDispensacionItems(opticaId) }
             AppLogger.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
+            tiposDown = safeDownload("servicio_tipos") { downloadSyncCoordinator.downloadServicioTipos(opticaId) }
+            AppLogger.d(TAG, "Finanzas: download servicio_tipos=$tiposDown")
             servDown = safeDownload("servicios_extra") { downloadSyncCoordinator.downloadServicios(opticaId) }
             AppLogger.d(TAG, "Finanzas: download servicios_extra=$servDown")
             safeDownload("servicio_extra_items") { downloadSyncCoordinator.downloadServicioExtraItems(opticaId) }
@@ -129,6 +136,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             dispDown = 0
             itemsDown = 0
             servDown = 0
+            tiposDown = 0
             costosDown = 0
             biseladoDown = 0
             lcDown = 0
@@ -144,6 +152,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             uploadedDispensaciones = dispUp,
             uploadedDispensacionItems = itemsUp,
             uploadedServicios = servUp,
+            uploadedServicioTipos = tiposUp,
             uploadedCostosProductos = costosUp,
             uploadedCostosBiselado = biseladoUp,
             uploadedCostosLc = lcUp,
@@ -153,6 +162,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             downloadedDispensaciones = dispDown,
             downloadedDispensacionItems = itemsDown,
             downloadedServicios = servDown,
+            downloadedServicioTipos = tiposDown,
             downloadedPagos = pagosDown,
             downloadedRegalos = regalosDown,
             downloadedCostosProductos = costosDown,
@@ -207,7 +217,7 @@ open class SyncFinanzasUseCase @Inject constructor(
         false
     }
 
-    // Isolated try-catch so one entity's failure doesn't block other downloads
+    // Tables are independent on download; one failing table must not leave the others stale.
     private suspend fun safeDownload(name: String, block: suspend () -> Int): Int = try {
         block()
     } catch (e: CancellationException) {
