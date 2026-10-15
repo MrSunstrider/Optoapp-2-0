@@ -304,6 +304,24 @@
     <string name="cobertura_real">%1$s real</string>
     <string name="cobertura_estimado">%1$s estimado</string>
     <string name="cobertura_faltante">%1$s faltante</string>
+    <string name="costos_header_costo_ventas">Costo de ventas</string>
+    <string name="costos_header_gastos">Gastos del mes</string>
+    <string name="costos_header_cobertura_offline">Cobertura no disponible sin conexión</string>
+    <plurals name="ots_sin_costo">
+        <item quantity="one">%d OT sin costo</item>
+        <item quantity="many">%d OTs sin costo</item>
+        <item quantity="other">%d OTs sin costo</item>
+    </plurals>
+    <string name="costos_chart_gastos_titulo">Gastos por categoría</string>
+    <string name="costos_chart_componentes_titulo">Costo por componente</string>
+    <string name="costos_chart_componentes_offline">El costo por componente no está disponible sin conexión</string>
+    <string name="costos_componente_serie">Costo</string>
+    <string name="costos_componente_lentes">Lentes</string>
+    <string name="costos_componente_montura">Montura</string>
+    <string name="costos_componente_lc">Lentes de contacto</string>
+    <string name="costos_componente_biselado">Biselado</string>
+    <string name="costos_componente_servicios">Servicios</string>
+    <string name="costos_componente_regalos">Regalos</string>
     <string name="gastos_total_mes">Total del mes</string>
     <string name="gastos_vacio_mes">No hay gastos en este mes</string>
     <string name="gastos_agregar">Agregar gasto</string>

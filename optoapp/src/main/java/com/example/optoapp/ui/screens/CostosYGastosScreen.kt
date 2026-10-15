@@ -37,6 +37,8 @@ import com.example.optoapp.ui.components.common.GastoFormValues
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
 import com.example.optoapp.ui.screens.costos.BiseladoTab
+import com.example.optoapp.ui.screens.costos.CostosCharts
+import com.example.optoapp.ui.screens.costos.CostosHeader
 import com.example.optoapp.ui.screens.costos.EditarPrecioDialog
 import com.example.optoapp.ui.screens.costos.FormBiseladoDialog
 import com.example.optoapp.ui.screens.costos.FormLcDialog
@@ -52,6 +54,8 @@ import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.COST_BLOCKS
+import com.example.optoapp.viewmodel.CostosHeaderUiState
+import com.example.optoapp.viewmodel.CostosHeaderViewModel
 import com.example.optoapp.viewmodel.CostosYGastosUiState
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import com.example.optoapp.viewmodel.GastoFila
@@ -65,8 +69,11 @@ fun CostosYGastosScreen(
     navController: NavController,
     drawerState: DrawerState,
     viewModel: CostosYGastosViewModel = hiltViewModel(),
+    headerViewModel: CostosHeaderViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val headerState by headerViewModel.uiState.collectAsState()
+    LaunchedEffect(uiState.mesGastos) { headerViewModel.seleccionarMes(uiState.mesGastos) }
     val scope = rememberCoroutineScope()
     val tabs = listOf(
         stringResource(R.string.costos_tab_lentes),
@@ -137,6 +144,7 @@ fun CostosYGastosScreen(
                 )
                 3 -> GastosOperativosTab(
                     uiState = uiState,
+                    headerState = headerState,
                     viewModel = viewModel,
                     showDatePicker = { showDatePicker = true },
                 )
@@ -396,6 +404,7 @@ private fun MatrizDeCostosTab(
 @Composable
 private fun GastosOperativosTab(
     uiState: CostosYGastosUiState,
+    headerState: CostosHeaderUiState,
     viewModel: CostosYGastosViewModel,
     showDatePicker: () -> Unit,
 ) {
@@ -411,6 +420,10 @@ private fun GastosOperativosTab(
                     onMonthSelected = viewModel::selectMesGastos,
                 )
             }
+
+            item { CostosHeader(state = headerState) }
+
+            item { CostosCharts(facts = headerState.facts) }
 
             item {
                 Card(

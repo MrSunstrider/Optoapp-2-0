@@ -4,8 +4,21 @@ import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
+// Unknown costo_origen values count as missing, as in CoberturaCostoClassifier, so the CTA never disagrees with
+// the server coverage. Servicios stay out because CostCoverageBadge already reports them.
+private const val OT_SIN_COSTO =
+    "d.opticaId = :opticaId AND d.fecha >= :desde AND d.fecha <= :hasta " +
+        "AND d.estadoEntrega NOT IN ('Anulado', 'Reclamada') " +
+        "AND EXISTS (SELECT 1 FROM dispensacion_items i WHERE i.dispensacion_id = d.id AND i.optica_id = d.opticaId AND (" +
+        "(i.costo_origen IS NULL AND COALESCE(i.costo_real_od, 0) + COALESCE(i.costo_real_oi, 0) + " +
+        "COALESCE(i.costo_real_montura, 0) + COALESCE(i.costo_real_biselado, 0) + COALESCE(i.costo_real_lc, 0) <= 0) " +
+        "OR (i.costo_origen IS NOT NULL AND i.costo_origen NOT IN ('manual', 'matriz', 'mixto'))))"
+
 @Dao
 interface DispensacionDao {
+    @Query("SELECT COUNT(*) FROM dispensaciones d WHERE $OT_SIN_COSTO")
+    fun countOtsSinCosto(opticaId: String, desde: LocalDate, hasta: LocalDate): Flow<Int>
+
     @Query("SELECT * FROM dispensaciones WHERE pacienteId = :pacienteId AND opticaId = :opticaId ORDER BY fecha DESC")
     fun getDispensacionesByPaciente(pacienteId: String, opticaId: String): Flow<List<DispensacionOptica>>
 
