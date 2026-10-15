@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -111,7 +112,7 @@ fun MainDrawerScreen(
                                         is com.example.optoapp.viewmodel.OpticaSelectionPrep.Error -> {
                                             android.widget.Toast.makeText(
                                                 context,
-                                                prep.message.ifBlank { "Error al cargar ópticas" },
+                                                prep.message.ifBlank { context.getString(R.string.drawer_error_cargar_opticas) },
                                                 android.widget.Toast.LENGTH_SHORT,
                                             ).show()
                                         }
@@ -121,7 +122,7 @@ fun MainDrawerScreen(
                                             } else {
                                                 android.widget.Toast.makeText(
                                                     context,
-                                                    "Solo tienes una óptica asociada.",
+                                                    context.getString(R.string.drawer_una_optica),
                                                     android.widget.Toast.LENGTH_SHORT,
                                                 ).show()
                                             }
@@ -133,7 +134,7 @@ fun MainDrawerScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         ) {
                             Text(
-                                text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
+                                text = stringResource(R.string.drawer_optica_activa, opticaHeader.nombreOptica, opticaHeader.fiscalEtiqueta),
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(vertical = 2.dp),
                                 maxLines = 1,
@@ -234,10 +235,6 @@ fun MainDrawerScreen(
                             }
                             composable(Route.Reportes.route) { ReportesScreen(drawerState) }
                             composable(Route.CostosYGastos.route) { CostosYGastosScreen(navController, drawerState) }
-                            composable(Route.CostosYGastosDisp("{dispensacionId}").route) { backStackEntry ->
-                                val dispId = backStackEntry.arguments?.getString("dispensacionId")
-                                CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
-                            }
                             composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
                             composable(

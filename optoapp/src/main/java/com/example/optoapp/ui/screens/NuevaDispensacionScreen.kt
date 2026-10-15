@@ -22,12 +22,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.domain.estadoAfterFechaEntrega
 import com.example.optoapp.domain.PagoEffect
@@ -49,8 +51,10 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtModel
 import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtSection
+import com.example.optoapp.ui.screens.dispensacion.PASO_PRODUCTOS
 import com.example.optoapp.ui.screens.dispensacion.pasoInicialDispensacion
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.DispensacionItemUi
 import com.example.optoapp.viewmodel.DispensacionViewModel
 import com.example.optoapp.viewmodel.OrderLifecycleState
@@ -124,12 +128,12 @@ fun NuevaDispensacionScreen(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             OptoTopAppBar(
-                title = if (dispensacionId == null) "Nueva Dispensación" else "Editar Dispensación",
+                title = stringResource(if (dispensacionId == null) R.string.disp_titulo_nueva else R.string.disp_titulo_editar),
                 navigationIcon = {
                     IconButton(onClick = {
                         if (currentStep > 0) currentStep-- else navController.popBackStack()
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.disp_atras_cd))
                     }
                 },
                 actions = {
@@ -138,7 +142,7 @@ fun NuevaDispensacionScreen(
                             onClick = { saveAction() },
                             enabled = !uiState.isLoading && !lifecycle.isReadOnly,
                         ) {
-                            Icon(Icons.Default.Check, contentDescription = "Guardar")
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.disp_guardar_cd))
                         }
                     }
                 },
@@ -156,13 +160,13 @@ fun NuevaDispensacionScreen(
                     OutlinedButton(
                         onClick = { currentStep-- },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Anterior") }
+                    ) { Text(stringResource(R.string.disp_anterior)) }
                 }
                 if (currentStep < lastStepIndex) {
                     Button(
                         onClick = { currentStep++ },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Siguiente") }
+                    ) { Text(stringResource(R.string.disp_siguiente)) }
                 } else {
                     Button(
                         onClick = { saveAction() },
@@ -171,8 +175,8 @@ fun NuevaDispensacionScreen(
                     ) {
                         Text(
                             when {
-                                isEditMode -> "Actualizar Orden"
-                                else -> "Crear Orden"
+                                isEditMode -> stringResource(R.string.disp_actualizar_orden)
+                                else -> stringResource(R.string.disp_crear_orden)
                             },
                         )
                     }
@@ -254,6 +258,10 @@ fun NuevaDispensacionScreen(
                         dispensacionId = dispensacionId!!,
                         pacienteId = pacienteId,
                         navController = navController,
+                        onGestionarCostos = {
+                            currentStep = PASO_PRODUCTOS
+                            enfocarCosto = true
+                        },
                     )
                 }
             }
@@ -289,7 +297,7 @@ private fun StepOrden(
     onShowDatePicker: () -> Unit,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
-        Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+        Text(stringResource(R.string.disp_fecha, DateUtils.formatLocalized(uiState.fecha)))
     }
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -299,11 +307,11 @@ private fun StepOrden(
         OptoTextField(
             value = uiState.ot,
             onValueChange = { viewModel.updateUiState { s -> s.copy(ot = it) } },
-            label = "N° OT (OT-AAAA-####)",
+            label = stringResource(R.string.disp_ot_label),
             modifier = Modifier.weight(1f).testTag(TestTags.DISPENSACION_OT_FIELD),
         )
         TextButton(onClick = { viewModel.suggestOt() }) {
-            Text("Sugerir OT", fontSize = 13.sp)
+            Text(stringResource(R.string.disp_sugerir_ot), fontSize = 13.sp)
         }
     }
 
@@ -313,7 +321,7 @@ private fun StepOrden(
         shape = RoundedCornerShape(12.dp),
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Evaluación Vinculada", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.disp_evaluacion_vinculada), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
 
             if (uiState.evaluacionesDisponibles.isNotEmpty()) {
                 ExposedDropdownMenuBox(
@@ -323,13 +331,13 @@ private fun StepOrden(
                     OutlinedTextField(
                         value = if (uiState.evaluacionId != null) {
                             val eval = uiState.evaluacionesDisponibles.find { it.id == uiState.evaluacionId }
-                            if (eval != null) DateUtils.formatLocalized(eval.fecha) else "Seleccionar evaluación"
+                            if (eval != null) DateUtils.formatLocalized(eval.fecha) else stringResource(R.string.disp_seleccionar_evaluacion)
                         } else {
-                            "Sin evaluación"
+                            stringResource(R.string.disp_sin_evaluacion)
                         },
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Evaluación") },
+                        label = { Text(stringResource(R.string.disp_evaluacion)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = evaluacionExpanded) },
                         modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                     )
@@ -338,7 +346,7 @@ private fun StepOrden(
                         onDismissRequest = { onEvaluacionExpandedChange(false) },
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Sin evaluación", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            text = { Text(stringResource(R.string.disp_sin_evaluacion), color = MaterialTheme.colorScheme.onSurfaceVariant) },
                             onClick = {
                                 viewModel.setEvaluacionId(null)
                                 onEvaluacionExpandedChange(false)
@@ -356,16 +364,16 @@ private fun StepOrden(
                     }
                 }
             } else {
-                Text("No hay evaluaciones para este paciente.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.disp_sin_evaluaciones), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             if (selectedEvaluacion != null &&
                 (selectedEvaluacion.prismaOdValor.orEmpty().isNotBlank() || selectedEvaluacion.prismaOiValor.orEmpty().isNotBlank())
             ) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                Text("Prisma (solo lectura)", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.disp_prisma_solo_lectura), fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("OD:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.disp_od), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         buildPrismaDisplay(selectedEvaluacion.prismaOdValor.orEmpty(), selectedEvaluacion.prismaOdBase.orEmpty()),
                         fontSize = 12.sp,
@@ -373,7 +381,7 @@ private fun StepOrden(
                     )
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("OI:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.disp_oi), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         buildPrismaDisplay(selectedEvaluacion.prismaOiValor.orEmpty(), selectedEvaluacion.prismaOiBase.orEmpty()),
                         fontSize = 12.sp,
@@ -404,7 +412,7 @@ private fun StepProductos(
     }
 
     Text(
-        "Productos",
+        stringResource(R.string.disp_productos),
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         color = MaterialTheme.colorScheme.primary,
@@ -430,9 +438,9 @@ private fun StepProductos(
             onClick = { viewModel.addItem() },
             modifier = Modifier.fillMaxWidth().testTag(TestTags.DISPENSACION_AGREGAR_ITEM_BTN),
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Agregar")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.disp_agregar_cd))
             Spacer(Modifier.width(8.dp))
-            Text("Agregar otro producto (lente + montura)")
+            Text(stringResource(R.string.disp_agregar_producto))
         }
     }
 
@@ -453,7 +461,7 @@ private fun ReplacementOrderBanner(link: @Composable () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)),
     ) {
         Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Orden de reemplazo por garantía", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.disp_orden_reemplazo), fontWeight = FontWeight.Bold)
             link()
         }
     }
@@ -467,6 +475,7 @@ private fun StepGestion(
     dispensacionId: String,
     pacienteId: String,
     navController: NavController,
+    onGestionarCostos: () -> Unit,
 ) {
     var showAnularDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -501,9 +510,9 @@ private fun StepGestion(
 
     if (showAnularDialog) {
         MotivoDialog(
-            title = "¿Anular orden?",
-            confirmText = "Anular",
-            message = "Se revierten los pagos y vuelven al stock la montura de tienda y los regalos. No se puede deshacer.",
+            title = stringResource(R.string.disp_anular_titulo),
+            confirmText = stringResource(R.string.disp_anular_confirmar),
+            message = stringResource(R.string.disp_anular_mensaje),
             submitting = uiState.isLoading,
             onConfirm = { motivo ->
                 viewModel.anularDispensacion(dispensacionId, motivo) {
@@ -517,7 +526,7 @@ private fun StepGestion(
 
     if (showDeleteDialog) {
         ConfirmDeleteDialog(
-            itemName = "OT ${uiState.ot}".trim(),
+            itemName = stringResource(R.string.disp_ot_nombre, uiState.ot).trim(),
             deleting = uiState.isLoading,
             onConfirm = {
                 viewModel.deleteDispensacion(dispensacionId) {
@@ -534,19 +543,19 @@ private fun StepGestion(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.disp_informacion_financiera), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
             val pagado = uiState.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
             val saldo = monto - pagado
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Monto Total:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text("s/. ${"%.2f".format(monto)}", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.disp_monto_total), fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(MoneyFormatter.format(monto), fontWeight = FontWeight.Bold)
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Saldo:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.disp_saldo), fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
-                    "s/. ${"%.2f".format(saldo)}",
+                    MoneyFormatter.format(saldo),
                     fontWeight = FontWeight.Bold,
                     color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
                 )
@@ -556,20 +565,20 @@ private fun StepGestion(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Estado:", fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(stringResource(R.string.disp_estado), fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 OrderEstadoChip(uiState.estadoEntrega, saldo = saldo)
             }
             OutlinedButton(
                 onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Gestionar Pagos") }
+            ) { Text(stringResource(R.string.disp_gestionar_pagos)) }
             OutlinedButton(
-                onClick = { navController.navigate(Route.CostosYGastosDisp(dispensacionId).route) },
+                onClick = onGestionarCostos,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Receipt, contentDescription = stringResource(R.string.disp_recibo_cd), modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Gestionar costos →")
+                Text(stringResource(R.string.disp_gestionar_costos))
             }
             if (!lifecycle.isReadOnly) {
                 FechaEntregaControls(uiState = uiState, viewModel = viewModel)
@@ -585,7 +594,7 @@ private fun StepGestion(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
         ) {
-            Text("Anular orden")
+            Text(stringResource(R.string.disp_anular_orden))
         }
     }
     if (lifecycle.canClaim) {
@@ -594,7 +603,7 @@ private fun StepGestion(
             enabled = !uiState.isLoading,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Reclamar (garantía)")
+            Text(stringResource(R.string.disp_reclamar_garantia))
         }
     }
     if (lifecycle.canHardDelete) {
@@ -604,7 +613,7 @@ private fun StepGestion(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
         ) {
-            Text("Eliminar orden")
+            Text(stringResource(R.string.disp_eliminar_orden))
         }
     }
 }
@@ -636,7 +645,7 @@ private fun FechaEntregaControls(
                 )
             }
         }) {
-            Text("Asignar fecha de entrega", fontSize = 12.sp)
+            Text(stringResource(R.string.disp_asignar_fecha_entrega), fontSize = 12.sp)
         }
     }
 }
@@ -672,7 +681,7 @@ private fun CollapsibleItemCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Lente ${index + 1}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.disp_lente_numero, index + 1), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             buildItemSummary(item),
@@ -683,19 +692,10 @@ private fun CollapsibleItemCard(
                             modifier = Modifier.weight(1f),
                         )
                     }
-                    if (item.costoRealOd != null || item.costoRealOi != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                "Costos: ${item.costoRealOd?.let { "OD s/. ${fmt(it)}" } ?: ""}${if (item.costoRealOd != null && item.costoRealOi != null) " | " else ""}${item.costoRealOi?.let { "OI s/. ${fmt(it)}" } ?: ""}",
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                    }
                 }
                 Icon(
                     if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (isExpanded) "Colapsar" else "Expandir",
+                    contentDescription = stringResource(if (isExpanded) R.string.disp_colapsar_cd else R.string.disp_expandir_cd),
                     modifier = Modifier.size(20.dp),
                 )
             }
@@ -719,9 +719,9 @@ private fun CollapsibleItemCard(
                         onClick = onCalculateCosts,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Icon(Icons.Default.Receipt, contentDescription = "Recibo", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Receipt, contentDescription = stringResource(R.string.disp_recibo_cd), modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Calcular costos desde evaluación")
+                        Text(stringResource(R.string.disp_calcular_costos))
                     }
                 }
             }
@@ -729,17 +729,18 @@ private fun CollapsibleItemCard(
     }
 }
 
+@Composable
 private fun buildItemSummary(item: DispensacionItemUi): String {
     val parts = mutableListOf<String>()
     if (item.tipoLente.isNotBlank()) parts.add(item.tipoLente)
     if (item.materialLente.isNotBlank()) parts.add(item.materialLente)
     if (item.tratamientos.isNotEmpty()) parts.add(item.tratamientos.first())
-    if (item.origenMontura.isNotBlank()) parts.add("Montura: ${item.origenMontura}")
+    if (item.origenMontura.isNotBlank()) parts.add(stringResource(R.string.disp_resumen_montura, item.origenMontura))
     if (item.descripcionMontura.isNotBlank()) parts.add(item.descripcionMontura)
     return if (parts.isNotEmpty()) {
         parts.joinToString(" · ")
     } else {
-        "Sin especificar"
+        stringResource(R.string.disp_sin_especificar)
     }
 }
 
@@ -751,10 +752,4 @@ private fun buildPrismaDisplay(valor: String, base: String): String {
         v.isNotBlank() -> "${v}Δ"
         else -> "—"
     }
-}
-
-private fun fmt(value: Double): String = if (value == value.toLong().toDouble()) {
-    String.format(java.util.Locale.getDefault(), "%,.0f", value)
-} else {
-    String.format(java.util.Locale.getDefault(), "%,.2f", value)
 }

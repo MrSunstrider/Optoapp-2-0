@@ -1,22 +1,18 @@
-﻿package com.example.optoapp.ui.screens
+package com.example.optoapp.ui.screens
 
+import com.example.optoapp.viewmodel.COST_BLOCKS
 import com.example.optoapp.viewmodel.CostosYGastosUiState
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
+import com.example.optoapp.viewmodel.blockToFilter
 import org.junit.Assert.*
 import org.junit.Test
 
-/**
- * RED test: CostosYGastosScreen structure — 2 tabs render, block dropdown works.
- *
- * Tests UiState defaults and ViewModel contract via reflection
- * (the screen and ViewModel don't exist yet — that's expected in RED phase).
- */
 class CostosYGastosScreenTest {
 
     @Test
     fun uiState_defaults_tabIsMatriz() {
         val state = CostosYGastosUiState()
-        assertEquals(0, state.selectedTab) // 0 = Matriz tab
+        assertEquals(0, state.selectedTab)
     }
 
     @Test
@@ -44,46 +40,14 @@ class CostosYGastosScreenTest {
     }
 
     @Test
-    fun uiState_costosPorDispensacion_isEmptyByDefault() {
-        val state = CostosYGastosUiState()
-        assertTrue(state.costosPorDispensacion.isEmpty())
-    }
-
-    @Test
-    fun uiState_dispensacionFilter_isNullByDefault() {
-        val state = CostosYGastosUiState()
-        assertNull(state.dispensacionFilterId)
-    }
-
-    @Test
-    fun uiState_tabTitles_containsMatriz() {
-        val tabs = listOf("Matriz de Costos", "Gastos Operativos")
-        assertEquals("Matriz de Costos", tabs[0])
-        assertEquals("Gastos Operativos", tabs[1])
-    }
-
-    @Test
     fun uiState_switchingTab_updatesSelectedTab() {
         val state = CostosYGastosUiState(selectedTab = 1)
         assertEquals(1, state.selectedTab)
     }
 
     @Test
-    fun uiState_blockList_contains8Blocks() {
-        val blocks = listOf(
-            "Stock Monofocal",
-            "Stock Bifocal",
-            "Stock Multifocal",
-            "Fabricación Resina",
-            "Fabricación Cristal",
-            "Monturas",
-            "Biselado",
-            "Lentes Contacto",
-        )
-        assertEquals(8, blocks.size)
-        assertTrue(blocks.contains("Stock Monofocal"))
-        assertTrue(blocks.contains("Biselado"))
-        assertTrue(blocks.contains("Lentes Contacto"))
+    fun costBlocks_mapToTheirStockOrFabricationFilter() {
+        assertEquals(listOf("stock", "stock", "stock", "fabricacion", "fabricacion"), COST_BLOCKS.map(::blockToFilter))
     }
 
     @Test

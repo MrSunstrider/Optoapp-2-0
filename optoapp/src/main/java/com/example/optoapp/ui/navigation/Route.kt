@@ -50,7 +50,6 @@ sealed class Route(val route: String) {
     }
     data class NuevoServicioPaciente(val pacienteId: String) : Route("nuevo_servicio/$pacienteId")
     data class EditarServicio(val id: String) : Route("editar_servicio/$id")
-    data class CostosYGastosDisp(val dispensacionId: String) : Route("costos_y_gastos/$dispensacionId")
     data class InformacionFinanciera(val dispensacionId: String) : Route("informacion_financiera/$dispensacionId")
 
 

@@ -9,7 +9,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,7 +50,6 @@ import java.time.YearMonth
 fun CostosYGastosScreen(
     navController: NavController,
     drawerState: DrawerState,
-    dispensacionId: String? = null,
     viewModel: CostosYGastosViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -103,7 +107,7 @@ fun CostosYGastosScreen(
             }
 
             when (uiState.selectedTab) {
-                0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel, dispensacionId = dispensacionId)
+                0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel)
                 1 -> Text(stringResource(R.string.costos_biselado_proximamente), modifier = Modifier.padding(16.dp))
                 2 -> Text(stringResource(R.string.costos_lentes_contacto_proximamente), modifier = Modifier.padding(16.dp))
                 3 -> GastosOperativosTab(
@@ -121,7 +125,6 @@ fun CostosYGastosScreen(
 private fun MatrizDeCostosTab(
     uiState: com.example.optoapp.viewmodel.CostosYGastosUiState,
     viewModel: CostosYGastosViewModel,
-    dispensacionId: String?,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -191,27 +194,6 @@ private fun MatrizDeCostosTab(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                    }
-                }
-            }
-
-            if (!dispensacionId.isNullOrBlank()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Receipt, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.costos_orden_titulo), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.costos_orden_dispensacion, dispensacionId.take(8)),
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 }
             }
@@ -446,6 +428,7 @@ private fun GastosOperativosTab(
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
+                        // Decorative because the message below already announces the empty month to screen readers.
                         Icon(
                             Icons.Default.MoneyOff,
                             contentDescription = null,

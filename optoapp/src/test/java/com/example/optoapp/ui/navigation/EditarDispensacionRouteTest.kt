@@ -1,7 +1,9 @@
 package com.example.optoapp.ui.navigation
 
 import com.example.optoapp.ui.screens.dispensacion.pasoInicialDispensacion
+import com.example.optoapp.viewmodel.CostosYGastosUiState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EditarDispensacionRouteTest {
@@ -21,6 +23,13 @@ class EditarDispensacionRouteTest {
     @Test
     fun `the registered pattern accepts the optional section`() {
         assertEquals("editarDispensacion/{pacienteId}/{dispId}?seccion={seccion}", Route.EditarDispensacion.PATTERN)
+    }
+
+    @Test
+    fun `order costs are managed in the order itself instead of a costs screen route`() {
+        assertTrue(Route::class.java.declaredClasses.none { it.simpleName == "CostosYGastosDisp" })
+        val estadoCostos = CostosYGastosUiState::class.java.declaredFields.map { it.name }
+        assertTrue(estadoCostos.none { it == "costosPorDispensacion" || it == "dispensacionFilterId" })
     }
 
     @Test

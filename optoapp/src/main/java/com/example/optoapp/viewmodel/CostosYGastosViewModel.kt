@@ -27,7 +27,6 @@ import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
-/** 5 cost blocks for ophthalmic lenses. Each block maps to stock_o_fabricacion values. */
 val COST_BLOCKS = listOf(
     "Stock Monofocal",
     "Stock Bifocal",
@@ -36,7 +35,6 @@ val COST_BLOCKS = listOf(
     "Fabricación Cristal",
 )
 
-/** Maps display block name to stock_o_fabricacion filter value. */
 fun blockToFilter(block: String): String = when (block) {
     "Stock Monofocal", "Stock Bifocal", "Stock Multifocal" -> "stock"
     "Fabricación Resina", "Fabricación Cristal" -> "fabricacion"
@@ -72,8 +70,6 @@ data class CostosYGastosUiState(
     val selectedTab: Int = 0,
     val selectedBlock: String? = null,
     val costosDelBloque: List<CostoProductoEntity> = emptyList(),
-    val costosPorDispensacion: Map<String, List<CostoProductoEntity>> = emptyMap(),
-    val dispensacionFilterId: String? = null,
     val editingCosto: CostoProductoEntity? = null,
     val nuevoCostoUnitario: String = "",
     val gastosOperativos: List<GastoOperativoEntity> = emptyList(),
