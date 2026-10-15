@@ -14,11 +14,13 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.CapturaCosto
 import com.example.optoapp.domain.CapturaCostoItem
 import com.example.optoapp.domain.ComponenteCosto
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
+import com.example.optoapp.domain.OrigenComponente
 import com.example.optoapp.domain.OrigenMontura
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.RecetaCosto
@@ -123,6 +125,9 @@ data class DispensacionItemUi(
     val costoRealBiselado: Double? = null,
     val costoRealLc: Double? = null,
     val costoOverrides: Map<ComponenteCosto, Double> = emptyMap(),
+    val costoOrigen: String? = null,
+    // Session-only because the schema stores a single origin per item, not one per component.
+    val costoOrigenes: Map<ComponenteCosto, OrigenComponente> = emptyMap(),
 )
 
 @HiltViewModel
@@ -307,6 +312,7 @@ class DispensacionViewModel @Inject constructor(
         costoRealOd = costoRealOd, costoRealOi = costoRealOi,
         costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
         costoRealLc = costoRealLc,
+        costoOrigen = costoOrigen,
     )
 
     fun addPago(pago: Pago) {
@@ -522,8 +528,7 @@ class DispensacionViewModel @Inject constructor(
                     repository.runInTransaction {
                         kotlinx.coroutines.runBlocking {
                             val row = if (isNew) disp else persistedEditableRow(disp, currentOpticaId)
-                            // Stock adjustments MUST run inside the transaction for atomicity.
-                            // If the transaction fails, stock is not modified.
+                            // Runs inside the transaction so a failed save never leaves stock adjusted.
                             toAddStock.forEach { mid ->
                                 stockHelper.adjustStockAndRegistrarMovimiento(mid, currentOpticaId, 1, "AJUSTE", finalId, "Reversión por edición")
                             }
@@ -580,7 +585,7 @@ class DispensacionViewModel @Inject constructor(
                                 repository.deletePagoRegistrandoAnulacionEnCaja(pago, currentOpticaId)
                             }
 
-                            // Prefer DAO effect-aware net over wizard in-memory pagos (IF may have newer rows).
+                            // Uses the DAO net because Información Financiera may have saved newer pagos than the wizard holds.
                             val montoPagadoNeto = calcularMontoPagadoUseCase(finalId, currentOpticaId)
                             repository.updateDispensacion(row.copy(montoPagado = montoPagadoNeto))
                         }
@@ -748,6 +753,14 @@ class DispensacionViewModel @Inject constructor(
         updateItem(itemIndex, item.copy(costoOverrides = item.costoOverrides + (componente to valor)))
     }
 
+    // Re-runs the preview because clearing must show the same fallback (lookup or persisted snapshot) the save applies.
+    fun clearCostoOverride(itemIndex: Int, componente: ComponenteCosto) {
+        val item = _uiState.value.items.getOrNull(itemIndex) ?: return
+        if (componente !in item.costoOverrides) return
+        updateItem(itemIndex, item.copy(costoOverrides = item.costoOverrides - componente))
+        calculateCosts(itemIndex)
+    }
+
     fun calculateCosts(itemIndex: Int) {
         viewModelScope.launch {
             val s = _uiState.value
@@ -756,7 +769,7 @@ class DispensacionViewModel @Inject constructor(
             val receta = recetaDe(s.evaluacionId, opticaId)
             val previo = repository.getDispensacionItemsByDispensacion(s.generatedId, opticaId).find { it.id == itemUi.id }
             val recetaPrevia = recetaPrevia(previo?.dispensacionId, s.evaluacionId, receta, opticaId)
-            val capturado = capturarCosto(
+            val captura = capturarDetalle(
                 itemUi.toEntity(s.generatedId, opticaId),
                 previo,
                 itemUi.costoOverrides,
@@ -764,6 +777,7 @@ class DispensacionViewModel @Inject constructor(
                 recetaPrevia,
                 s.fecha,
             )
+            val capturado = captura.item
             val actual = _uiState.value.items.getOrNull(itemIndex)?.takeIf { it.id == itemUi.id } ?: return@launch
             updateItem(
                 itemIndex,
@@ -773,6 +787,7 @@ class DispensacionViewModel @Inject constructor(
                     costoRealMontura = capturado.costoRealMontura,
                     costoRealBiselado = capturado.costoRealBiselado,
                     costoRealLc = capturado.costoRealLc,
+                    costoOrigenes = captura.origenes,
                 ),
             )
         }
@@ -785,7 +800,16 @@ class DispensacionViewModel @Inject constructor(
         receta: RecetaCosto?,
         recetaPrevia: RecetaCosto?,
         fecha: LocalDate,
-    ): DispensacionItem = CapturaCostoItem.capturar(item, previo, overrides, receta, recetaPrevia) {
+    ): DispensacionItem = capturarDetalle(item, previo, overrides, receta, recetaPrevia, fecha).item
+
+    private suspend fun capturarDetalle(
+        item: DispensacionItem,
+        previo: DispensacionItem?,
+        overrides: Map<ComponenteCosto, Double>,
+        receta: RecetaCosto?,
+        recetaPrevia: RecetaCosto?,
+        fecha: LocalDate,
+    ): CapturaCosto = CapturaCostoItem.capturarDetalle(item, previo, overrides, receta, recetaPrevia) {
         calcularCostoItem(item.opticaId, it, receta, fecha)
     }
 
@@ -794,7 +818,7 @@ class DispensacionViewModel @Inject constructor(
         return (repository.getEvaluacionById(id, opticaId) as? Resource.Success)?.data?.let(RecetaCosto::from)
     }
 
-    // The order only links its evaluation, so the prescription it was priced with is the one it linked before.
+    // Reuses the previously linked evaluation because that is the prescription the order was priced with.
     private suspend fun recetaPrevia(
         dispensacionId: String?,
         evaluacionId: String?,

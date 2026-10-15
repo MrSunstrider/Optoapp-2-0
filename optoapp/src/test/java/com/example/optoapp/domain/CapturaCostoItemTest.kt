@@ -218,4 +218,22 @@ class CapturaCostoItemTest {
         assertNull(guardado.altoIndice)
         assertEquals(9.0, guardado.costoRealBiselado!!, 0.001)
     }
+
+    @Test
+    fun `the detailed capture reports the origin of each captured component`() = runTest {
+        val detalle = CapturaCostoItem.capturarDetalle(
+            item,
+            persistido(null, od = 18.0, oi = 18.0, biselado = null),
+            mapOf(OD to 25.0),
+            receta,
+            receta,
+        ) { CostoItemCalculado(mapOf(BISELADO to null)) }
+
+        assertEquals(OrigenComponente.MANUAL, detalle.origenes[OD])
+        assertEquals(OrigenComponente.PRESERVADA, detalle.origenes[OI])
+        assertEquals(OrigenComponente.PRESERVADA, detalle.origenes[MONTURA])
+        assertEquals(OrigenComponente.FALTANTE, detalle.origenes[BISELADO])
+        assertEquals(25.0, detalle.item.costoRealOd!!, 0.001)
+        assertEquals("faltante", detalle.item.costoOrigen)
+    }
 }

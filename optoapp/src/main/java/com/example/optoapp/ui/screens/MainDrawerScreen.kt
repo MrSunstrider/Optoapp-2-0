@@ -53,7 +53,7 @@ fun MainDrawerScreen(
     val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
     val showConfiguracion = AppRoles.canManageUsers(opticaRol)
 
-    // Refresh cloud data so the user always sees the latest shared state on entry
+    // Refreshes on entry because other devices may have changed the shared data while this one was away.
     LaunchedEffect(Unit) {
         syncViewModel.performSilentSync()
     }
@@ -191,7 +191,16 @@ fun MainDrawerScreen(
                                     NuevaDispensacionScreen(navController, pacienteId = pacienteId)
                                 }
                             }
-                            composable(Route.EditarDispensacion("{pacienteId}", "{dispId}").route) { backStackEntry ->
+                            composable(
+                                Route.EditarDispensacion.PATTERN,
+                                arguments = listOf(
+                                    navArgument(Route.EditarDispensacion.SECCION_ARG) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { backStackEntry ->
                                 val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                                 if (pacienteId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -201,6 +210,7 @@ fun MainDrawerScreen(
                                         navController,
                                         pacienteId = pacienteId,
                                         dispensacionId = backStackEntry.arguments?.getString("dispId"),
+                                        seccion = backStackEntry.arguments?.getString(Route.EditarDispensacion.SECCION_ARG),
                                     )
                                 }
                             }
@@ -264,8 +274,6 @@ fun MainDrawerScreen(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                         )
                     }
-
-                    // Bottom navigation removed — drawer provides all navigation
                 }
             }
         }

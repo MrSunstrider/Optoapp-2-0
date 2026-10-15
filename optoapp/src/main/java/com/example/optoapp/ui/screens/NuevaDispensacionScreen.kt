@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +47,9 @@ import com.example.optoapp.ui.components.reclamoOrigenLinkLabel
 import com.example.optoapp.ui.components.reemplazoLinkLabel
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
+import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtModel
+import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtSection
+import com.example.optoapp.ui.screens.dispensacion.pasoInicialDispensacion
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.viewmodel.DispensacionItemUi
 import com.example.optoapp.viewmodel.DispensacionViewModel
@@ -57,14 +62,21 @@ internal fun wizardStepsForMode(isEditMode: Boolean): List<String> =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, dispensacionId: String? = null, viewModel: DispensacionViewModel = hiltViewModel()) {
+fun NuevaDispensacionScreen(
+    navController: NavController,
+    pacienteId: String,
+    dispensacionId: String? = null,
+    seccion: String? = null,
+    viewModel: DispensacionViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycle by viewModel.lifecycle.collectAsState()
     val monturasActivas by viewModel.monturasActivas.collectAsState()
     val expandedItems = remember { mutableStateMapOf<Int, Boolean>() }
     var showDatePicker by remember { mutableStateOf(false) }
     var evaluacionExpanded by remember { mutableStateOf(false) }
-    var currentStep by remember { mutableStateOf(0) }
+    var currentStep by remember { mutableStateOf(pasoInicialDispensacion(seccion)) }
+    var enfocarCosto by remember { mutableStateOf(seccion == Route.EditarDispensacion.SECCION_COSTO) }
     val isEditMode = dispensacionId != null
     val wizardSteps = remember(isEditMode) { wizardStepsForMode(isEditMode) }
     val lastStepIndex = wizardSteps.lastIndex
@@ -231,6 +243,8 @@ fun NuevaDispensacionScreen(navController: NavController, pacienteId: String, di
                     monturasActivas = monturasActivas,
                     expandedItems = expandedItems,
                     canAddItems = !lifecycle.isReadOnly,
+                    enfocarCosto = enfocarCosto,
+                    onCostoEnfocado = { enfocarCosto = false },
                 )
                 2 -> if (isEditMode) {
                     StepGestion(
@@ -378,7 +392,17 @@ private fun StepProductos(
     monturasActivas: List<com.example.optoapp.data.Montura>,
     expandedItems: MutableMap<Int, Boolean>,
     canAddItems: Boolean,
+    enfocarCosto: Boolean,
+    onCostoEnfocado: () -> Unit,
 ) {
+    val seccionCosto = remember { BringIntoViewRequester() }
+    LaunchedEffect(enfocarCosto) {
+        if (enfocarCosto) {
+            seccionCosto.bringIntoView()
+            onCostoEnfocado()
+        }
+    }
+
     Text(
         "Productos",
         fontWeight = FontWeight.Bold,
@@ -411,6 +435,15 @@ private fun StepProductos(
             Text("Agregar otro producto (lente + montura)")
         }
     }
+
+    val montoTotal = uiState.montoTotal.replace(",", ".").toDoubleOrNull()
+    CostoMargenOtSection(
+        modelo = remember(montoTotal, uiState.items) { CostoMargenOtModel.from(montoTotal, uiState.items) },
+        onEditar = viewModel::setCostoOverride,
+        onRestablecer = viewModel::clearCostoOverride,
+        editable = canAddItems,
+        modifier = Modifier.bringIntoViewRequester(seccionCosto),
+    )
 }
 
 @Composable

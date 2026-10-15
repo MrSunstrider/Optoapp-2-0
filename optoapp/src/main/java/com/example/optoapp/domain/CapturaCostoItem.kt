@@ -2,6 +2,8 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionItem
 
+data class CapturaCosto(val item: DispensacionItem, val origenes: Map<ComponenteCosto, OrigenComponente>)
+
 object CapturaCostoItem {
 
     suspend fun capturar(
@@ -11,44 +13,54 @@ object CapturaCostoItem {
         receta: RecetaCosto?,
         recetaPrevia: RecetaCosto?,
         calcular: suspend (DispensacionItem) -> CostoItemCalculado,
-    ): DispensacionItem {
+    ): DispensacionItem = capturarDetalle(item, previo, overrides, receta, recetaPrevia, calcular).item
+
+    suspend fun capturarDetalle(
+        item: DispensacionItem,
+        previo: DispensacionItem?,
+        overrides: Map<ComponenteCosto, Double>,
+        receta: RecetaCosto?,
+        recetaPrevia: RecetaCosto?,
+        calcular: suspend (DispensacionItem) -> CostoItemCalculado,
+    ): CapturaCosto {
         val actual = item.copy(altoIndice = altoIndice(item, previo))
         val pendientes = ComponenteCosto.entries.filter {
             it !in overrides && requiereLookup(it, actual, previo, receta, recetaPrevia)
         }
         val calculado = if (pendientes.isEmpty()) emptyMap() else calcular(actual).componentes
         val costos = mutableMapOf<ComponenteCosto, Double>()
-        val origenes = mutableListOf<OrigenComponente>()
+        val origenes = linkedMapOf<ComponenteCosto, OrigenComponente>()
         ComponenteCosto.entries.forEach { componente ->
             val override = overrides[componente]
             val persistido = previo?.costo(componente)
             when {
                 override != null -> {
                     costos[componente] = override
-                    origenes += OrigenComponente.MANUAL
+                    origenes[componente] = OrigenComponente.MANUAL
                 }
                 componente in pendientes -> if (componente in calculado) {
                     val valor = calculado[componente]
                     costos[componente] = valor ?: 0.0
-                    origenes += if (valor != null) OrigenComponente.MATRIZ else OrigenComponente.FALTANTE
+                    origenes[componente] = if (valor != null) OrigenComponente.MATRIZ else OrigenComponente.FALTANTE
                 }
                 persistido != null -> {
                     costos[componente] = persistido
-                    origenes += OrigenComponente.PRESERVADA
+                    origenes[componente] = OrigenComponente.PRESERVADA
                 }
             }
         }
-        return actual.copy(
+        val capturado = actual.copy(
             costoRealOd = costos[ComponenteCosto.OD],
             costoRealOi = costos[ComponenteCosto.OI],
             costoRealMontura = costos[ComponenteCosto.MONTURA],
             costoRealBiselado = costos[ComponenteCosto.BISELADO],
             costoRealLc = costos[ComponenteCosto.LC],
-            costoOrigen = CostoOrigenResolver.resolver(origenes, previo?.costoOrigen),
+            costoOrigen = CostoOrigenResolver.resolver(origenes.values.toList(), previo?.costoOrigen),
         )
+        return CapturaCosto(capturado, origenes)
     }
 
-    // A value persisted by the web stays; one derived from a treatment the user removed must go.
+    // Keeps a web-entered index but drops one derived from a removed treatment, because a stale index mis-prices the bevel.
     private fun altoIndice(item: DispensacionItem, previo: DispensacionItem?): String? {
         AltoIndiceNormalizer.fromTratamientos(item.tratamientos)?.let { return it }
         val persistido = previo?.altoIndice ?: return null
@@ -86,7 +98,7 @@ object CapturaCostoItem {
         }
     }
 
-    // The bevel price depends on the stock/fabrication block and cylinder series, not on the raw sphere.
+    // Compares block and cylinder series because the bevel matrix is priced by them, so a sphere change alone keeps the price.
     private fun bloqueBiselado(esfera: Double?, cilindro: Double?): Pair<String, Int?>? = esfera?.let {
         CalcularCostoItemUseCase.tipoLente(it, cilindro) to CalcularCostoItemUseCase.seriePorCilindro(cilindro)
     }

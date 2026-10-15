@@ -8,7 +8,7 @@ import java.util.Locale
 
 object MoneyFormatter {
     private const val SYMBOL = "S/ "
-    private const val NOT_AVAILABLE = "\u2014"
+    const val NOT_AVAILABLE = "\u2014"
     private val THOUSAND = BigDecimal(1_000)
     private val MILLION = BigDecimal(1_000_000)
 

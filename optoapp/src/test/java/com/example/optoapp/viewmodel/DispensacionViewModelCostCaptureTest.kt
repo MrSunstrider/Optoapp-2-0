@@ -11,6 +11,7 @@ import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.ComponenteCosto
 import com.example.optoapp.domain.CostoItemCalculado
+import com.example.optoapp.domain.OrigenComponente
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
@@ -23,6 +24,8 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -32,6 +35,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -89,7 +93,7 @@ class DispensacionViewModelCostCaptureTest {
         mockk(relaxed = true),
     )
 
-    // The save transaction runs on Dispatchers.IO, outside the test scheduler, so completion is awaited in real time.
+    // Awaits in real time because the save transaction runs on Dispatchers.IO, outside the test scheduler.
     private suspend fun DispensacionViewModel.guardar(dispensacionId: String?) {
         val guardado = CompletableDeferred<Unit>()
         saveDispensacion("pac-1", dispensacionId) { guardado.complete(Unit) }
@@ -193,5 +197,57 @@ class DispensacionViewModelCostCaptureTest {
         val item = viewModel.uiState.value.items.first()
         assertEquals(18.0, item.costoRealOd!!, 0.001)
         assertEquals(30.0, item.costoRealOi!!, 0.001)
+    }
+
+    @Test
+    fun `the cost preview records the origin of each component`() = runTest(testDispatcher) {
+        coEvery { calcularCostoItem(any(), any(), any(), any()) } returns
+            CostoItemCalculado(mapOf(ComponenteCosto.OD to 18.0, ComponenteCosto.BISELADO to null))
+        val viewModel = createViewModel()
+        viewModel.prepararOt()
+
+        viewModel.calculateCosts(0)
+        advanceUntilIdle()
+
+        val origenes = viewModel.uiState.value.items.first().costoOrigenes
+        assertEquals(OrigenComponente.MATRIZ, origenes[ComponenteCosto.OD])
+        assertEquals(OrigenComponente.FALTANTE, origenes[ComponenteCosto.BISELADO])
+    }
+
+    @Test
+    fun `clearing an override restores the matrix value and origin`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.prepararOt()
+        viewModel.setCostoOverride(0, ComponenteCosto.OD, 20.0)
+        viewModel.calculateCosts(0)
+        advanceUntilIdle()
+
+        viewModel.clearCostoOverride(0, ComponenteCosto.OD)
+        advanceUntilIdle()
+
+        val item = viewModel.uiState.value.items.first()
+        assertTrue(item.costoOverrides.isEmpty())
+        assertEquals(18.0, item.costoRealOd!!, 0.001)
+        assertEquals(OrigenComponente.MATRIZ, item.costoOrigenes[ComponenteCosto.OD])
+    }
+
+    @Test
+    fun `a loaded order keeps the saved cost origin of each item`() = runTest(testDispatcher) {
+        val persistido = DispensacionItem(id = "item-1", dispensacionId = "disp-1", costoRealOd = 15.0, costoOrigen = "faltante")
+        coEvery { repository.getDispensacionById("disp-1", "optica-test") } returns Resource.Success(
+            DispensacionOptica(
+                id = "disp-1", ot = "OT-2026-0001", pacienteId = "pac-1", fecha = fechaOt,
+                opticaId = "optica-test", estadoEntrega = "Pendiente",
+            ),
+        )
+        coEvery { repository.getDispensacionItemsByDispensacion("disp-1", "optica-test") } returns listOf(persistido)
+        coEvery { repository.getPagosByDispensacion("disp-1", "optica-test") } returns flowOf(emptyList())
+        coEvery { repository.getRegalosByDispensacionId("disp-1", "optica-test") } returns emptyList()
+        val viewModel = createViewModel()
+
+        viewModel.loadDispensacion("disp-1")
+
+        val item = viewModel.uiState.first { !it.isLoading && it.ot.isNotEmpty() }.items.single()
+        assertEquals("faltante", item.costoOrigen)
     }
 }
