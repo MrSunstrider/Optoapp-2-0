@@ -293,4 +293,15 @@
     <string name="chart_columna_categoria">Categoría</string>
     <string name="chart_columna_monto">Monto</string>
     <string name="chart_columna_porcentaje">Porcentaje</string>
+
+    <!-- Metric tiles and cost coverage -->
+    <string name="metric_estado_bueno">Bueno</string>
+    <string name="metric_estado_atencion">Atención</string>
+    <string name="metric_estado_critico">Crítico</string>
+    <string name="cobertura_titulo">Cobertura de costos</string>
+    <string name="cobertura_sin_datos">Sin datos</string>
+    <string name="cobertura_offline_nota">cobertura no disponible sin conexión</string>
+    <string name="cobertura_real">%1$s real</string>
+    <string name="cobertura_estimado">%1$s estimado</string>
+    <string name="cobertura_faltante">%1$s faltante</string>
 </resources>
