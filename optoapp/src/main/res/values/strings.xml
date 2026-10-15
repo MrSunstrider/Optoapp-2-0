@@ -202,4 +202,9 @@
     <string name="reportes_margen">Margen</string>
     <string name="reportes_margen_movimiento">Margen: s/. %1$s</string>
     <string name="reportes_costo_incompleto">Costo incompleto</string>
+
+    <!-- Analisis -->
+    <string name="analisis_eliminar_gasto_confirmacion">¿Eliminar \"%1$s\" por %2$s?</string>
+    <string name="analisis_categoria_ventas_margen">%1$s ventas · %2$s margen</string>
+    <string name="analisis_stock_costo_unitario">Costo: %1$s c/u</string>
 </resources>

@@ -15,11 +15,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Prioridad
@@ -29,6 +31,7 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.GastosViewModel
@@ -230,7 +233,7 @@ fun AnalisisNegocioScreen(
                                 Icon(Icons.Default.Refresh, contentDescription = "Actualizar gastos", modifier = Modifier.size(16.dp))
                             }
                         }
-                        Text("S/ ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
+                        Text(MoneyFormatter.format(totalGastos), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
                     }
                     if (gastosMes.isNotEmpty()) {
                         Spacer(Modifier.height(6.dp))
@@ -262,7 +265,7 @@ fun AnalisisNegocioScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     )
                                 }
-                                Text("S/ ${formatNumber(g.monto.toDouble())}", fontSize = 12.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
+                                Text(MoneyFormatter.format(g.monto.toDouble()), fontSize = 12.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
                                     onClick = { gastosViewModel.editGasto(g) },
@@ -306,7 +309,10 @@ fun AnalisisNegocioScreen(
                         AlertDialog(
                             onDismissRequest = { deleteTarget = null },
                             title = { Text("Eliminar gasto") },
-                            text = { Text("¿Eliminar \"${target.categoria}${if (!target.descripcion.isNullOrBlank()) " · ${target.descripcion}" else ""}\" por S/ ${formatNumber(target.monto.toDouble())}?") },
+                            text = {
+                                val etiqueta = target.categoria + if (!target.descripcion.isNullOrBlank()) " · ${target.descripcion}" else ""
+                                Text(stringResource(R.string.analisis_eliminar_gasto_confirmacion, etiqueta, MoneyFormatter.format(target.monto.toDouble())))
+                            },
                             confirmButton = {
                                 Button(onClick = {
                                     gastosViewModel.delete(target)
@@ -444,20 +450,20 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 MetricItem(
                     modifier = Modifier.weight(1f),
                     label = "Vendiste",
-                    value = "S/ ${formatNumber(analisis.ventasMes)}",
+                    value = MoneyFormatter.format(analisis.ventasMes),
                     color = MaterialTheme.colorScheme.positiveGreen,
                 )
                 MetricItem(
                     modifier = Modifier.weight(1f),
                     label = "Cobraste",
-                    value = "S/ ${formatNumber(analisis.cobrosMes)}",
+                    value = MoneyFormatter.format(analisis.cobrosMes),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
             MetricItem(
                 modifier = Modifier.fillMaxWidth(),
                 label = "Saldo pendiente",
-                value = "S/ ${formatNumber(saldo)}",
+                value = MoneyFormatter.format(saldo),
                 color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
             )
             Card(
@@ -472,7 +478,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                         "De cada S/ 100 que vendés, te quedan S/ ${Math.round(analisis.margenNetoPct)} (margen neto)",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color =                         if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
+                        color = if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
                     )
                 }
             }
@@ -480,7 +486,7 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 MetricItem(
                     modifier = Modifier.weight(1f),
                     label = "Ticket prom.",
-                    value = "S/ ${formatNumber(analisis.ticketPromedio)}",
+                    value = MoneyFormatter.format(analisis.ticketPromedio),
                     color = MaterialTheme.colorScheme.primary,
                 )
                 MetricItem(
@@ -641,5 +647,3 @@ internal fun RecomendacionCard(
         }
     }
 }
-
-private fun formatNumber(value: Double): String = com.example.optoapp.util.NumberFormatter.formatCurrency(value)

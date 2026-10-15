@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -24,12 +25,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
+import java.util.Locale
 
 @Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -251,7 +255,7 @@ private fun BarItem(label: String, value: Double, max: Double, color: Color) {
     Column {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("S/ ${formatNumber(value)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+            Text(MoneyFormatter.format(value), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(2.dp))
         LinearProgressIndicator(
@@ -270,10 +274,10 @@ private fun CategoriaRankingRow(nombre: String, ventas: Double, costos: Double, 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            Text("${formatNumber(pct)}%", style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber)
+            Text(formatPercent(pct), style = MaterialTheme.typography.bodyMedium, color = if (pct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber)
         }
         Text(
-            "S/ ${formatNumber(ventas)} ventas · S/ ${formatNumber(margen)} margen",
+            stringResource(R.string.analisis_categoria_ventas_margen, MoneyFormatter.format(ventas), MoneyFormatter.format(margen)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -295,7 +299,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
         Spacer(Modifier.height(2.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(telefono, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text("S/ ${formatNumber(saldo)}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
+            Text(MoneyFormatter.format(saldo), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
         }
         Text("$diasDeuda días de deuda", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.warningAmber)
     }
@@ -309,7 +313,7 @@ private fun StockRow(modelo: String, sku: String, stock: Int, diasSinVenta: Int,
             Text("SKU: $sku · Stock: $stock", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("${diasSinVenta}d sin vender", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.alertRed)
         }
-        Text("Costo: S/ ${formatNumber(costo)} c/u", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.analisis_stock_costo_unitario, MoneyFormatter.format(costo)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -318,19 +322,18 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Ingresos esperados", style = MaterialTheme.typography.bodyMedium)
-            Text("S/ ${formatNumber(proyeccion.ingresosEsperados)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.positiveGreen)
+            Text(MoneyFormatter.format(proyeccion.ingresosEsperados), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.positiveGreen)
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Egresos programados", style = MaterialTheme.typography.bodyMedium)
-            Text("S/ ${formatNumber(proyeccion.egresosProgramados)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
+            Text(MoneyFormatter.format(proyeccion.egresosProgramados), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
         }
         HorizontalDivider()
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text("Saldo neto proyectado", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            Text("S/ ${formatNumber(proyeccion.saldoNeto)}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (proyeccion.saldoNeto >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
+            Text(MoneyFormatter.format(proyeccion.saldoNeto), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (proyeccion.saldoNeto >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
         }
 
-        // Data-depth warning when fewer than 3 months of historical data
         if (proyeccion.mesesHistoricos < 3) {
             Spacer(Modifier.height(4.dp))
             Surface(
@@ -371,4 +374,4 @@ private fun EmptyPlaceholder(text: String) {
     }
 }
 
-private fun formatNumber(value: Double): String = com.example.optoapp.util.NumberFormatter.formatCurrency(value)
+private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value)
