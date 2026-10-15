@@ -386,4 +386,5 @@ internal fun rutaEdicionDeudor(ventaId: String, pacienteId: String): String? {
         Route.EditarServicio(ventaId.removePrefix(VENTA_SERVICIO)).route
     }
 }
+// WHY: a device-locale format would print "25,0%" next to amounts that MoneyFormatter always prints with '.'.
 private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value)
