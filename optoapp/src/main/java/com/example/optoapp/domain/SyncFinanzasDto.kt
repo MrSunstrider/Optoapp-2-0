@@ -181,6 +181,7 @@ data class DispensacionItemRemota(
     @SerialName("costo_real_montura") val costoRealMontura: Double? = null,
     @SerialName("costo_real_biselado") val costoRealBiselado: Double? = null,
     @SerialName("costo_real_lc") val costoRealLc: Double? = null,
+    @SerialName("costo_origen") val costoOrigen: String? = null,
 ) {
     fun toEntity() = DispensacionItem(
         id = id, dispensacionId = dispensacionId,
@@ -198,7 +199,7 @@ data class DispensacionItemRemota(
         lenticular = lenticular, curvaBase = curvaBase,
         costoRealOd = costoRealOd, costoRealOi = costoRealOi,
         costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
-        costoRealLc = costoRealLc,
+        costoRealLc = costoRealLc, costoOrigen = costoOrigen,
     )
 }
 
@@ -568,7 +569,7 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
     lenticular = lenticular, curvaBase = curvaBase,
     costoRealOd = costoRealOd, costoRealOi = costoRealOi,
     costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
-    costoRealLc = costoRealLc,
+    costoRealLc = costoRealLc, costoOrigen = costoOrigen,
 )
 
 fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = ServicioRemoto(
