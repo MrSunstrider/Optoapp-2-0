@@ -81,6 +81,7 @@ class ServiciosViewModelStockTest {
         postSaveSyncScheduler,
         cancelServicioExtraUseCase,
         stockHelper,
+        mockk(relaxed = true),
     )
 
     @Test

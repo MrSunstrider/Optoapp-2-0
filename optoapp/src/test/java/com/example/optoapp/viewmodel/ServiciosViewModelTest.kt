@@ -6,6 +6,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
 import com.example.optoapp.domain.CostoServicioResolver
 import io.mockk.coEvery
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -35,6 +37,7 @@ class ServiciosViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var repository: OptoRepository
     private lateinit var sessionManager: SessionManager
+    private val servicioTipoDao = mockk<ServicioTipoDao>(relaxed = true)
     private val insertedItems = mutableListOf<ServicioExtraItem>()
     private val savedServicios = mutableListOf<ServicioExtra>()
 
@@ -80,6 +83,7 @@ class ServiciosViewModelTest {
     private fun buildViewModel() = ServiciosViewModel(
         repository, sessionManager, mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true) { coEvery { adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) } returns Result.success(1) },
+        servicioTipoDao,
     )
 
     private fun storedServicio(costoReal: Double = 0.0) = ServicioExtra(
@@ -169,7 +173,7 @@ class ServiciosViewModelTest {
     }
 
     @Test
-    fun aServicioWithoutExecutorStoresNoExecutorAndZeroCost() = runTest(testDispatcher) {
+    fun aNewServicioWithoutTypeStoresYoAndZeroCost() = runTest(testDispatcher) {
         val vm = buildViewModel()
         vm.setItem(null)
 
@@ -178,9 +182,105 @@ class ServiciosViewModelTest {
 
         val saved = savedServicios.single()
         assertEquals(null, saved.servicioTipoId)
-        assertEquals(null, saved.realizadoPor)
+        assertEquals(CostoServicioResolver.PROPIO, saved.realizadoPor)
         assertEquals(null, saved.realizadoPorNombre)
         assertEquals(0.0, saved.costoReal, 0.0)
+    }
+
+    @Test
+    fun realizadoPorStartsAsYoAndATypePreloadsItsOwnCost() = runTest(testDispatcher) {
+        val vm = buildViewModel()
+
+        val inicial = vm.uiState.value.costo.realizadoPor
+        vm.seleccionarTipoServicio(biselado)
+
+        assertEquals(CostoServicioResolver.PROPIO, inicial)
+        assertEquals("5", vm.uiState.value.costo.costoDraft)
+    }
+
+    @Test
+    fun aManualCostSurvivesSwitchingToOtroOptico() = runTest(testDispatcher) {
+        val vm = buildViewModel()
+        vm.seleccionarTipoServicio(biselado)
+
+        vm.updateCostoServicio("8")
+        vm.seleccionarRealizadoPor(CostoServicioResolver.TERCERO)
+
+        assertEquals("8", vm.uiState.value.costo.costoDraft)
+    }
+
+    @Test
+    fun theThirdPartyNameOnlyLivesWhileOtroOpticoIsSelected() = runTest(testDispatcher) {
+        val vm = buildViewModel()
+        vm.updateRealizadoPorNombre("Ignorado")
+        val conYo = vm.uiState.value.costo.realizadoPorNombre
+        vm.seleccionarRealizadoPor(CostoServicioResolver.TERCERO)
+        vm.updateRealizadoPorNombre("Laboratorio Sur")
+        val conOtro = vm.uiState.value.costo.realizadoPorNombre
+
+        vm.seleccionarRealizadoPor(CostoServicioResolver.PROPIO)
+
+        assertEquals("", conYo)
+        assertEquals("Laboratorio Sur", conOtro)
+        assertEquals("", vm.uiState.value.costo.realizadoPorNombre)
+    }
+
+    @Test
+    fun aTypeWithZeroCostLeavesAnEmptyDraft() = runTest(testDispatcher) {
+        val vm = buildViewModel()
+
+        vm.seleccionarTipoServicio(biselado.copy(costoPropio = 0.0))
+
+        assertEquals("", vm.uiState.value.costo.costoDraft)
+    }
+
+    @Test
+    fun aNegativeServiceCostBlocksTheSave() = runTest(testDispatcher) {
+        val vm = buildViewModel()
+        vm.setItem(null)
+        vm.updateCostoServicio("-3")
+
+        vm.saveServicio {}
+        advanceUntilIdle()
+
+        assertEquals(ServiciosViewModel.ERROR_COSTO_SERVICIO, vm.uiState.value.error)
+        assertEquals(emptyList<ServicioExtra>(), savedServicios)
+    }
+
+    @Test
+    fun anUnreadableServiceCostBlocksTheSave() = runTest(testDispatcher) {
+        val vm = buildViewModel()
+        vm.setItem(null)
+        vm.updateCostoServicio("abc")
+
+        vm.saveServicio {}
+        advanceUntilIdle()
+
+        assertEquals(ServiciosViewModel.ERROR_COSTO_SERVICIO, vm.uiState.value.error)
+        assertEquals(emptyList<ServicioExtra>(), savedServicios)
+    }
+
+    @Test
+    fun theSelectorOffersOnlyActiveTypes() = runTest(testDispatcher) {
+        every { servicioTipoDao.observeActivosByOptica(opticaId) } returns flowOf(listOf(biselado))
+        val vm = buildViewModel()
+        backgroundScope.launch { vm.tiposServicio.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(listOf(biselado), vm.tiposServicio.value)
+    }
+
+    @Test
+    fun aSavedServicioStillShowsItsDeactivatedTypeName() = runTest(testDispatcher) {
+        coEvery { servicioTipoDao.getById("t1", opticaId) } returns biselado.copy(activo = false)
+        coEvery { repository.getServicioById("s1", opticaId) } returns Resource.Success(storedServicio(costoReal = 12.0))
+        val vm = buildViewModel()
+
+        vm.loadServicio("s1")
+        advanceUntilIdle()
+
+        assertEquals("Biselado", vm.uiState.value.costo.tipo?.nombre)
+        assertEquals("12", vm.uiState.value.costo.costoDraft)
     }
 
     @Test

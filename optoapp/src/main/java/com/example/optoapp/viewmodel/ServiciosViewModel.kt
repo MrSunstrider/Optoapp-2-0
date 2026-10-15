@@ -11,6 +11,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
 import com.example.optoapp.domain.CostoServicioDraft
 import com.example.optoapp.domain.CostoServicioResolver
@@ -64,7 +65,7 @@ data class ServiciosUiState(
     val isEdit: Boolean = false,
     val motivoAnulacion: String? = null,
     val fechaAnulacion: LocalDate? = null,
-    val costo: CostoServicioDraft = CostoServicioDraft(),
+    val costo: CostoServicioDraft = CostoServicioDraft(realizadoPor = CostoServicioResolver.PROPIO),
 ) {
     val isReadOnly: Boolean
         get() = OrderStatusPolicy.isTerminal(estado)
@@ -80,11 +81,13 @@ class ServiciosViewModel @Inject constructor(
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val cancelServicioExtraUseCase: com.example.optoapp.domain.CancelServicioExtraUseCase,
     private val stockHelper: DispensacionStockHelper,
+    private val servicioTipoDao: ServicioTipoDao,
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "ServiciosViewModel"
         private val CANCEL_ROLES = setOf("admin", "gerente")
+        const val ERROR_COSTO_SERVICIO = "El costo del servicio debe ser un número igual o mayor a 0."
     }
 
     private val _uiState = MutableStateFlow(ServiciosUiState())
@@ -138,6 +141,11 @@ class ServiciosViewModel @Inject constructor(
     val monturas: StateFlow<List<com.example.optoapp.data.Montura>> = sessionManager.opticaId
         .flatMapLatest { repository.getMonturasByOptica(it) }
         .map { list -> inventarioParaServicioExtra(list) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val tiposServicio: StateFlow<List<ServicioTipoEntity>> = sessionManager.opticaId
+        .flatMapLatest { servicioTipoDao.observeActivosByOptica(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -279,7 +287,7 @@ class ServiciosViewModel @Inject constructor(
                         error = null,
                         motivoAnulacion = s.motivoAnulacion,
                         fechaAnulacion = s.fechaAnulacion,
-                        costo = costoGuardado(s),
+                        costo = costoGuardado(s, opticaId),
                     )
                     _uiState.value = deriveHeader(base)
                 }
@@ -329,6 +337,11 @@ class ServiciosViewModel @Inject constructor(
             }
             if (lineMontos.any { it == null }) {
                 _uiState.update { it.copy(error = "Cada producto debe tener un monto válido.") }
+                return@launch
+            }
+            val costoServicio = state.costo.costoDraft
+            if (costoServicio.isNotBlank() && (MontoDraftFormatting.parseDraft(costoServicio) ?: -1.0) < 0.0) {
+                _uiState.update { it.copy(error = ERROR_COSTO_SERVICIO) }
                 return@launch
             }
             val montoParsed = lineMontos.sumOf { it!! }
@@ -576,9 +589,10 @@ class ServiciosViewModel @Inject constructor(
     private fun servicioAlreadyTerminalMessage(estado: String): String =
         if (estado == OrderStatusPolicy.ANULADO) "Este servicio ya fue anulado" else "Este servicio ya está en estado $estado"
 
-    private fun costoGuardado(servicio: ServicioExtra): CostoServicioDraft {
+    private suspend fun costoGuardado(servicio: ServicioExtra, opticaId: String): CostoServicioDraft {
         val costoDraft = MontoDraftFormatting.formatDraft(servicio.costoReal)
         return CostoServicioDraft(
+            tipo = servicio.servicioTipoId?.let { servicioTipoDao.getById(it, opticaId) },
             servicioTipoId = servicio.servicioTipoId,
             realizadoPor = servicio.realizadoPor,
             realizadoPorNombre = servicio.realizadoPorNombre.orEmpty(),

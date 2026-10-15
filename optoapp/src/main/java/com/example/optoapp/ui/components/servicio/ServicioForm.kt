@@ -20,9 +20,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.optoapp.R
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Pago
@@ -38,6 +40,7 @@ import com.example.optoapp.ui.components.financiera.PagosSectionState
 import com.example.optoapp.ui.components.financiera.SaldoDisplayStyle
 import com.example.optoapp.ui.screens.RegalosSection
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.util.MontoDraftFormatting
 import com.example.optoapp.viewmodel.RegaloDispensacionUi
 import com.example.optoapp.viewmodel.ServicioExtraItemUi
@@ -62,6 +65,7 @@ fun ServicioForm(
     onShowDatePicker: () -> Unit,
     step: Int = 0,
     isPacienteLocked: Boolean = false,
+    ejecutorSection: @Composable () -> Unit = {},
 ) {
     when (step) {
         0 -> StepDatos(
@@ -74,6 +78,7 @@ fun ServicioForm(
             onRemoveItem = onRemoveItem,
             onShowDatePicker = onShowDatePicker,
             isPacienteLocked = isPacienteLocked,
+            ejecutorSection = ejecutorSection,
         )
         1 -> StepPagos(
             uiState = uiState,
@@ -101,16 +106,17 @@ private fun StepDatos(
     onRemoveItem: (Int) -> Unit,
     onShowDatePicker: () -> Unit,
     isPacienteLocked: Boolean,
+    ejecutorSection: @Composable () -> Unit,
 ) {
     OutlinedButton(onClick = onShowDatePicker, modifier = Modifier.fillMaxWidth()) {
-        Text("Fecha: ${DateUtils.formatLocalized(uiState.fecha)}")
+        Text(stringResource(R.string.servicio_form_fecha, DateUtils.formatLocalized(uiState.fecha)))
     }
 
-    OptoTextField(value = uiState.ot, onValueChange = { onUpdate(uiState.copy(ot = it)) }, label = "OT (Opcional)")
+    OptoTextField(value = uiState.ot, onValueChange = { onUpdate(uiState.copy(ot = it)) }, label = stringResource(R.string.servicio_form_ot_label))
 
     if (monturas.none { it.stockActual > 0 }) {
         Text(
-            "No hay productos con stock en el inventario.",
+            stringResource(R.string.servicio_form_sin_stock),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -133,7 +139,7 @@ private fun StepDatos(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "Producto ${index + 1}",
+                        stringResource(R.string.servicio_form_producto_n, index + 1),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -141,7 +147,7 @@ private fun StepDatos(
                         IconButton(onClick = { onRemoveItem(index) }) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Quitar producto",
+                                contentDescription = stringResource(R.string.servicio_form_quitar_producto_cd),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }
@@ -168,20 +174,20 @@ private fun StepDatos(
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = "Buscar producto (marca, modelo o SKU)",
-                    placeholder = "Ej: líquido, cofre, Ray-Ban...",
+                    label = stringResource(R.string.servicio_form_buscar_producto_label),
+                    placeholder = stringResource(R.string.servicio_form_buscar_producto_placeholder),
                 )
 
                 OptoTextField(
                     value = item.descripcion,
                     onValueChange = { onUpdateItem(index, item.copy(descripcion = it)) },
-                    label = "Descripción",
+                    label = stringResource(R.string.servicio_form_descripcion),
                 )
 
                 OptoTextField(
                     value = item.montoDraft,
                     onValueChange = { onUpdateItem(index, item.copy(montoDraft = it)) },
-                    label = "Monto",
+                    label = stringResource(R.string.servicio_form_monto),
                     keyboardType = KeyboardType.Decimal,
                 )
             }
@@ -194,12 +200,15 @@ private fun StepDatos(
     ) {
         Icon(Icons.Default.Add, contentDescription = null)
         Spacer(Modifier.width(8.dp))
-        Text("Agregar otro producto")
+        Text(stringResource(R.string.servicio_form_agregar_producto))
     }
 
     if (uiState.montoTotal.isNotBlank()) {
         Text(
-            "Total: S/. ${uiState.montoTotal}",
+            stringResource(
+                R.string.servicio_form_total,
+                MoneyFormatter.format(MontoDraftFormatting.parseDraft(uiState.montoTotal) ?: 0.0),
+            ),
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.titleMedium,
         )
@@ -207,8 +216,12 @@ private fun StepDatos(
 
     HorizontalDivider()
 
+    ejecutorSection()
+
+    HorizontalDivider()
+
     if (isPacienteLocked) {
-        val pacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Paciente"
+        val pacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: stringResource(R.string.servicio_form_paciente_fallback)
         PatientContextCard(pacienteNombre = pacienteName)
     } else {
         PacienteSelector(uiState = uiState, onUpdate = onUpdate, pacientes = pacientes)
@@ -222,7 +235,7 @@ private fun PacienteSelector(
     onUpdate: (ServiciosUiState) -> Unit,
     pacientes: List<Paciente>,
 ) {
-    Text("Asociar a Paciente (Opcional)", fontWeight = FontWeight.Bold)
+    Text(stringResource(R.string.servicio_form_asociar_paciente), fontWeight = FontWeight.Bold)
     var pExpanded by remember { mutableStateOf(false) }
     var pSearchQuery by remember { mutableStateOf("") }
     val filteredPacientes = if (pSearchQuery.isEmpty()) {
@@ -230,20 +243,21 @@ private fun PacienteSelector(
     } else {
         pacientes.filter { it.nombreCompleto.contains(pSearchQuery, ignoreCase = true) }
     }
-    val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: "Ninguno"
+    val ningunoLabel = stringResource(R.string.servicio_form_paciente_ninguno)
+    val currentPacienteName = pacientes.find { it.id == uiState.pacienteId }?.nombreCompleto ?: ningunoLabel
 
     ExposedDropdownMenuBox(expanded = pExpanded, onExpandedChange = { pExpanded = !pExpanded }) {
         OutlinedTextField(
             value = pSearchQuery.ifBlank { if (pExpanded) "" else currentPacienteName },
             onValueChange = { pSearchQuery = it },
-            label = { Text("Buscar Paciente...") },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+            label = { Text(stringResource(R.string.servicio_form_buscar_paciente)) },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.servicio_form_buscar_cd)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = pExpanded) },
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
         )
         ExposedDropdownMenu(expanded = pExpanded, onDismissRequest = { pExpanded = false }) {
-            DropdownMenuItem(text = { Text("Ninguno") }, onClick = {
+            DropdownMenuItem(text = { Text(ningunoLabel) }, onClick = {
                 onUpdate(uiState.copy(pacienteId = null))
                 pSearchQuery = ""
                 pExpanded = false
@@ -296,7 +310,7 @@ private fun StepPagos(
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
 
     OptoDropdownMenuField(
-        label = "Estado",
+        label = stringResource(R.string.servicio_form_estado),
         selected = uiState.estado,
         options = uiState.selectableEstados,
         enabled = !uiState.isReadOnly,

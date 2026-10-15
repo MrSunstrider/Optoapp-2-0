@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,12 +11,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.MotivoDialog
@@ -28,10 +31,10 @@ import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.ServiciosViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,7 +75,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
             initialDate = selectedDate ?: DateUtils.today(),
             onDateSelected = { selectedDate = it },
             onDismiss = { showDatePicker = false },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 
@@ -105,17 +108,17 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.navigationBarsPadding()) },
         topBar = {
             OptoTopAppBar(
-                title = "Servicios Extra",
+                title = stringResource(R.string.servicios_extra_title),
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.servicios_extra_menu_cd))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showDatePicker = true }) {
                         Icon(
                             Icons.Default.CalendarMonth,
-                            contentDescription = "Filtrar por fecha",
+                            contentDescription = stringResource(R.string.servicios_extra_filtrar_fecha_cd),
                             tint = if (selectedDate != null) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                         )
                     }
@@ -127,7 +130,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                 onClick = { navController.navigate(Route.NuevoServicio.route) },
                 modifier = Modifier.navigationBarsPadding(),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir Servicio")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.servicios_extra_anadir_cd))
             }
         },
     ) { padding ->
@@ -138,9 +141,9 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         ) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Facturado", "s/. ${fmt(totalFacturado)}", MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
-                    OptoKpiCard("Pendiente", "s/. ${fmt(totalPendiente)}", if (totalPendiente > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
-                    OptoKpiCard("Cantidad", "$pendientesCount", MaterialTheme.colorScheme.warningAmber, Icons.Default.Handyman, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.servicios_extra_kpi_facturado), MoneyFormatter.format(totalFacturado), MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.servicios_extra_kpi_pendiente), MoneyFormatter.format(totalPendiente), if (totalPendiente > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.servicios_extra_kpi_cantidad), "$pendientesCount", MaterialTheme.colorScheme.warningAmber, Icons.Default.Handyman, Modifier.weight(1f))
                 }
             }
 
@@ -149,8 +152,8 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Buscar por OT o descripción...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                    placeholder = { Text(stringResource(R.string.servicios_extra_buscar_placeholder)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = stringResource(R.string.servicios_extra_buscar_cd)) },
                     shape = MaterialTheme.shapes.medium,
                     singleLine = true,
                 )
@@ -162,7 +165,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                         FilterChip(
                             selected = estadoFilter == estado,
                             onClick = { estadoFilter = estado },
-                            label = { Text(estado, fontSize = 12.sp) },
+                            label = { Text(stringResource(estadoFilterLabel(estado)), fontSize = 12.sp) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = when (estado) {
                                     "Pendiente" -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.15f)
@@ -178,7 +181,7 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                             selected = true,
                             onClick = { selectedDate = null },
                             label = { Text(DateUtils.formatLocalized(selectedDate!!), fontSize = 12.sp) },
-                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Quitar filtro", modifier = Modifier.size(14.dp)) },
+                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.servicios_extra_quitar_filtro_cd), modifier = Modifier.size(14.dp)) },
                         )
                     }
                 }
@@ -195,11 +198,11 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
                     ) {
                         Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.Handyman, contentDescription = "Sin servicios", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                                Icon(Icons.Default.Handyman, contentDescription = stringResource(R.string.servicios_extra_sin_servicios_cd), modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                                 Spacer(Modifier.height(12.dp))
-                                Text("No hay servicios", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.servicios_extra_empty_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(Modifier.height(4.dp))
-                                Text("Toca + para agregar un servicio extra", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
+                                Text(stringResource(R.string.servicios_extra_empty_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f))
                             }
                         }
                     }
@@ -224,6 +227,14 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
     }
 }
 
+@StringRes
+private fun estadoFilterLabel(estado: String): Int = when (estado) {
+    "Pendiente" -> R.string.servicios_extra_filtro_pendiente
+    "Entregado" -> R.string.servicios_extra_filtro_entregado
+    "Anulado" -> R.string.servicios_extra_filtro_anulado
+    else -> R.string.servicios_extra_filtro_todos
+}
+
 @Composable
 private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit: () -> Unit, onAnular: (() -> Unit)?) {
     val saldo = servicio.montoTotal - aCuenta
@@ -241,10 +252,11 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     if (servicio.ot.isNotBlank()) {
-                        Text("OT ${servicio.ot}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.servicios_extra_ot, servicio.ot), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    val sinDescripcion = stringResource(R.string.servicios_extra_sin_descripcion)
                     Text(
-                        servicio.descripcion.ifBlank { "Sin descripción" },
+                        servicio.descripcion.ifBlank { sinDescripcion },
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         maxLines = 2,
@@ -262,21 +274,21 @@ private fun ServicioCard(servicio: ServicioExtra, aCuenta: Double = 0.0, onEdit:
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Column {
-                    Text("Total: s/. ${fmt(servicio.montoTotal)}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.servicios_extra_total, MoneyFormatter.format(servicio.montoTotal)), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     if (saldo > 0) {
-                        Text("Saldo: s/. ${fmt(saldo)}", fontSize = 13.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.servicios_extra_saldo, MoneyFormatter.format(saldo)), fontSize = 13.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
                     } else {
-                        Text("Pagado", fontSize = 13.sp, color = MaterialTheme.colorScheme.positiveGreen, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.servicios_extra_pagado), fontSize = 13.sp, color = MaterialTheme.colorScheme.positiveGreen, fontWeight = FontWeight.Medium)
                     }
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(DateUtils.formatLocalized(servicio.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (servicio.fechaEntrega != null) {
-                        Text("Entregado: ${DateUtils.formatLocalized(servicio.fechaEntrega)}", fontSize = 10.sp, color = MaterialTheme.colorScheme.positiveGreen)
+                        Text(stringResource(R.string.servicios_extra_entregado_fecha, DateUtils.formatLocalized(servicio.fechaEntrega)), fontSize = 10.sp, color = MaterialTheme.colorScheme.positiveGreen)
                     }
                     Row {
                         IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.servicios_extra_editar_cd), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                         }
                         if (onAnular != null) {
                             ServicioOverflowMenu(onAnular = onAnular)
@@ -293,11 +305,11 @@ private fun ServicioOverflowMenu(onAnular: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { expanded = true }, modifier = Modifier.size(48.dp)) {
-            Icon(Icons.Default.MoreVert, contentDescription = "Más acciones", modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.servicios_extra_mas_acciones_cd), modifier = Modifier.size(18.dp))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             DropdownMenuItem(
-                text = { Text("Anular", color = MaterialTheme.colorScheme.error) },
+                text = { Text(stringResource(R.string.servicios_extra_anular), color = MaterialTheme.colorScheme.error) },
                 onClick = {
                     expanded = false
                     onAnular()
@@ -314,18 +326,16 @@ internal fun AnularServicioDialog(
     onConfirm: (motivo: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val descripcionFallback = stringResource(R.string.servicios_extra_anular_dialog_fallback)
     MotivoDialog(
-        title = "¿Anular servicio?",
-        confirmText = "Anular",
-        message = "${descripcion.ifBlank { "Servicio" }}: se revierten los pagos y vuelven al stock los productos y regalos. No se puede deshacer.",
+        title = stringResource(R.string.servicios_extra_anular_dialog_title),
+        confirmText = stringResource(R.string.servicios_extra_anular),
+        message = stringResource(
+            R.string.servicios_extra_anular_dialog_message,
+            descripcion.ifBlank { descripcionFallback },
+        ),
         submitting = submitting,
         onConfirm = onConfirm,
         onDismiss = onDismiss,
     )
-}
-
-private fun fmt(value: Double): String = if (value == value.toLong().toDouble()) {
-    String.format(Locale.getDefault(), "%,.0f", value)
-} else {
-    String.format(Locale.getDefault(), "%,.2f", value)
 }

@@ -90,6 +90,7 @@ class ServiciosViewModelPagoValidationTest {
         postSaveSyncScheduler,
         cancelServicioExtraUseCase,
         stockHelper,
+        mockk(relaxed = true),
     )
 
     @Test
