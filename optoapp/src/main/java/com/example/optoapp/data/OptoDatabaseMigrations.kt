@@ -1200,8 +1200,8 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
 
 val MIGRATION_40_41 = object : Migration(40, 41) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // v41 only registered the costos_lc entity without creating its table, so the step exists
-        // solely to keep the version chain continuous.
+        // Left empty although v41 registered costos_lc: rewriting a shipped step would not reach devices
+        // already past it, so MIGRATION_55_56 creates the missing table instead.
     }
 }
 
@@ -1483,7 +1483,7 @@ val MIGRATION_54_55 = object : Migration(54, 55) {
     }
 }
 
-// Additive only. tipoGasto stays NULL (resolved by category, no backfill); matrix updated_at stays NULL
+// Additive only (plus costos_lc for devices that came through MIGRATION_40_41). tipoGasto stays NULL (resolved by category, no backfill); matrix updated_at stays NULL
 // until the first download or local edit stamps it.
 val MIGRATION_55_56 = object : Migration(55, 56) {
     override fun migrate(db: SupportSQLiteDatabase) {
@@ -1509,6 +1509,25 @@ val MIGRATION_55_56 = object : Migration(55, 56) {
         db.execSQL("ALTER TABLE servicio_extra_items ADD COLUMN costo_real REAL NOT NULL DEFAULT 0")
         db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_origen TEXT")
         db.execSQL("ALTER TABLE gastos_operativos ADD COLUMN tipoGasto TEXT")
+        // Created with the v55 shape so the ALTER below converges both upgrade paths on the v56 schema.
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS costos_lc (
+                id TEXT NOT NULL,
+                optica_id TEXT NOT NULL,
+                tipo_lc TEXT NOT NULL,
+                material_lc TEXT NOT NULL,
+                modalidad TEXT NOT NULL,
+                radio_base TEXT,
+                diametro TEXT,
+                laboratorio_id TEXT,
+                costo_unitario REAL NOT NULL,
+                vigente_desde TEXT NOT NULL,
+                vigente_hasta TEXT,
+                PRIMARY KEY(id)
+            )
+            """.trimIndent(),
+        )
         db.execSQL("ALTER TABLE costos_lc ADD COLUMN updated_at TEXT")
         db.execSQL("ALTER TABLE costos_productos ADD COLUMN updated_at TEXT")
         db.execSQL("ALTER TABLE costos_biselado ADD COLUMN updated_at TEXT")

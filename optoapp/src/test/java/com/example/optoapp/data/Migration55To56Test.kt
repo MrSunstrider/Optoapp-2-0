@@ -96,15 +96,45 @@ class Migration55To56Test {
         room.close()
     }
 
-    private fun createV55Database() {
+    // Devices that upgraded through MIGRATION_40_41 never got a costos_lc table.
+    @Test
+    fun v55_database_without_costos_lc_migrates_to_the_v56_costos_lc_schema() {
+        createV55Database(withoutTables = setOf("costos_lc"))
+
+        val room = Room.databaseBuilder(context, OptoDatabase::class.java, dbName)
+            .addMigrations(MIGRATION_55_56)
+            .allowMainThreadQueries()
+            .build()
+        val db = room.openHelper.writableDatabase
+
+        db.execSQL(
+            "INSERT INTO costos_lc (id, optica_id, tipo_lc, material_lc, modalidad, costo_unitario, vigente_desde, " +
+                "updated_at) VALUES ('lc2', 'o1', 'graduado', 'hydrogel', 'stock', 50.0, '2026-02-01', " +
+                "'2026-02-01T00:00:00Z')",
+        )
+        db.singleRow("SELECT costo_unitario, updated_at, vigente_hasta FROM costos_lc WHERE id = 'lc2'") {
+            assertEquals(50.0, it.getDouble(0), 0.0)
+            assertEquals("2026-02-01T00:00:00Z", it.getString(1))
+            assertTrue(it.isNull(2))
+        }
+        db.singleRow("SELECT COUNT(*) FROM costos_lc") {
+            assertEquals(1, it.getInt(0))
+        }
+        db.singleRow("SELECT montoTotal FROM dispensaciones WHERE id = 'd1'") {
+            assertEquals(200.0, it.getDouble(0), 0.0)
+        }
+        room.close()
+    }
+
+    private fun createV55Database(withoutTables: Set<String> = emptySet()) {
         context.deleteDatabase(dbName)
         val schema = loadSchema(55)
         val config = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(dbName)
             .callback(object : SupportSQLiteOpenHelper.Callback(55) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
-                    createSchema(db, schema)
-                    insertV55Rows(db)
+                    createSchema(db, schema, withoutTables)
+                    insertV55Rows(db, withoutTables)
                 }
 
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
@@ -122,10 +152,11 @@ class Migration55To56Test {
         return Json.parseToJsonElement(file.readText()).jsonObject.getValue("database").jsonObject
     }
 
-    private fun createSchema(db: SupportSQLiteDatabase, schema: JsonObject) {
+    private fun createSchema(db: SupportSQLiteDatabase, schema: JsonObject, withoutTables: Set<String>) {
         schema.getValue("entities").jsonArray.forEach { element ->
             val entity = element.jsonObject
             val table = entity.getValue("tableName").jsonPrimitive.content
+            if (table in withoutTables) return@forEach
             db.execSQL(entity.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table))
             entity["indices"]?.jsonArray?.forEach { index ->
                 db.execSQL(index.jsonObject.getValue("createSql").jsonPrimitive.content.replace("\${TABLE_NAME}", table))
@@ -134,7 +165,7 @@ class Migration55To56Test {
         schema.getValue("setupQueries").jsonArray.forEach { db.execSQL(it.jsonPrimitive.content) }
     }
 
-    private fun insertV55Rows(db: SupportSQLiteDatabase) {
+    private fun insertV55Rows(db: SupportSQLiteDatabase, withoutTables: Set<String>) {
         db.execSQL(
             "INSERT INTO pacientes (id, nombreCompleto, edad, telefono, fechaCreacion, ultimasEtiquetas, opticaId) " +
                 "VALUES ('p1', 'Ana', 30, '999', '2026-01-01', '', 'o1')",
@@ -167,10 +198,12 @@ class Migration55To56Test {
             "INSERT INTO gastos_operativos (id, opticaId, categoria, monto, fecha, isRecurring, frecuencia) " +
                 "VALUES ('g1', 'o1', 'alquiler', 2000.0, '2026-07-01', 1, 'mensual')",
         )
-        db.execSQL(
-            "INSERT INTO costos_lc (id, optica_id, tipo_lc, material_lc, modalidad, costo_unitario, vigente_desde) " +
-                "VALUES ('lc1', 'o1', 'graduado', 'hydrogel', 'stock', 45.0, '2026-01-01')",
-        )
+        if ("costos_lc" !in withoutTables) {
+            db.execSQL(
+                "INSERT INTO costos_lc (id, optica_id, tipo_lc, material_lc, modalidad, costo_unitario, vigente_desde) " +
+                    "VALUES ('lc1', 'o1', 'graduado', 'hydrogel', 'stock', 45.0, '2026-01-01')",
+            )
+        }
         db.execSQL(
             "INSERT INTO costos_productos (id, optica_id, material, tipo_lente, stock_o_fabricacion, costo_unitario, " +
                 "vigente_desde) VALUES ('cp1', 'o1', 'resina', 'monofocal', 'stock', 18.0, '2026-01-01')",
