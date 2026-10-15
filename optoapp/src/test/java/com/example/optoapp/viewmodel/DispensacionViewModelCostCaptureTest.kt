@@ -6,6 +6,7 @@ import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.domain.AnularDispensacionUseCase
 import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
@@ -13,6 +14,7 @@ import com.example.optoapp.domain.ComponenteCosto
 import com.example.optoapp.domain.CostoItemCalculado
 import com.example.optoapp.domain.OrigenComponente
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
+import com.example.optoapp.domain.ResumenRecalcMarker
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
@@ -48,6 +50,9 @@ class DispensacionViewModelCostCaptureTest {
     private lateinit var calcularCostoItem: CalcularCostoItemUseCase
     private val testDispatcher = UnconfinedTestDispatcher()
     private val fechaOt = LocalDate.of(2026, 9, 15)
+    private val tracker = mockk<SyncStateTracker>(relaxed = true)
+    @Volatile private var enTransaccion = false
+    private val marcadoEnTransaccion = java.util.Collections.synchronizedList(mutableListOf<Boolean>())
 
     private val evaluacion = EvaluacionClinica(
         id = "eval-1",
@@ -70,7 +75,15 @@ class DispensacionViewModelCostCaptureTest {
         calcularCostoItem = mockk()
         every { sessionManager.opticaId } returns MutableStateFlow("optica-test")
         every { sessionManager.opticaRol } returns MutableStateFlow("admin")
-        every { repository.runInTransaction(any()) } answers { firstArg<() -> Unit>().invoke() }
+        every { repository.runInTransaction(any()) } answers {
+            enTransaccion = true
+            try {
+                firstArg<() -> Unit>().invoke()
+            } finally {
+                enTransaccion = false
+            }
+        }
+        coEvery { tracker.markPendingRecalc(any(), any(), any(), any()) } answers { marcadoEnTransaccion += enTransaccion }
         coEvery { repository.getEvaluacionById("eval-1", "optica-test") } returns Resource.Success(evaluacion)
         coEvery { calcularCostoItem(any(), any(), any(), any()) } returns
             CostoItemCalculado(mapOf(ComponenteCosto.OD to 18.0, ComponenteCosto.OI to 18.0))
@@ -91,6 +104,7 @@ class DispensacionViewModelCostCaptureTest {
         mockk<ReclamarDispensacionUseCase>(relaxed = true),
         calcularCostoItem,
         mockk(relaxed = true),
+        ResumenRecalcMarker(tracker),
     )
 
     // Awaits in real time because the save transaction runs on Dispatchers.IO, outside the test scheduler.
@@ -249,5 +263,46 @@ class DispensacionViewModelCostCaptureTest {
 
         val item = viewModel.uiState.first { !it.isLoading && it.ot.isNotEmpty() }.items.single()
         assertEquals("faltante", item.costoOrigen)
+    }
+
+    private fun persistirOtPasada() {
+        val persistido = DispensacionItem(
+            id = "item-1", dispensacionId = "disp-1", tipoLente = "Monofocal", materialLente = "Resina",
+            costoRealOd = 15.0, costoRealOi = 15.0, costoOrigen = "matriz",
+        )
+        coEvery { repository.getDispensacionItemsByDispensacion("disp-1", "optica-test") } returns listOf(persistido)
+        coEvery { repository.getDispensacionById("disp-1", "optica-test") } returns Resource.Success(
+            DispensacionOptica(
+                id = "disp-1", ot = "OT-2026-0001", pacienteId = "pac-1", fecha = fechaOt,
+                opticaId = "optica-test", estadoEntrega = "Pendiente", evaluacionId = "eval-1",
+            ),
+        )
+    }
+
+    @Test
+    fun `a past order whose cost and date change marks both dates inside the save transaction`() = runTest(testDispatcher) {
+        persistirOtPasada()
+        val nuevaFecha = fechaOt.plusDays(5)
+        val viewModel = createViewModel()
+        viewModel.prepararOt()
+        viewModel.updateUiState { it.copy(fecha = nuevaFecha) }
+        viewModel.setCostoOverride(0, ComponenteCosto.OD, 25.0)
+
+        viewModel.guardar("disp-1")
+
+        coVerify(exactly = 1) { tracker.markPendingRecalc("optica-test", fechaOt, "dispensacion", "disp-1") }
+        coVerify(exactly = 1) { tracker.markPendingRecalc("optica-test", nuevaFecha, "dispensacion", "disp-1") }
+        assertEquals(listOf(true, true), marcadoEnTransaccion)
+    }
+
+    @Test
+    fun `a past order saved with the same cost and date marks nothing`() = runTest(testDispatcher) {
+        persistirOtPasada()
+        val viewModel = createViewModel()
+        viewModel.prepararOt()
+
+        viewModel.guardar("disp-1")
+
+        coVerify(exactly = 0) { tracker.markPendingRecalc(any(), any(), any(), any()) }
     }
 }

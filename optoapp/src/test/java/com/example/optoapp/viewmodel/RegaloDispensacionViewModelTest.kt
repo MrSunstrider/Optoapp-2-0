@@ -3,7 +3,9 @@ package com.example.optoapp.viewmodel
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import com.example.optoapp.domain.ResumenRecalcMarker
 import com.example.optoapp.util.DispensacionStockHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -30,6 +32,7 @@ class RegaloDispensacionViewModelTest {
     private lateinit var repository: OptoRepository
     private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var viewModel: RegaloDispensacionViewModel
+    private val tracker = mockk<SyncStateTracker>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val opticaId = "optica-test"
@@ -67,7 +70,7 @@ class RegaloDispensacionViewModelTest {
         }
         givenParentEstado("Pendiente")
 
-        viewModel = RegaloDispensacionViewModel(repository, stockHelper)
+        viewModel = RegaloDispensacionViewModel(repository, stockHelper, ResumenRecalcMarker(tracker))
     }
 
     private fun givenParentEstado(estado: String) {
@@ -203,5 +206,22 @@ class RegaloDispensacionViewModelTest {
         coVerify(inverse = true) {
             stockHelper.adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any())
         }
+    }
+
+    @Test
+    fun `adding or removing a costed gift on a past order marks its date for the parent`() = runTest {
+        viewModel.saveRegaloAndDeductStock(testRegalo, opticaId)
+        viewModel.removeRegaloAndRestoreStock(testRegalo, opticaId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 2) { tracker.markPendingRecalc(opticaId, LocalDate.of(2026, 9, 1), "dispensacion", dispId) }
+    }
+
+    @Test
+    fun `a free gift marks nothing`() = runTest {
+        viewModel.saveRegaloAndDeductStock(testRegalo.copy(costoUnitario = 0.0), opticaId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { tracker.markPendingRecalc(any(), any(), any(), any()) }
     }
 }

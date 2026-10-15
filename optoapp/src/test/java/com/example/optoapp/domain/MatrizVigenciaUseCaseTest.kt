@@ -183,6 +183,7 @@ class MatrizVigenciaUseCaseTest {
         assertEquals("2026-07-31", db.costoLcDao().getById("l1")!!.vigenteHasta)
         assertEquals(47.0, db.costoLcDao().getById(nuevoId)!!.costoUnitario, 0.0)
         assertEquals(pendiente, estado("costo_lc", "l1")?.status)
+        assertTrue(tracker.pendingRecalcMarkers(opticaId).isEmpty())
         assertEquals(pendiente, estado("costo_lc", nuevoId)?.status)
     }
 }

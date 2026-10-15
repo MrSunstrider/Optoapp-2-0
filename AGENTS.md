@@ -57,6 +57,7 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 - **Order**: pacientes → historial → finanzas (upload 12 tables, download 14 tables, cost matrices including costos_lc, servicio_tipos before servicios_extra) → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
 - **JWT**: margin check at 300s before sync (`SyncSessionHelper`); auto-refresh + retry on 401 (`NetworkRetryHelper`)
 - **resumen_diario**: recalculado via RPC `recalcular_resumen_diario` en cada sync finanzas
+- **Pending recalcs**: past-day cost edits leave `pending_recalc` markers in `SyncStateTracker`; every finanzas sync flushes them after the last upload (regalos) and before downloading `resumen_diario`, calling `recalcular_resumen_diario_rango` in windows of at most 31 days (`ResumenRecalcCoordinator`). A marker clears only after its window's RPC succeeds and its cause row (plus child batches) synced after it was marked.
 - **Conflict resolution**: local vs remote timestamps; conflicted entities skipped on upload
 
 ## Auth

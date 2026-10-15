@@ -55,6 +55,7 @@ class ServicioTipoCatalogUseCaseTest {
         assertEquals(tipo.copy(updatedAt = stored.updatedAt), stored)
         assertNotNull(stored.updatedAt)
         assertEquals("pending_upload", estado("t1"))
+        assertTrue(SyncStateTracker(db.syncEntityStateDao(), db).pendingRecalcMarkers(opticaId).isEmpty())
     }
 
     @Test

@@ -64,6 +64,7 @@ class DispensacionViewModelReclamoTest {
             reclamar,
             mockk(relaxed = true),
             mockk(relaxed = true),
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
     }

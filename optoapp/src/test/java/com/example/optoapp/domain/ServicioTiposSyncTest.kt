@@ -134,6 +134,7 @@ class ServicioTiposSyncTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase(opticaId) as com.example.optoapp.data.Resource.Success

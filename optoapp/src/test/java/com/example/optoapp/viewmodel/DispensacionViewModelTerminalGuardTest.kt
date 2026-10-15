@@ -76,7 +76,7 @@ class DispensacionViewModelTerminalGuardTest {
         return DispensacionViewModel(
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true), stockHelper, calcularMontoPagado,
             mockk<AnularDispensacionUseCase>(relaxed = true), mockk<ReclamarDispensacionUseCase>(relaxed = true),
-            mockk<CalcularCostoItemUseCase>(relaxed = true), mockk(relaxed = true),
+            mockk<CalcularCostoItemUseCase>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         )
     }
 

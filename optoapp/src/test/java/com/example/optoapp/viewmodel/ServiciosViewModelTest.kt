@@ -5,11 +5,14 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
 import com.example.optoapp.domain.CostoServicioResolver
+import com.example.optoapp.domain.ResumenRecalcMarker
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -26,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -40,6 +44,9 @@ class ServiciosViewModelTest {
     private val servicioTipoDao = mockk<ServicioTipoDao>(relaxed = true)
     private val insertedItems = mutableListOf<ServicioExtraItem>()
     private val savedServicios = mutableListOf<ServicioExtra>()
+    private val tracker = mockk<SyncStateTracker>(relaxed = true)
+    private var enTransaccion = false
+    private val marcadoEnTransaccion = mutableListOf<Boolean>()
 
     private val biselado = ServicioTipoEntity(
         id = "t1", opticaId = opticaId, nombre = "Biselado", costoPropio = 5.0, costoTercero = 12.0,
@@ -60,7 +67,15 @@ class ServiciosViewModelTest {
         coEvery { repository.getServicioExtraItems(any(), any()) } returns emptyList()
         coEvery { repository.getRegalosByServicioExtraId(any(), any()) } returns emptyList()
         coEvery { repository.getPagosByServicioExtra(any(), any()) } returns flowOf(emptyList())
-        coEvery { repository.withTransaction(any<suspend () -> Any>()) } coAnswers { firstArg<suspend () -> Any>()() }
+        coEvery { repository.withTransaction(any<suspend () -> Any>()) } coAnswers {
+            enTransaccion = true
+            try {
+                firstArg<suspend () -> Any>()()
+            } finally {
+                enTransaccion = false
+            }
+        }
+        coEvery { tracker.markPendingRecalc(any(), any(), any(), any()) } answers { marcadoEnTransaccion += enTransaccion }
         coEvery { repository.insertServicioExtraItem(any()) } answers { insertedItems += firstArg<ServicioExtraItem>() }
         coEvery { repository.insertServicio(any()) } answers { savedServicios += firstArg<ServicioExtra>() }
         coEvery { repository.updateServicio(any()) } answers { savedServicios += firstArg<ServicioExtra>() }
@@ -84,6 +99,7 @@ class ServiciosViewModelTest {
         repository, sessionManager, mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true) { coEvery { adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) } returns Result.success(1) },
         servicioTipoDao,
+        ResumenRecalcMarker(tracker),
     )
 
     private fun storedServicio(costoReal: Double = 0.0) = ServicioExtra(
@@ -299,5 +315,25 @@ class ServiciosViewModelTest {
         assertEquals("t1", saved.servicioTipoId)
         assertEquals("Laboratorio Sur", saved.realizadoPorNombre)
         assertEquals("12", vm.uiState.value.costo.costoDraft)
+        coVerify(exactly = 0) { tracker.markPendingRecalc(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun aPastServicioCostEditMarksItsDateInsideTheSaveTransaction() = runTest(testDispatcher) {
+        coEvery { repository.getServicioById("s1", opticaId) } returns Resource.Success(storedServicio(costoReal = 12.0))
+        coEvery { repository.getServicioExtraItems("s1", opticaId) } returns listOf(storedItem("m1", costoReal = 30.0))
+        val vm = buildViewModel()
+        vm.loadServicio("s1")
+        advanceUntilIdle()
+        vm.updateCostoServicio("20")
+        var guardado = false
+
+        vm.saveServicio { guardado = true }
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { tracker.markPendingRecalc(opticaId, LocalDate.of(2026, 9, 1), "servicio_extra", "s1") }
+        assertEquals(listOf(true), marcadoEnTransaccion)
+        assertTrue(guardado)
+        assertEquals(20.0, savedServicios.single().costoReal, 0.0)
     }
 }

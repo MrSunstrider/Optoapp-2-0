@@ -17,6 +17,8 @@ import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.CapturaCosto
 import com.example.optoapp.domain.CapturaCostoItem
 import com.example.optoapp.domain.ComponenteCosto
+import com.example.optoapp.domain.CostoFechado
+import com.example.optoapp.domain.CostoVentaCalculator
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
@@ -26,6 +28,7 @@ import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.RecetaCosto
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
+import com.example.optoapp.domain.ResumenRecalcMarker
 import com.example.optoapp.domain.lastCreditMetodo
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.InventarioItemKind
@@ -141,6 +144,7 @@ class DispensacionViewModel @Inject constructor(
     private val reclamarDispensacionUseCase: ReclamarDispensacionUseCase,
     private val calcularCostoItem: CalcularCostoItemUseCase,
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
+    private val resumenRecalcMarker: ResumenRecalcMarker,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -527,7 +531,8 @@ class DispensacionViewModel @Inject constructor(
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     repository.runInTransaction {
                         kotlinx.coroutines.runBlocking {
-                            val row = if (isNew) disp else persistedEditableRow(disp, currentOpticaId)
+                            val persisted = if (isNew) null else persistedEditable(finalId, currentOpticaId)
+                            val row = persisted?.let { editableRow(disp, it) } ?: disp
                             // Runs inside the transaction so a failed save never leaves stock adjusted.
                             toAddStock.forEach { mid ->
                                 stockHelper.adjustStockAndRegistrarMovimiento(mid, currentOpticaId, 1, "AJUSTE", finalId, "Reversión por edición")
@@ -554,7 +559,7 @@ class DispensacionViewModel @Inject constructor(
 
                             val previos = itemsAnteriores.associateBy { it.id }
                             repository.deleteItemsByDispensacionId(finalId, currentOpticaId)
-                            s.items.forEach { itemUi ->
+                            val itemsGuardados = s.items.map { itemUi ->
                                 val item = capturarCosto(
                                     itemUi.toEntity(finalId, currentOpticaId),
                                     previos[itemUi.id],
@@ -564,7 +569,15 @@ class DispensacionViewModel @Inject constructor(
                                     s.fecha,
                                 )
                                 repository.insertDispensacionItem(item)
+                                item
                             }
+                            resumenRecalcMarker.registrar(
+                                currentOpticaId,
+                                ResumenRecalcMarker.CAUSA_DISPENSACION,
+                                finalId,
+                                anterior = persisted?.let { CostoFechado(it.fecha, costoItems(itemsAnteriores)) },
+                                nuevo = CostoFechado(row.fecha, costoItems(itemsGuardados)),
+                            )
 
                             if (dispensacionId != null && dispensacionId != "null") {
                                 s.itemsToDelete.forEach { itemId ->
@@ -619,16 +632,22 @@ class DispensacionViewModel @Inject constructor(
      * `updateDispensacion` replaces the whole row, so fields the wizard does not edit
      * (claim linkage, cancellation metadata) are carried from the persisted row.
      */
-    private suspend fun persistedEditableRow(edited: DispensacionOptica, opticaId: String): DispensacionOptica {
-        val persisted = (repository.getDispensacionById(edited.id, opticaId) as? Resource.Success)?.data
+    private suspend fun persistedEditable(id: String, opticaId: String): DispensacionOptica {
+        val persisted = (repository.getDispensacionById(id, opticaId) as? Resource.Success)?.data
             ?: throw IllegalStateException("Dispensación no encontrada.")
         OrderStatusPolicy.requireEditable(persisted.estadoEntrega, "editar la dispensación")
-        return edited.copy(
-            reclamoOrigenId = persisted.reclamoOrigenId,
-            motivoAnulacion = persisted.motivoAnulacion,
-            fechaAnulacion = persisted.fechaAnulacion,
-        )
+        return persisted
     }
+
+    private fun editableRow(edited: DispensacionOptica, persisted: DispensacionOptica): DispensacionOptica = edited.copy(
+        reclamoOrigenId = persisted.reclamoOrigenId,
+        motivoAnulacion = persisted.motivoAnulacion,
+        fechaAnulacion = persisted.fechaAnulacion,
+    )
+
+    // Gifts are left out: this save never changes them, so they cannot move the day's cost.
+    private fun costoItems(items: List<DispensacionItem>): Double =
+        CostoVentaCalculator.dispensacion(items, costoUnitarioSnapshot = null, regalos = emptyList()).costo
 
     /** Claims the loading flag before launching so a second tap queued behind the first is ignored. */
     private fun tryStartAction(): Boolean {

@@ -13,11 +13,14 @@ import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
 import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
+import com.example.optoapp.domain.CostoFechado
 import com.example.optoapp.domain.CostoServicioDraft
 import com.example.optoapp.domain.CostoServicioResolver
+import com.example.optoapp.domain.CostoVentaCalculator
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.domain.ResumenRecalcMarker
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.inventarioParaServicioExtra
 import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
@@ -82,6 +85,7 @@ class ServiciosViewModel @Inject constructor(
     private val cancelServicioExtraUseCase: com.example.optoapp.domain.CancelServicioExtraUseCase,
     private val stockHelper: DispensacionStockHelper,
     private val servicioTipoDao: ServicioTipoDao,
+    private val resumenRecalcMarker: ResumenRecalcMarker,
 ) : ViewModel() {
 
     companion object {
@@ -427,8 +431,12 @@ class ServiciosViewModel @Inject constructor(
                 }
 
                 repository.withTransaction {
+                    val existingServicio = if (state.isEdit) {
+                        (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data
+                    } else {
+                        null
+                    }
                     if (state.isEdit) {
-                        val existingServicio = (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data
                         existingServicio?.let { OrderStatusPolicy.requireEditable(it.estado, "editar el servicio") }
                         applyEditStockDiff(
                             previousItems = previousItems,
@@ -471,6 +479,16 @@ class ServiciosViewModel @Inject constructor(
                     for (entity in regalosToPersist) {
                         repository.insertRegaloServicioExtra(entity)
                     }
+
+                    resumenRecalcMarker.registrar(
+                        currentOpticaId,
+                        ResumenRecalcMarker.CAUSA_SERVICIO_EXTRA,
+                        finalId,
+                        anterior = existingServicio?.let {
+                            CostoFechado(it.fecha, CostoVentaCalculator.servicio(it, previousItems, previousRegalos).costo)
+                        },
+                        nuevo = CostoFechado(servicio.fecha, CostoVentaCalculator.servicio(servicio, persistedItems, regalosToPersist).costo),
+                    )
 
                     state.pagos.forEach { pago ->
                         val pagoToSave = pago.copy(

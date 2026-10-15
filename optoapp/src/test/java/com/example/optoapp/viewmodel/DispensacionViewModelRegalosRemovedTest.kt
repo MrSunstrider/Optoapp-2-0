@@ -71,6 +71,7 @@ class DispensacionViewModelRegalosRemovedTest {
         mockk<ReclamarDispensacionUseCase>(relaxed = true),
         mockk<CalcularCostoItemUseCase>(relaxed = true),
         mockk(relaxed = true),
+        mockk(relaxed = true),
     )
 
     @Test

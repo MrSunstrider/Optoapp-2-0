@@ -84,6 +84,7 @@ class ServiciosViewModelMonturasTest {
             cancelServicioExtraUseCase,
             stockHelper,
             mockk(relaxed = true),
+            mockk(relaxed = true),
         )
         advanceUntilIdle()
 

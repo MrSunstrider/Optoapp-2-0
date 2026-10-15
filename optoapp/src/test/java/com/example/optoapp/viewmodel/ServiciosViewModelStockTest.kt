@@ -82,6 +82,7 @@ class ServiciosViewModelStockTest {
         cancelServicioExtraUseCase,
         stockHelper,
         mockk(relaxed = true),
+        mockk(relaxed = true),
     )
 
     @Test

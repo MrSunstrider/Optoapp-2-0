@@ -568,6 +568,7 @@ data class FinanzasSyncResult(
     val downloadedCostosProductos: Int = 0,
     val downloadedCostosBiselado: Int = 0,
     val downloadedCostosLc: Int = 0,
+    val resumenRecalcDias: Int = 0,
 )
 
 @Serializable

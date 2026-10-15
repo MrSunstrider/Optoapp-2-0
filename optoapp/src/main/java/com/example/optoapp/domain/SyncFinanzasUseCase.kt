@@ -26,6 +26,7 @@ open class SyncFinanzasUseCase @Inject constructor(
     private val uploadSyncCoordinator: UploadSyncCoordinator,
     private val downloadSyncCoordinator: DownloadSyncCoordinator,
     private val discardLosingClaim: DiscardLosingClaimUseCase,
+    private val resumenRecalcCoordinator: ResumenRecalcCoordinator,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -91,6 +92,10 @@ open class SyncFinanzasUseCase @Inject constructor(
             regalosUp = r8.count; hadPartialUpload = hadPartialUpload || r8.partial
             AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
         }
+
+        // Runs on every sync, even one that uploaded nothing, so days whose RPC failed earlier are retried.
+        val recalcDias = flushPendingRecalcs(opticaId)
+        AppLogger.d(TAG, "Finanzas: resumen recalc dias=$recalcDias")
 
         val dispDown: Int
         val itemsDown: Int
@@ -171,6 +176,7 @@ open class SyncFinanzasUseCase @Inject constructor(
             downloadedResumenesDiarios = resumenDown,
             downloadedConfiguracionesFinancieras = configDown,
             downloadedGastosOperativos = gastosDown,
+            resumenRecalcDias = recalcDias,
         )
         if (hadPartialUpload) {
             Resource.Error("Error sincronizando finanzas: upload parcial / quarantine", result)
@@ -215,6 +221,15 @@ open class SyncFinanzasUseCase @Inject constructor(
     } catch (e: Exception) {
         AppLogger.e(TAG, "Residual claim credit transfer failed", e)
         false
+    }
+
+    private suspend fun flushPendingRecalcs(opticaId: String): Int = try {
+        resumenRecalcCoordinator.flush(opticaId)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Pending resumen recalc flush failed (non-fatal)", e)
+        0
     }
 
     // Tables are independent on download; one failing table must not leave the others stale.

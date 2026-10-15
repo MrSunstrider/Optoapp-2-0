@@ -79,6 +79,7 @@ class DispensacionViewModelDeleteTest {
         mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true),
         mockk(relaxed = true),
         eliminar,
+        mockk(relaxed = true),
     ).also { testDispatcher.scheduler.advanceUntilIdle() }
 
     @Test
