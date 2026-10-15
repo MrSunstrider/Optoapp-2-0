@@ -8,9 +8,13 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcDao
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.domain.AltoIndiceNormalizer
 import com.example.optoapp.domain.GastoTipoResolver
 import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.OpticalCatalog
@@ -46,6 +50,45 @@ fun blockToFilter(block: String): String = when (block) {
     else -> block
 }
 
+val MATRIZ_BLOQUES_EDITABLES = COST_BLOCKS + listOf("Biselado", "Lentes de Contacto")
+
+// Codes mirror the server CHECK constraints and the cost lookup keys, so a free-text value would never be priced.
+val TIPOS_ARO_BISELADO = listOf("aro_completo", "semi_aire", "al_aire")
+val MODALIDADES_BISELADO = listOf("stock", "fabricacion")
+val TIPOS_LC = listOf("cosmetico", "graduado", "terapeutico")
+val MODALIDADES_LC = listOf("diario", "quincenal", "mensual", "anual")
+
+fun filtrarCostos(
+    costos: List<CostoProductoEntity>,
+    material: String?,
+    tipoLente: String?,
+    serie: Int?,
+): List<CostoProductoEntity> = costos.filter {
+    (material == null || it.material == material) &&
+        (tipoLente == null || it.tipoLente == tipoLente) &&
+        (serie == null || it.serie == serie)
+}
+
+data class VersionPrecio(val id: String, val costo: Double, val vigenteDesde: String, val vigenteHasta: String?)
+
+data class FormBiselado(
+    val material: String = "",
+    val tipoAro: String = "",
+    val modalidad: String = "",
+    val serie: String = "",
+    val altoIndice: String = "",
+    val costo: String = "",
+    val error: String? = null,
+)
+
+data class FormLc(
+    val tipoLc: String = "",
+    val material: String = "",
+    val modalidad: String = "",
+    val costo: String = "",
+    val error: String? = null,
+)
+
 data class GastoFila(val gasto: GastoOperativoEntity, val tipo: String)
 
 data class GrupoGastos(
@@ -75,11 +118,21 @@ data class CostosYGastosUiState(
     val selectedTab: Int = 0,
     val selectedBlock: String? = null,
     val costosDelBloque: List<CostoProductoEntity> = emptyList(),
+    val filtroMaterial: String? = null,
+    val filtroTipoLente: String? = null,
+    val filtroSerie: Int? = null,
+    val costosBiselado: List<CostoBiseladoEntity> = emptyList(),
+    val costosLc: List<CostoLcEntity> = emptyList(),
+    val puedeEditarMatrices: Boolean = false,
+    val formBiselado: FormBiselado? = null,
+    val formLc: FormLc? = null,
     val editingCosto: CostoProductoEntity? = null,
+    val editingBiselado: CostoBiseladoEntity? = null,
+    val editingLc: CostoLcEntity? = null,
     val nuevoCostoUnitario: String = "",
     val vigenteDesde: LocalDate? = null,
     val vigenteDesdeError: String? = null,
-    val historialCosto: List<CostoProductoEntity> = emptyList(),
+    val historialPrecios: List<VersionPrecio> = emptyList(),
     val gastosOperativos: List<GastoOperativoEntity> = emptyList(),
     val mesGastos: YearMonth = YearMonth.from(DateUtils.today()),
     val gruposGastos: List<GrupoGastos> = emptyList(),
@@ -108,7 +161,10 @@ data class CostosYGastosUiState(
     val costoCostoUnitario: String = "",
     val costoSaveError: String? = null,
     val deletingCosto: CostoProductoEntity? = null,
-)
+) {
+    val costosVisibles: List<CostoProductoEntity>
+        get() = filtrarCostos(costosDelBloque, filtroMaterial, filtroTipoLente, filtroSerie)
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -116,6 +172,7 @@ class CostosYGastosViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
+    private val costoLcDao: CostoLcDao,
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
@@ -131,6 +188,11 @@ class CostosYGastosViewModel @Inject constructor(
     companion object {
         private const val TAG = "CostosYGastosVM"
         private val FECHA_UI = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        private const val TAB_BISELADO = 1
+        private const val TAB_LC = 2
+        private const val TIPO_BISELADO = "costo_biselado"
+        private const val TIPO_LC = "costo_lc"
+        private const val PRECIO_DUPLICADO = "Ya existe un precio vigente para esta combinación. Tócalo en la lista para editarlo."
         val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
 
         fun autoGenerarRecurrentes(
@@ -193,7 +255,10 @@ class CostosYGastosViewModel @Inject constructor(
                     Log.e(TAG, "Role flow crashed, gastos stay read-only", e)
                     emit("")
                 }
-                .collect { rol -> _uiState.update { it.copy(puedeEditarGastos = AppRoles.canWriteGastos(rol)) } }
+                .collect { rol ->
+                    val gestion = AppRoles.canWriteGastos(rol)
+                    _uiState.update { it.copy(puedeEditarGastos = gestion, puedeEditarMatrices = gestion) }
+                }
         }
     }
 
@@ -237,10 +302,54 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
+        when (index) {
+            TAB_BISELADO -> cargarMatriz("biselado", ::refrescarBiselado)
+            TAB_LC -> cargarMatriz("lentes de contacto", ::refrescarLc)
+        }
+    }
+
+    private fun cargarMatriz(nombre: String, refrescar: suspend (String) -> Unit) {
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            try {
+                refrescar(sessionManager.opticaId.first())
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Loading the $nombre matrix failed", e)
+                _uiState.update { it.copy(error = "No se pudo cargar la matriz de $nombre.") }
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
+
+    private suspend fun refrescarBiselado(opticaId: String) {
+        val filas = costoBiseladoDao.getByOpticaIdList(opticaId)
+        _uiState.update { it.copy(costosBiselado = filas) }
+    }
+
+    private suspend fun refrescarLc(opticaId: String) {
+        val filas = costoLcDao.getByOpticaIdList(opticaId)
+        _uiState.update { it.copy(costosLc = filas) }
+    }
+
+    fun updateFiltroMaterial(material: String?) {
+        _uiState.update { it.copy(filtroMaterial = material) }
+    }
+
+    fun updateFiltroTipoLente(tipoLente: String?) {
+        _uiState.update { it.copy(filtroTipoLente = tipoLente) }
+    }
+
+    fun updateFiltroSerie(serie: Int?) {
+        _uiState.update { it.copy(filtroSerie = serie) }
     }
 
     fun loadBlock(block: String) {
-        _uiState.update { it.copy(selectedBlock = block, isLoading = true) }
+        _uiState.update {
+            it.copy(selectedBlock = block, isLoading = true, filtroMaterial = null, filtroTipoLente = null, filtroSerie = null)
+        }
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
@@ -255,23 +364,59 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun showEditCosto(costo: CostoProductoEntity) {
+        if (!_uiState.value.puedeEditarMatrices) return
+        abrirEdicion(costo.vigenteDesde, costo.costoUnitario) { it.copy(editingCosto = costo) }
+        cargarHistorial({ it.editingCosto?.id == costo.id }) {
+            costoProductoDao.getHistorial(
+                costo.opticaId, costo.material, costo.tipoLente, costo.stockOFabricacion,
+                costo.tratamiento, costo.serie, costo.laboratorioId,
+            ).map { VersionPrecio(it.id, it.costoUnitario, it.vigenteDesde, it.vigenteHasta) }
+        }
+    }
+
+    fun showEditBiselado(fila: CostoBiseladoEntity) {
+        if (!_uiState.value.puedeEditarMatrices) return
+        abrirEdicion(fila.vigenteDesde, fila.costoPorPar) { it.copy(editingBiselado = fila) }
+        cargarHistorial({ it.editingBiselado?.id == fila.id }) {
+            costoBiseladoDao.getHistorial(
+                fila.opticaId, fila.material, fila.tipoAro, fila.stockOFabricacion, fila.serie, fila.altoIndice,
+            ).map { VersionPrecio(it.id, it.costoPorPar, it.vigenteDesde, it.vigenteHasta) }
+        }
+    }
+
+    fun showEditLc(fila: CostoLcEntity) {
+        if (!_uiState.value.puedeEditarMatrices) return
+        abrirEdicion(fila.vigenteDesde, fila.costoUnitario) { it.copy(editingLc = fila) }
+        cargarHistorial({ it.editingLc?.id == fila.id }) {
+            costoLcDao.getHistorial(fila.opticaId, fila.tipoLc, fila.materialLc, fila.modalidad, fila.laboratorioId)
+                .map { VersionPrecio(it.id, it.costoUnitario, it.vigenteDesde, it.vigenteHasta) }
+        }
+    }
+
+    private fun abrirEdicion(
+        vigenteDesde: String,
+        costoActual: Double,
+        seleccionar: (CostosYGastosUiState) -> CostosYGastosUiState,
+    ) {
         _uiState.update {
-            it.copy(
-                editingCosto = costo,
-                nuevoCostoUnitario = costo.costoUnitario.toString(),
-                vigenteDesde = MatrizVigenciaUseCase.fechaMinima(costo.vigenteDesde, DateUtils.today()),
-                vigenteDesdeError = null,
-                historialCosto = emptyList(),
-                error = null,
+            seleccionar(
+                it.copy(
+                    nuevoCostoUnitario = costoActual.toString(),
+                    vigenteDesde = MatrizVigenciaUseCase.fechaMinima(vigenteDesde, DateUtils.today()),
+                    vigenteDesdeError = null,
+                    historialPrecios = emptyList(),
+                    error = null,
+                ),
             )
         }
+    }
+
+    // The dialog may be closed or switched to another row before the query returns; a late result must not leak into it.
+    private fun cargarHistorial(sigueAbierta: (CostosYGastosUiState) -> Boolean, leer: suspend () -> List<VersionPrecio>) {
         viewModelScope.launch {
             try {
-                val historial = costoProductoDao.getHistorial(
-                    costo.opticaId, costo.material, costo.tipoLente, costo.stockOFabricacion,
-                    costo.tratamiento, costo.serie, costo.laboratorioId,
-                )
-                _uiState.update { if (it.editingCosto?.id == costo.id) it.copy(historialCosto = historial) else it }
+                val historial = leer()
+                _uiState.update { if (sigueAbierta(it)) it.copy(historialPrecios = historial) else it }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -280,9 +425,17 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    fun dismissEditCosto() {
+    fun dismissEditPrecio() {
         _uiState.update {
-            it.copy(editingCosto = null, nuevoCostoUnitario = "", vigenteDesde = null, vigenteDesdeError = null, historialCosto = emptyList())
+            it.copy(
+                editingCosto = null,
+                editingBiselado = null,
+                editingLc = null,
+                nuevoCostoUnitario = "",
+                vigenteDesde = null,
+                vigenteDesdeError = null,
+                historialPrecios = emptyList(),
+            )
         }
     }
 
@@ -295,45 +448,205 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun saveCostoEdit() {
+        val costo = _uiState.value.editingCosto ?: return
+        guardarVersion(::refrescarBloque) { valor, desde ->
+            matrizVigenciaUseCase.editarProducto(costo, valor, desde, DateUtils.today())
+        }
+    }
+
+    fun saveBiseladoEdit() {
+        val fila = _uiState.value.editingBiselado ?: return
+        guardarVersion(::refrescarBiselado) { valor, desde ->
+            matrizVigenciaUseCase.editarBiselado(fila, valor, desde, DateUtils.today())
+        }
+    }
+
+    fun saveLcEdit() {
+        val fila = _uiState.value.editingLc ?: return
+        guardarVersion(::refrescarLc) { valor, desde ->
+            matrizVigenciaUseCase.editarLc(fila, valor, desde, DateUtils.today())
+        }
+    }
+
+    private fun guardarVersion(
+        refrescar: suspend (String) -> Unit,
+        editar: suspend (valor: Double, desde: LocalDate) -> ResultadoVigencia,
+    ) {
         val s = _uiState.value
-        val costo = s.editingCosto ?: return
+        if (!s.puedeEditarMatrices) return
         val desde = s.vigenteDesde ?: return
-        val nuevoValor = s.nuevoCostoUnitario.toDoubleOrNull()
-        if (nuevoValor == null || nuevoValor <= 0) {
+        val nuevoValor = costoPositivo(s.nuevoCostoUnitario)
+        if (nuevoValor == null) {
             _uiState.update { it.copy(error = "Ingresa un costo válido") }
             return
         }
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                when (val resultado = matrizVigenciaUseCase.editarProducto(costo, nuevoValor, desde, DateUtils.today())) {
+                when (val resultado = editar(nuevoValor, desde)) {
                     is ResultadoVigencia.Rechazado -> _uiState.update {
                         it.copy(vigenteDesdeError = "La fecha debe ser el ${resultado.fechaMinima.format(FECHA_UI)} o posterior")
                     }
                     is ResultadoVigencia.Aplicado -> {
                         postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-                        dismissEditCosto()
-                        refrescarBloque(opticaId)
+                        dismissEditPrecio()
+                        refrescar(opticaId)
                     }
                     ResultadoVigencia.YaNoVigente -> {
-                        dismissEditCosto()
+                        dismissEditPrecio()
                         _uiState.update { it.copy(error = "Este precio ya no está vigente. Revisa la lista actualizada.") }
-                        refrescarBloque(opticaId)
+                        refrescar(opticaId)
                     }
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                Log.e(TAG, "saveCostoEdit failed", e)
+                Log.e(TAG, "Saving a price version failed", e)
                 _uiState.update { it.copy(error = "No se pudo guardar el precio. Inténtalo de nuevo.") }
             }
         }
     }
 
+    private fun costoPositivo(raw: String): Double? = raw.trim().toDoubleOrNull()?.takeIf { it > 0 }
+
     private suspend fun refrescarBloque(opticaId: String) {
         val bloque = _uiState.value.selectedBlock ?: return
         val refreshed = costoProductoDao.getByBloque(opticaId, blockToFilter(bloque)).first()
         _uiState.update { it.copy(costosDelBloque = refreshed) }
+    }
+
+    fun showNewBiselado() {
+        if (!_uiState.value.puedeEditarMatrices) return
+        _uiState.update { it.copy(formBiselado = FormBiselado()) }
+    }
+
+    fun updateFormBiselado(cambio: (FormBiselado) -> FormBiselado) {
+        _uiState.update { s -> s.formBiselado?.let { s.copy(formBiselado = cambio(it).copy(error = null)) } ?: s }
+    }
+
+    fun dismissFormBiselado() {
+        _uiState.update { it.copy(formBiselado = null) }
+    }
+
+    fun saveBiselado() {
+        val s = _uiState.value
+        val form = s.formBiselado ?: return
+        if (!s.puedeEditarMatrices) return
+        val error = errorFormBiselado(form, s.costosBiselado)
+        if (error != null) {
+            _uiState.update { it.copy(formBiselado = form.copy(error = error)) }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                val fila = CostoBiseladoEntity(
+                    id = UUID.randomUUID().toString(),
+                    opticaId = opticaId,
+                    material = form.material,
+                    tipoAro = form.tipoAro,
+                    stockOFabricacion = form.modalidad,
+                    serie = form.serie.trim().toIntOrNull(),
+                    altoIndice = AltoIndiceNormalizer.normalize(form.altoIndice),
+                    costoPorPar = form.costo.trim().toDouble(),
+                    vigenteDesde = DateUtils.toIso(DateUtils.today()),
+                    updatedAt = Instant.now().toString(),
+                )
+                repository.withTransaction {
+                    costoBiseladoDao.upsertAll(listOf(fila))
+                    syncStateTracker.markLocallyModified(opticaId, TIPO_BISELADO, fila.id)
+                }
+                _uiState.update { it.copy(formBiselado = null) }
+                refrescarBiselado(opticaId)
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "saveBiselado failed", e)
+                _uiState.update { it.copy(formBiselado = it.formBiselado?.copy(error = "No se pudo guardar el precio. Inténtalo de nuevo.")) }
+            }
+        }
+    }
+
+    // A second open row for the same combination would make the cost lookup ambiguous; edits must version the existing one.
+    private fun errorFormBiselado(form: FormBiselado, abiertas: List<CostoBiseladoEntity>): String? {
+        val serie = form.serie.trim()
+        val altoIndice = AltoIndiceNormalizer.normalize(form.altoIndice)
+        return when {
+            form.material.isBlank() -> "Selecciona el material"
+            form.tipoAro !in TIPOS_ARO_BISELADO -> "Selecciona el tipo de aro"
+            form.modalidad !in MODALIDADES_BISELADO -> "Selecciona stock o fabricación"
+            serie.isNotEmpty() && serie.toIntOrNull() == null -> "La serie debe ser un número entero"
+            costoPositivo(form.costo) == null -> "Ingresa un costo válido"
+            abiertas.any {
+                it.material == form.material && it.tipoAro == form.tipoAro && it.stockOFabricacion == form.modalidad &&
+                    it.serie == serie.toIntOrNull() && it.altoIndice == altoIndice
+            } -> PRECIO_DUPLICADO
+            else -> null
+        }
+    }
+
+    fun showNewLc() {
+        if (!_uiState.value.puedeEditarMatrices) return
+        _uiState.update { it.copy(formLc = FormLc()) }
+    }
+
+    fun updateFormLc(cambio: (FormLc) -> FormLc) {
+        _uiState.update { s -> s.formLc?.let { s.copy(formLc = cambio(it).copy(error = null)) } ?: s }
+    }
+
+    fun dismissFormLc() {
+        _uiState.update { it.copy(formLc = null) }
+    }
+
+    fun saveLc() {
+        val s = _uiState.value
+        val form = s.formLc ?: return
+        if (!s.puedeEditarMatrices) return
+        val error = errorFormLc(form, s.costosLc)
+        if (error != null) {
+            _uiState.update { it.copy(formLc = form.copy(error = error)) }
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                val fila = CostoLcEntity(
+                    id = UUID.randomUUID().toString(),
+                    opticaId = opticaId,
+                    tipoLc = form.tipoLc,
+                    materialLc = form.material.trim(),
+                    modalidad = form.modalidad,
+                    costoUnitario = form.costo.trim().toDouble(),
+                    vigenteDesde = DateUtils.toIso(DateUtils.today()),
+                    updatedAt = Instant.now().toString(),
+                )
+                repository.withTransaction {
+                    costoLcDao.upsertAll(listOf(fila))
+                    syncStateTracker.markLocallyModified(opticaId, TIPO_LC, fila.id)
+                }
+                _uiState.update { it.copy(formLc = null) }
+                refrescarLc(opticaId)
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "saveLc failed", e)
+                _uiState.update { it.copy(formLc = it.formLc?.copy(error = "No se pudo guardar el precio. Inténtalo de nuevo.")) }
+            }
+        }
+    }
+
+    private fun errorFormLc(form: FormLc, abiertas: List<CostoLcEntity>): String? = when {
+        form.tipoLc !in TIPOS_LC -> "Selecciona el tipo de lente de contacto"
+        form.material.isBlank() -> "Ingresa el material"
+        form.modalidad !in MODALIDADES_LC -> "Selecciona la modalidad"
+        costoPositivo(form.costo) == null -> "Ingresa un costo válido"
+        abiertas.any {
+            it.tipoLc == form.tipoLc && it.materialLc == form.material.trim() && it.modalidad == form.modalidad &&
+                it.laboratorioId == null
+        } -> PRECIO_DUPLICADO
+        else -> null
     }
 
     val categorias = CATEGORIAS
@@ -477,6 +790,7 @@ class CostosYGastosViewModel @Inject constructor(
     val tratamientos = OpticalCatalog.TRATAMIENTOS
 
     fun showNewCosto() {
+        if (!_uiState.value.puedeEditarMatrices) return
         val block = _uiState.value.selectedBlock
         _uiState.update {
             it.copy(
@@ -582,6 +896,7 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun confirmDeleteCosto(costo: CostoProductoEntity) {
+        if (!_uiState.value.puedeEditarMatrices) return
         _uiState.update { it.copy(deletingCosto = costo) }
     }
 
@@ -590,6 +905,7 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun deleteCosto() {
+        if (!_uiState.value.puedeEditarMatrices) return
         val costo = _uiState.value.deletingCosto ?: return
         viewModelScope.launch {
             try {

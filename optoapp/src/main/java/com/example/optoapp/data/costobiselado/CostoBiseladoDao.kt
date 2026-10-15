@@ -43,6 +43,27 @@ interface CostoBiseladoDao {
     @Query("SELECT * FROM costos_biselado WHERE optica_id = :opticaId")
     suspend fun getAllByOpticaIdList(opticaId: String): List<CostoBiseladoEntity>
 
+    @Query(
+        """
+        SELECT * FROM costos_biselado
+        WHERE optica_id = :opticaId
+          AND material = :material
+          AND tipo_aro = :tipoAro
+          AND stock_o_fabricacion = :stockOFabricacion
+          AND serie IS :serie
+          AND alto_indice IS :altoIndice
+        ORDER BY vigente_desde DESC
+    """,
+    )
+    suspend fun getHistorial(
+        opticaId: String,
+        material: String,
+        tipoAro: String,
+        stockOFabricacion: String,
+        serie: Int?,
+        altoIndice: String?,
+    ): List<CostoBiseladoEntity>
+
     @Query("SELECT * FROM costos_biselado WHERE id = :id")
     suspend fun getById(id: String): CostoBiseladoEntity?
 

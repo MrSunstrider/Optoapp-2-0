@@ -69,4 +69,27 @@ class CostoBiseladoDaoTest {
         )
         assertEquals(listOf(14.0), candidatos.map { it.costoPorPar })
     }
+
+    @Test
+    fun getHistorial_returnsOnlyThatRowCombinationNewestFirst() = runTest {
+        val base = CostoBiseladoEntity(
+            id = "v1", opticaId = "optica1",
+            material = "Resina", tipoAro = "al_aire",
+            stockOFabricacion = "stock", serie = null, altoIndice = null,
+            costoPorPar = 10.0, vigenteDesde = "2026-01-01", vigenteHasta = "2026-03-31",
+        )
+        dao.upsertAll(
+            listOf(
+                base,
+                base.copy(id = "v2", costoPorPar = 12.0, vigenteDesde = "2026-04-01", vigenteHasta = null),
+                base.copy(id = "otroIndice", altoIndice = "1.67"),
+                base.copy(id = "otraSerie", serie = 1),
+                base.copy(id = "otroAro", tipoAro = "aro_completo"),
+            ),
+        )
+
+        val historial = dao.getHistorial("optica1", "Resina", "al_aire", "stock", null, null)
+
+        assertEquals(listOf("v2", "v1"), historial.map { it.id })
+    }
 }

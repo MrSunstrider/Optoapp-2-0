@@ -4,6 +4,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.domain.MatrizVigenciaUseCase
@@ -76,6 +77,7 @@ class CostosYGastosViewModelTest {
         syncStateTracker = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns flowOf(opticaId)
+        every { sessionManager.opticaRol } returns flowOf("admin")
         every { repository.getGastosOperativos(opticaId) } returns emptyFlow()
         coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers { firstArg<suspend () -> Any?>().invoke() }
         coEvery { costoProductoDao.getByBloque(any(), any()) } returns flowOf(emptyList())
@@ -85,6 +87,7 @@ class CostosYGastosViewModelTest {
         repository,
         costoProductoDao,
         costoBiseladoDao,
+        mockk<CostoLcDao>(relaxed = true),
         sessionManager,
         scheduler,
         syncFinanzas,

@@ -76,4 +76,20 @@ class CostoLcDaoTest {
         assertEquals(listOf("lab1"), dao.lookupVigente("o1", "graduado", "Hydrogel", "lab1", "2026-07-15").map { it.id })
         assertEquals(listOf("lab2", "lab1"), dao.lookupVigente("o1", "graduado", "Hydrogel", null, "2026-07-15").map { it.id })
     }
+
+    @Test
+    fun getHistorialReturnsOnlyThatRowCombinationNewestFirst() = runTest {
+        dao.upsertAll(
+            listOf(
+                row("old", desde = "2026-01-01", hasta = "2026-07-31"),
+                row("new", desde = "2026-08-01"),
+                row("diario", desde = "2026-02-01", modalidad = "diario"),
+                row("rgp", desde = "2026-01-01", materialLc = "RGP"),
+                row("conLab", desde = "2026-01-01", laboratorioId = "lab1"),
+            ),
+        )
+
+        assertEquals(listOf("new", "old"), dao.getHistorial("o1", "graduado", "Hydrogel", "mensual", null).map { it.id })
+        assertEquals(listOf("conLab"), dao.getHistorial("o1", "graduado", "Hydrogel", "mensual", "lab1").map { it.id })
+    }
 }

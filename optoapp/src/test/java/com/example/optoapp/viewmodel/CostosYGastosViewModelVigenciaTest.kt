@@ -4,6 +4,7 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.domain.MatrizVigenciaUseCase
@@ -81,6 +82,7 @@ class CostosYGastosViewModelVigenciaTest {
             repository,
             costoProductoDao,
             mockk<CostoBiseladoDao>(relaxed = true),
+            mockk<CostoLcDao>(relaxed = true),
             sessionManager,
             scheduler,
             mockk<SyncFinanzasUseCase>(relaxed = true),
@@ -103,7 +105,10 @@ class CostosYGastosViewModelVigenciaTest {
 
         val state = viewModel.uiState.value
         assertEquals(hoy, state.vigenteDesde)
-        assertEquals(listOf("p2", "p1"), state.historialCosto.map { it.id })
+        assertEquals(
+            listOf(VersionPrecio("p2", 18.0, "2026-03-01", null), VersionPrecio("p1", 15.0, "2026-01-01", "2026-02-28")),
+            state.historialPrecios,
+        )
     }
 
     @Test

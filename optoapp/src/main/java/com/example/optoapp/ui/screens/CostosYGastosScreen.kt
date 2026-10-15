@@ -1,6 +1,6 @@
 package com.example.optoapp.ui.screens
 
-import androidx.compose.foundation.clickable
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,15 +35,26 @@ import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
+import com.example.optoapp.ui.screens.costos.BiseladoTab
+import com.example.optoapp.ui.screens.costos.EditarPrecioDialog
+import com.example.optoapp.ui.screens.costos.FormBiseladoDialog
+import com.example.optoapp.ui.screens.costos.FormLcDialog
+import com.example.optoapp.ui.screens.costos.LcTab
+import com.example.optoapp.ui.screens.costos.MatrizAgregarFab
+import com.example.optoapp.ui.screens.costos.MatrizDropdown
+import com.example.optoapp.ui.screens.costos.MatrizRow
+import com.example.optoapp.ui.screens.costos.MatrizSoloLectura
+import com.example.optoapp.ui.screens.costos.MatrizVacia
+import com.example.optoapp.ui.screens.costos.etiquetaMatriz
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.COST_BLOCKS
+import com.example.optoapp.viewmodel.CostosYGastosUiState
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import com.example.optoapp.viewmodel.GastoFila
 import com.example.optoapp.viewmodel.GrupoGastos
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,8 +120,18 @@ fun CostosYGastosScreen(
 
             when (uiState.selectedTab) {
                 0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel)
-                1 -> Text(stringResource(R.string.costos_biselado_proximamente), modifier = Modifier.padding(16.dp))
-                2 -> Text(stringResource(R.string.costos_lentes_contacto_proximamente), modifier = Modifier.padding(16.dp))
+                1 -> BiseladoTab(
+                    filas = uiState.costosBiselado,
+                    puedeEditar = uiState.puedeEditarMatrices,
+                    onEditar = viewModel::showEditBiselado,
+                    onAgregar = viewModel::showNewBiselado,
+                )
+                2 -> LcTab(
+                    filas = uiState.costosLc,
+                    puedeEditar = uiState.puedeEditarMatrices,
+                    onEditar = viewModel::showEditLc,
+                    onAgregar = viewModel::showNewLc,
+                )
                 3 -> GastosOperativosTab(
                     uiState = uiState,
                     viewModel = viewModel,
@@ -119,22 +140,73 @@ fun CostosYGastosScreen(
             }
         }
     }
+
+    MatricesDialogs(uiState = uiState, viewModel = viewModel)
 }
 
+private data class EdicionPrecio(val descripcion: String, @StringRes val etiquetaCosto: Int, val guardar: () -> Unit)
+
 @Composable
-private fun HistorialCostoRow(version: CostoProductoEntity) {
-    val monto = MoneyFormatter.format(version.costoUnitario)
-    val desde = DateUtils.formatLocalized(LocalDate.parse(version.vigenteDesde))
-    val texto = version.vigenteHasta?.let { hasta ->
-        stringResource(R.string.costos_historial_cerrado, monto, desde, DateUtils.formatLocalized(LocalDate.parse(hasta)))
-    } ?: stringResource(R.string.costos_historial_vigente, monto, desde)
-    Text(texto, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+private fun MatricesDialogs(uiState: CostosYGastosUiState, viewModel: CostosYGastosViewModel) {
+    val costo = uiState.editingCosto
+    val biselado = uiState.editingBiselado
+    val lc = uiState.editingLc
+    val edicion = when {
+        costo != null -> EdicionPrecio(
+            "${costo.material} · ${costo.tipoLente}",
+            R.string.costos_costo_unitario,
+            viewModel::saveCostoEdit,
+        )
+        biselado != null -> EdicionPrecio(
+            "${biselado.material} · ${etiquetaMatriz(biselado.tipoAro)}",
+            R.string.costos_costo_por_par,
+            viewModel::saveBiseladoEdit,
+        )
+        lc != null -> EdicionPrecio(
+            "${etiquetaMatriz(lc.tipoLc)} · ${lc.materialLc}",
+            R.string.costos_costo_unitario,
+            viewModel::saveLcEdit,
+        )
+        else -> null
+    }
+    edicion?.let { (descripcion, etiquetaCosto, guardar) ->
+        EditarPrecioDialog(
+            descripcion = descripcion,
+            etiquetaCosto = stringResource(etiquetaCosto),
+            costo = uiState.nuevoCostoUnitario,
+            onCostoChange = viewModel::updateNuevoCostoUnitario,
+            vigenteDesde = uiState.vigenteDesde,
+            onVigenteDesdeChange = viewModel::updateVigenteDesde,
+            vigenteDesdeError = uiState.vigenteDesdeError,
+            error = uiState.error,
+            historial = uiState.historialPrecios,
+            onGuardar = guardar,
+            onDismiss = viewModel::dismissEditPrecio,
+        )
+    }
+    uiState.formBiselado?.let { form ->
+        FormBiseladoDialog(
+            form = form,
+            materiales = viewModel.materialesOpticos,
+            onCambio = viewModel::updateFormBiselado,
+            onGuardar = viewModel::saveBiselado,
+            onDismiss = viewModel::dismissFormBiselado,
+        )
+    }
+    uiState.formLc?.let { form ->
+        FormLcDialog(
+            form = form,
+            onCambio = viewModel::updateFormLc,
+            onGuardar = viewModel::saveLc,
+            onDismiss = viewModel::dismissFormLc,
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MatrizDeCostosTab(
-    uiState: com.example.optoapp.viewmodel.CostosYGastosUiState,
+    uiState: CostosYGastosUiState,
     viewModel: CostosYGastosViewModel,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -173,40 +245,15 @@ private fun MatrizDeCostosTab(
                 }
             }
 
+            if (!uiState.puedeEditarMatrices) {
+                MatrizSoloLectura()
+            }
+
             uiState.selectedBlock?.let { block ->
-                val costos = uiState.costosDelBloque
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(stringResource(R.string.costos_bloque_titulo, block), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            pluralStringResource(R.plurals.costos_registros, costos.size, costos.size),
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (costos.isNotEmpty()) {
-                            Spacer(Modifier.height(8.dp))
-                            HorizontalDivider()
-                            costos.forEach { costo ->
-                                CostoProductoRow(
-                                    costo,
-                                    onClick = { viewModel.showEditCosto(costo) },
-                                    onDelete = { viewModel.confirmDeleteCosto(costo) },
-                                )
-                            }
-                        } else if (!uiState.isLoading) {
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                stringResource(R.string.costos_bloque_vacio),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
+                if (uiState.costosDelBloque.isNotEmpty()) {
+                    FiltrosLentes(uiState = uiState, viewModel = viewModel)
                 }
+                BloqueLentesCard(block = block, uiState = uiState, viewModel = viewModel)
             }
 
             uiState.error?.let { error ->
@@ -214,84 +261,10 @@ private fun MatrizDeCostosTab(
             }
 
             Spacer(Modifier.height(80.dp))
-
-            uiState.editingCosto?.let { costo ->
-                var editValue by remember { mutableStateOf(uiState.nuevoCostoUnitario) }
-                var showVigenciaPicker by remember { mutableStateOf(false) }
-                val vigenteDesde = uiState.vigenteDesde
-                if (showVigenciaPicker && vigenteDesde != null) {
-                    OptoDatePickerDialog(
-                        initialDate = vigenteDesde,
-                        onDateSelected = { viewModel.updateVigenteDesde(it) },
-                        onDismiss = { showVigenciaPicker = false },
-                    )
-                }
-                AlertDialog(
-                    onDismissRequest = { viewModel.dismissEditCosto() },
-                    title = { Text(stringResource(R.string.costos_editar_titulo), fontWeight = FontWeight.Bold) },
-                    text = {
-                        Column(
-                            modifier = Modifier.verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                "${costo.material} · ${costo.tipoLente}",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            OutlinedTextField(
-                                value = editValue,
-                                onValueChange = {
-                                    editValue = it
-                                    viewModel.updateNuevoCostoUnitario(it)
-                                },
-                                label = { Text(stringResource(R.string.costos_costo_unitario)) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            uiState.error?.let { e ->
-                                Text(e, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
-                            }
-                            Text(stringResource(R.string.costos_vigente_desde), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            OutlinedButton(onClick = { showVigenciaPicker = true }, modifier = Modifier.fillMaxWidth()) {
-                                Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(vigenteDesde?.let { DateUtils.formatLocalized(it) }.orEmpty())
-                            }
-                            Text(
-                                uiState.vigenteDesdeError ?: stringResource(R.string.costos_vigente_desde_ayuda),
-                                color = if (uiState.vigenteDesdeError != null) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                fontSize = 12.sp,
-                            )
-                            if (uiState.historialCosto.isNotEmpty()) {
-                                HorizontalDivider()
-                                Text(stringResource(R.string.costos_historial_titulo), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                                uiState.historialCosto.forEach { version ->
-                                    HistorialCostoRow(version)
-                                }
-                            }
-                        }
-                    },
-                    confirmButton = { Button(onClick = { viewModel.saveCostoEdit() }) { Text(stringResource(R.string.common_save)) } },
-                    dismissButton = { TextButton(onClick = { viewModel.dismissEditCosto() }) { Text(stringResource(R.string.common_cancel)) } },
-                )
-            }
         }
 
-        if (uiState.selectedBlock != null) {
-            FloatingActionButton(
-                onClick = { viewModel.showNewCosto() },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-                    .navigationBarsPadding(),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.costos_anadir_cd))
-            }
+        if (uiState.selectedBlock != null && uiState.puedeEditarMatrices) {
+            MatrizAgregarFab(onAgregar = viewModel::showNewCosto, modifier = Modifier.align(Alignment.BottomEnd))
         }
 
         if (uiState.isCostoDialogVisible) {
@@ -418,7 +391,7 @@ private fun MatrizDeCostosTab(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GastosOperativosTab(
-    uiState: com.example.optoapp.viewmodel.CostosYGastosUiState,
+    uiState: CostosYGastosUiState,
     viewModel: CostosYGastosViewModel,
     showDatePicker: () -> Unit,
 ) {
@@ -561,7 +534,7 @@ private fun GastosOperativosTab(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GastoFormularioDialog(
-    uiState: com.example.optoapp.viewmodel.CostosYGastosUiState,
+    uiState: CostosYGastosUiState,
     viewModel: CostosYGastosViewModel,
     showDatePicker: () -> Unit,
 ) {
@@ -703,36 +676,93 @@ private fun GastoOperativoCard(fila: GastoFila, puedeEditar: Boolean, onEdit: ()
 }
 
 @Composable
-private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {}, onDelete: () -> Unit = {}) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+private fun FiltrosLentes(uiState: CostosYGastosUiState, viewModel: CostosYGastosViewModel) {
+    val costos = uiState.costosDelBloque
+    val todos = stringResource(R.string.costos_filtro_todos)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        MatrizDropdown(
+            label = stringResource(R.string.costos_filtro_material),
+            seleccion = uiState.filtroMaterial,
+            opciones = listOf(null) + costos.map { it.material }.distinct().sorted(),
+            etiqueta = { it ?: todos },
+            onSeleccion = viewModel::updateFiltroMaterial,
+            modifier = Modifier.weight(1f),
+        )
+        MatrizDropdown(
+            label = stringResource(R.string.costos_filtro_tipo_lente),
+            seleccion = uiState.filtroTipoLente,
+            opciones = listOf(null) + costos.map { it.tipoLente }.distinct().sorted(),
+            etiqueta = { it ?: todos },
+            onSeleccion = viewModel::updateFiltroTipoLente,
+            modifier = Modifier.weight(1f),
+        )
+        MatrizDropdown(
+            label = stringResource(R.string.costos_filtro_serie),
+            seleccion = uiState.filtroSerie,
+            opciones = listOf(null) + costos.mapNotNull { it.serie }.distinct().sorted(),
+            etiqueta = { it?.toString() ?: todos },
+            onSeleccion = viewModel::updateFiltroSerie,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun BloqueLentesCard(block: String, uiState: CostosYGastosUiState, viewModel: CostosYGastosViewModel) {
+    val costos = uiState.costosVisibles
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
     ) {
-        Column(
-            modifier = Modifier.weight(1f).clickable(onClick = onClick),
-        ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.costos_bloque_titulo, block), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Spacer(Modifier.height(4.dp))
             Text(
-                "${costo.material} · ${costo.tipoLente}",
-                fontWeight = FontWeight.Medium,
-                fontSize = 13.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                pluralStringResource(R.plurals.costos_registros, costos.size, costos.size),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            val serieDetalle = costo.serie?.let { stringResource(R.string.costos_serie_detalle, it) }.orEmpty()
-            val specs = costo.tratamiento.orEmpty() + serieDetalle
-            if (specs.isNotEmpty()) {
-                Text(specs, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            when {
+                costos.isNotEmpty() -> {
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider()
+                    costos.forEach { costo ->
+                        CostoLenteRow(
+                            costo = costo,
+                            puedeEditar = uiState.puedeEditarMatrices,
+                            onEditar = { viewModel.showEditCosto(costo) },
+                            onEliminar = { viewModel.confirmDeleteCosto(costo) },
+                        )
+                    }
+                }
+                uiState.isLoading -> Unit
+                uiState.costosDelBloque.isEmpty() -> MatrizVacia(uiState.puedeEditarMatrices, viewModel::showNewCosto)
+                else -> Text(
+                    stringResource(R.string.costos_filtro_sin_resultados),
+                    modifier = Modifier.padding(top = 8.dp),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                MoneyFormatter.format(costo.costoUnitario),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-            )
+    }
+}
+
+@Composable
+private fun CostoLenteRow(costo: CostoProductoEntity, puedeEditar: Boolean, onEditar: () -> Unit, onEliminar: () -> Unit) {
+    val detalle = listOfNotNull(
+        costo.tratamiento?.takeIf { it.isNotBlank() },
+        costo.serie?.let { stringResource(R.string.costos_serie_corta, it) },
+    ).joinToString(" · ")
+    MatrizRow(
+        titulo = "${costo.material} · ${costo.tipoLente}",
+        detalle = detalle,
+        costo = costo.costoUnitario,
+        onClick = if (puedeEditar) onEditar else null,
+    ) {
+        if (puedeEditar) {
             Spacer(Modifier.width(4.dp))
-            IconButton(modifier = Modifier.size(48.dp), onClick = onDelete) {
+            IconButton(modifier = Modifier.size(48.dp), onClick = onEliminar) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = stringResource(R.string.costos_eliminar_cd),
@@ -742,5 +772,4 @@ private fun CostoProductoRow(costo: CostoProductoEntity, onClick: () -> Unit = {
             }
         }
     }
-    HorizontalDivider()
 }

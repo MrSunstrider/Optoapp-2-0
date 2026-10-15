@@ -53,6 +53,25 @@ interface CostoLcDao {
     @Query("SELECT * FROM costos_lc WHERE optica_id = :opticaId")
     suspend fun getAllByOpticaIdList(opticaId: String): List<CostoLcEntity>
 
+    @Query(
+        """
+        SELECT * FROM costos_lc
+        WHERE optica_id = :opticaId
+          AND tipo_lc = :tipoLc
+          AND material_lc = :materialLc
+          AND modalidad = :modalidad
+          AND laboratorio_id IS :laboratorioId
+        ORDER BY vigente_desde DESC
+    """,
+    )
+    suspend fun getHistorial(
+        opticaId: String,
+        tipoLc: String,
+        materialLc: String,
+        modalidad: String,
+        laboratorioId: String?,
+    ): List<CostoLcEntity>
+
     @Query("SELECT * FROM costos_lc WHERE id = :id")
     suspend fun getById(id: String): CostoLcEntity?
 
