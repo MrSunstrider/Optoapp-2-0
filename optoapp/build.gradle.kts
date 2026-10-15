@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import java.util.Properties
 
 plugins {
@@ -231,6 +232,15 @@ dependencies {
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
+}
+
+// Robolectric loads production classes through its own classloader without a code source location;
+// JaCoCo skips such classes by default, so every Robolectric-hosted test would record zero coverage.
+tasks.withType<Test>().configureEach {
+    extensions.configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
     }
 }
 
