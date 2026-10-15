@@ -225,8 +225,42 @@
     <!-- Reportes -->
     <string name="reportes_costo">Costo</string>
     <string name="reportes_margen">Margen</string>
-    <string name="reportes_margen_movimiento">Margen: s/. %1$s</string>
+    <string name="reportes_margen_movimiento">Margen: %1$s</string>
     <string name="reportes_costo_incompleto">Costo incompleto</string>
+    <string name="reportes_titulo">Reportes</string>
+    <string name="reportes_menu_cd">Menú</string>
+    <string name="reportes_generar_pdf_cd">Generar PDF</string>
+    <string name="reportes_abrir_pdf">Abrir reporte financiero</string>
+    <string name="reportes_error_pdf">Error al generar PDF</string>
+    <string name="reportes_periodo">Período</string>
+    <string name="reportes_periodo_diario">Diario</string>
+    <string name="reportes_periodo_semanal">Semanal</string>
+    <string name="reportes_periodo_mensual">Mensual</string>
+    <string name="reportes_periodo_anual">Anual</string>
+    <string name="reportes_periodo_total">Total</string>
+    <string name="reportes_anterior_cd">Anterior</string>
+    <string name="reportes_siguiente_cd">Siguiente</string>
+    <string name="reportes_seleccionar_fecha_cd">Seleccionar fecha</string>
+    <string name="reportes_vendido">Vendido</string>
+    <string name="reportes_cobrado">Cobrado</string>
+    <string name="reportes_por_cobrar">Por Cobrar</string>
+    <string name="reportes_ticket_promedio">Ticket Prom.</string>
+    <string name="reportes_transacciones">Transacciones</string>
+    <string name="reportes_pendiente">Pendiente</string>
+    <string name="reportes_desglose_cobros">Desglose de Cobros</string>
+    <string name="reportes_ventas_periodo">Ventas del período</string>
+    <string name="reportes_cobros_atrasados">Cobros atrasados</string>
+    <string name="reportes_total_cobrado">Total cobrado</string>
+    <string name="reportes_composicion">Composición</string>
+    <string name="reportes_dispensaciones">Dispensaciones</string>
+    <string name="reportes_servicios_extra">Servicios Extra</string>
+    <string name="reportes_detalle">Detalle</string>
+    <string name="reportes_sin_movimientos">Sin movimientos en este período</string>
+    <string name="reportes_dispensacion_ot">Dispensación · OT %1$s</string>
+    <string name="reportes_servicio_descripcion">Servicio · %1$s</string>
+    <string name="reportes_sin_descripcion">Sin descripción</string>
+    <string name="reportes_saldo">Saldo: %1$s</string>
+    <string name="reportes_pagado">Pagado</string>
 
     <!-- Analisis -->
     <string name="analisis_eliminar_gasto_confirmacion">¿Eliminar \"%1$s\" por %2$s?</string>

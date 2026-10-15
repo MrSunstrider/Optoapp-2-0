@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.optoapp.R
 import com.example.optoapp.domain.MovimientoFinanciero
-import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoDatePickerDialog
+import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.theme.alertRed
@@ -34,8 +34,8 @@ import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
-import com.example.optoapp.util.fmt
 import com.example.optoapp.viewmodel.ReportesViewModel
 import kotlinx.coroutines.launch
 
@@ -86,10 +86,10 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             OptoTopAppBar(
-                title = "Reportes",
+                title = stringResource(R.string.reportes_titulo),
                 navigationIcon = {
                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.reportes_menu_cd))
                     }
                 },
                 actions = {
@@ -108,9 +108,9 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     pagosSumByDispensacion = pagosSumByDispensacion,
                                     aCuentaSumByServicio = aCuentaSumByServicio,
                                 )
-                                FileShareUtils.openPdf(context, pdf, "Abrir reporte financiero")
+                                FileShareUtils.openPdf(context, pdf, context.getString(R.string.reportes_abrir_pdf))
                             } catch (e: Exception) {
-                                android.widget.Toast.makeText(context, "Error al generar PDF", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, context.getString(R.string.reportes_error_pdf), android.widget.Toast.LENGTH_SHORT).show()
                             } finally {
                                 isPdfLoading = false
                             }
@@ -119,7 +119,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                         if (isPdfLoading) {
                             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                         } else {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = "Generar PDF")
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = stringResource(R.string.reportes_generar_pdf_cd))
                         }
                     }
                 },
@@ -145,11 +145,14 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        com.example.optoapp.ui.components.OptoDropdownMenuField(
-                            label = "Período",
-                            selected = periodo,
-                            options = listOf("Diario", "Semanal", "Mensual", "Anual", "Total"),
-                            onSelected = { viewModel.setPeriodo(it) },
+                        val periodoLabels = REPORTES_PERIODOS.associateWith { stringResource(reportesPeriodoLabelRes(it)) }
+                        OptoDropdownMenuField(
+                            label = stringResource(R.string.reportes_periodo),
+                            selected = periodoLabels[periodo] ?: stringResource(reportesPeriodoLabelRes(periodo)),
+                            options = periodoLabels.values.toList(),
+                            onSelected = { label ->
+                                periodoLabels.entries.firstOrNull { it.value == label }?.let { viewModel.setPeriodo(it.key) }
+                            },
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(
@@ -158,7 +161,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             IconButton(onClick = { viewModel.previous() }) {
-                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Anterior")
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.reportes_anterior_cd))
                             }
                             Text(
                                 periodoLabel,
@@ -170,11 +173,11 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                             Row {
                                 if (reportesShowsDatePicker(periodo)) {
                                     IconButton(onClick = { showDatePicker = true }) {
-                                        Icon(Icons.Default.DateRange, contentDescription = "Seleccionar fecha", modifier = Modifier.size(20.dp))
+                                        Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.reportes_seleccionar_fecha_cd), modifier = Modifier.size(20.dp))
                                     }
                                 }
                                 IconButton(onClick = { viewModel.next() }) {
-                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Siguiente")
+                                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.reportes_siguiente_cd))
                                 }
                             }
                         }
@@ -184,34 +187,34 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Vendido", "s/. ${totalVendido.fmt()}", MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                    OptoKpiCard("Cobrado", "s/. ${totalCobrado.fmt()}", MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.reportes_vendido), MoneyFormatter.format(totalVendido), MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.reportes_cobrado), MoneyFormatter.format(totalCobrado), MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Por Cobrar", "s/. ${porCobrar.fmt()}", if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
-                    OptoKpiCard("Ticket Prom.", "s/. ${ticketPromedio.fmt()}", MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.reportes_por_cobrar), MoneyFormatter.format(porCobrar), if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.reportes_ticket_promedio), MoneyFormatter.format(ticketPromedio), MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard("Transacciones", "$totalTransacciones", MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
-                    OptoKpiCard("Pendiente", "s/. ${porCobrar.fmt()}", MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.reportes_transacciones), totalTransacciones.toString(), MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
+                    OptoKpiCard(stringResource(R.string.reportes_pendiente), MoneyFormatter.format(porCobrar), MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
                 }
             }
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OptoKpiCard(
                         stringResource(R.string.reportes_costo),
-                        "s/. ${costoTotal.fmt()}",
+                        MoneyFormatter.format(costoTotal),
                         MaterialTheme.colorScheme.secondary,
                         Icons.Default.Inventory,
                         Modifier.weight(1f),
                     )
                     OptoKpiCard(
                         stringResource(R.string.reportes_margen),
-                        "s/. ${margenTotal.fmt()}",
+                        MoneyFormatter.format(margenTotal),
                         if (margenTotal >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed,
                         Icons.AutoMirrored.Filled.TrendingUp,
                         Modifier.weight(1f),
@@ -226,11 +229,11 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Desglose de Cobros", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        CobroRow("Ventas del período", ventasPeriodo, MaterialTheme.colorScheme.tertiary)
-                        CobroRow("Cobros atrasados", cobrosPeriodo, MaterialTheme.colorScheme.secondary)
+                        Text(stringResource(R.string.reportes_desglose_cobros), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        CobroRow(stringResource(R.string.reportes_ventas_periodo), ventasPeriodo, MaterialTheme.colorScheme.tertiary)
+                        CobroRow(stringResource(R.string.reportes_cobros_atrasados), cobrosPeriodo, MaterialTheme.colorScheme.secondary)
                         HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-                        CobroRow("Total cobrado", totalCobrado, MaterialTheme.colorScheme.primary, bold = true)
+                        CobroRow(stringResource(R.string.reportes_total_cobrado), totalCobrado, MaterialTheme.colorScheme.primary, bold = true)
                     }
                 }
             }
@@ -242,26 +245,26 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                         shape = RoundedCornerShape(12.dp),
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
-                            Text("Composición", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(stringResource(R.string.reportes_composicion), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Spacer(Modifier.height(8.dp))
                             val maxVal = maxOf(dispensacionesCount, serviciosCount, 1).toFloat()
-                            BarRow("Dispensaciones", dispensacionesCount, maxVal, MaterialTheme.colorScheme.primary)
+                            BarRow(stringResource(R.string.reportes_dispensaciones), dispensacionesCount, maxVal, MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.height(6.dp))
-                            BarRow("Servicios Extra", serviciosCount, maxVal, MaterialTheme.colorScheme.tertiary)
+                            BarRow(stringResource(R.string.reportes_servicios_extra), serviciosCount, maxVal, MaterialTheme.colorScheme.tertiary)
                         }
                     }
                 }
             }
 
             item {
-                Text("Detalle", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.reportes_detalle), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
             if (!isDataLoading && dispensaciones.isEmpty() && serviciosExtra.isEmpty()) {
                 item {
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Text("Sin movimientos en este período", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.reportes_sin_movimientos), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -275,12 +278,12 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Dispensación · OT ${disp.ot.ifBlank { "-" }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.reportes_dispensacion_ot, disp.ot.ifBlank { "-" }), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("s/. ${disp.montoTotal.fmt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(MoneyFormatter.format(disp.montoTotal), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
-                                if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
+                                if (saldo > 0) stringResource(R.string.reportes_saldo, MoneyFormatter.format(saldo)) else stringResource(R.string.reportes_pagado),
                                 fontSize = 11.sp,
                                 color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                             )
@@ -298,12 +301,12 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Servicio · ${serv.descripcion.ifBlank { "Sin descripción" }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.reportes_servicio_descripcion, serv.descripcion.ifBlank { stringResource(R.string.reportes_sin_descripcion) }), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("s/. ${serv.montoTotal.fmt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(MoneyFormatter.format(serv.montoTotal), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             Text(
-                                if (saldo > 0) "Saldo: s/. ${saldo.fmt()}" else "Pagado",
+                                if (saldo > 0) stringResource(R.string.reportes_saldo, MoneyFormatter.format(saldo)) else stringResource(R.string.reportes_pagado),
                                 fontSize = 11.sp,
                                 color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                             )
@@ -320,12 +323,12 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
 @Composable
 private fun MargenMovimiento(movimiento: MovimientoFinanciero) {
-    // A margin built on a missing cost overstates profit, so the row names the gap instead of a number.
+    // Any number here would overstate profit while a cost is still missing.
     if (movimiento.costoIncompleto) {
         Text(stringResource(R.string.reportes_costo_incompleto), fontSize = 11.sp, color = MaterialTheme.colorScheme.warningAmber)
     } else {
         Text(
-            stringResource(R.string.reportes_margen_movimiento, (movimiento.montoTotal - movimiento.costo).fmt()),
+            stringResource(R.string.reportes_margen_movimiento, MoneyFormatter.format(movimiento.montoTotal - movimiento.costo)),
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -336,7 +339,7 @@ private fun MargenMovimiento(movimiento: MovimientoFinanciero) {
 private fun CobroRow(label: String, amount: Double, color: Color, bold: Boolean = false) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, fontSize = 13.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
-        Text("s/. ${amount.fmt()}", fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = color, fontSize = 13.sp)
+        Text(MoneyFormatter.format(amount), fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium, color = color, fontSize = 13.sp)
     }
 }
 
@@ -357,6 +360,6 @@ private fun BarRow(label: String, count: Int, maxVal: Float, color: Color) {
                     .background(color, RoundedCornerShape(4.dp)),
             )
         }
-        Text(" $count", fontSize = 11.sp, fontWeight = FontWeight.Medium, modifier = Modifier.width(32.dp), textAlign = TextAlign.End)
+        Text(count.toString(), fontSize = 11.sp, fontWeight = FontWeight.Medium, modifier = Modifier.width(32.dp), textAlign = TextAlign.End)
     }
 }

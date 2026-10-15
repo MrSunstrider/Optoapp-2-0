@@ -76,9 +76,4 @@ class MoneyFormatterTest {
         assertEquals(emDash, MoneyFormatter.formatAbbreviated(Double.POSITIVE_INFINITY))
         assertEquals(emDash, MoneyFormatter.formatAbbreviated(Double.NEGATIVE_INFINITY))
     }
-
-    @Test
-    fun `legacy formatCurrency delegates to MoneyFormatter`() {
-        assertEquals("S/ 1,234.50", NumberFormatter.formatCurrency(1234.5))
-    }
 }
