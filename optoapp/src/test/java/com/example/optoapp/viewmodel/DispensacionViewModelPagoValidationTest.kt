@@ -4,9 +4,8 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.AnularDispensacionUseCase
+import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
@@ -79,8 +78,7 @@ class DispensacionViewModelPagoValidationTest {
             mockk<CalcularMontoPagadoUseCase>(relaxed = true),
             mockk<AnularDispensacionUseCase>(relaxed = true),
             mockk<ReclamarDispensacionUseCase>(relaxed = true),
-            mockk<CostoProductoDao>(relaxed = true),
-            mockk<CostoBiseladoDao>(relaxed = true),
+            mockk<CalcularCostoItemUseCase>(relaxed = true),
             mockk(relaxed = true),
         )
     }

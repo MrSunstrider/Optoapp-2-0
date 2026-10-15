@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.viewmodel
+package com.example.optoapp.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -12,12 +12,16 @@ import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
+import com.example.optoapp.domain.CapturaCostoItem
+import com.example.optoapp.domain.ComponenteCosto
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.OrigenMontura
 import com.example.optoapp.domain.PagoEffect
+import com.example.optoapp.domain.RecetaCosto
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
 import com.example.optoapp.domain.lastCreditMetodo
@@ -118,6 +122,7 @@ data class DispensacionItemUi(
     val costoRealMontura: Double? = null,
     val costoRealBiselado: Double? = null,
     val costoRealLc: Double? = null,
+    val costoOverrides: Map<ComponenteCosto, Double> = emptyMap(),
 )
 
 @HiltViewModel
@@ -129,8 +134,7 @@ class DispensacionViewModel @Inject constructor(
     private val calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase,
     private val anularDispensacionUseCase: com.example.optoapp.domain.AnularDispensacionUseCase,
     private val reclamarDispensacionUseCase: ReclamarDispensacionUseCase,
-    private val costoProductoDao: com.example.optoapp.data.costoproducto.CostoProductoDao,
-    private val costoBiseladoDao: com.example.optoapp.data.costobiselado.CostoBiseladoDao,
+    private val calcularCostoItem: CalcularCostoItemUseCase,
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
@@ -451,6 +455,8 @@ class DispensacionViewModel @Inject constructor(
             val role: String
             val currentOpticaId: String
             val itemsAnteriores: List<com.example.optoapp.data.DispensacionItem>
+            val receta: RecetaCosto?
+            val recetaPrevia: RecetaCosto?
             try {
                 role = sessionManager.opticaRol.first()
                 currentOpticaId = sessionManager.opticaId.first()
@@ -459,6 +465,8 @@ class DispensacionViewModel @Inject constructor(
                 } else {
                     emptyList()
                 }
+                receta = recetaDe(s.evaluacionId, currentOpticaId)
+                recetaPrevia = recetaPrevia(dispensacionId.takeUnless { isNew }, s.evaluacionId, receta, currentOpticaId)
             } catch (e: Exception) {
                 Log.e(TAG, "save prepare failed", e)
                 fail(e.message ?: "Error al preparar el guardado.")
@@ -539,32 +547,16 @@ class DispensacionViewModel @Inject constructor(
                                 repository.insertDispensacion(row)
                             }
 
+                            val previos = itemsAnteriores.associateBy { it.id }
                             repository.deleteItemsByDispensacionId(finalId, currentOpticaId)
-                            s.items.forEachIndexed { _, itemUi ->
-                                val requiereAlturaItem = itemUi.tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")
-                                val item = DispensacionItem(
-                                    id = itemUi.id,
-                                    dispensacionId = finalId,
-                                    tipoLente = itemUi.tipoLente,
-                                    materialLente = itemUi.materialLente,
-                                    tratamientos = itemUi.tratamientos,
-                                    colorLente = itemUi.colorLente,
-                                    distanciaLente = if (itemUi.tipoLente == "Monofocal") itemUi.distanciaLente else "",
-                                    altura = if (requiereAlturaItem) itemUi.altura.trim() else "",
-                                    subTipoBifocal = if (itemUi.tipoLente == "Bifocal") itemUi.subTipoBifocal else "",
-                                    notasDiseno = itemUi.notasDiseno,
-                                    monturaId = itemUi.monturaId,
-                                    origenMontura = itemUi.origenMontura,
-                                    tipoAro = itemUi.tipoAro,
-                                    materialMontura = itemUi.materialMontura,
-                                    descripcionMontura = itemUi.descripcionMontura,
-                                    tipoMontura = itemUi.tipoMontura,
-                                    opticaId = currentOpticaId,
-                                    costoRealOd = itemUi.costoRealOd,
-                                    costoRealOi = itemUi.costoRealOi,
-                                    costoRealMontura = itemUi.costoRealMontura,
-                                    costoRealBiselado = itemUi.costoRealBiselado,
-                                    costoRealLc = itemUi.costoRealLc,
+                            s.items.forEach { itemUi ->
+                                val item = capturarCosto(
+                                    itemUi.toEntity(finalId, currentOpticaId),
+                                    previos[itemUi.id],
+                                    itemUi.costoOverrides,
+                                    receta,
+                                    recetaPrevia,
+                                    s.fecha,
                                 )
                                 repository.insertDispensacionItem(item)
                             }
@@ -751,137 +743,91 @@ class DispensacionViewModel @Inject constructor(
         _uiState.update { it.copy(evaluacionId = evaluacionId) }
     }
 
+    fun setCostoOverride(itemIndex: Int, componente: ComponenteCosto, valor: Double) {
+        val item = _uiState.value.items.getOrNull(itemIndex) ?: return
+        updateItem(itemIndex, item.copy(costoOverrides = item.costoOverrides + (componente to valor)))
+    }
+
     fun calculateCosts(itemIndex: Int) {
-        val s = _uiState.value
-        val evalId = s.evaluacionId?.takeIf { it.isNotBlank() } ?: return
         viewModelScope.launch {
-            when (val result = repository.getEvaluacionById(evalId, sessionManager.opticaId.first())) {
-                is Resource.Success -> {
-                    val evaluacion = result.data ?: return@launch
-                    if (itemIndex !in s.items.indices) return@launch
-
-                    val item = s.items[itemIndex]
-                    val opticaId = sessionManager.opticaId.first()
-
-                    val odEsf = evaluacion.recetaOdEsf?.replace(",", ".")?.toDoubleOrNull()
-                    val odCil = evaluacion.recetaOdCil?.replace(",", ".")?.toDoubleOrNull()
-                    val oiEsf = evaluacion.recetaOiEsf?.replace(",", ".")?.toDoubleOrNull()
-                    val oiCil = evaluacion.recetaOiCil?.replace(",", ".")?.toDoubleOrNull()
-
-                    var costoOd: Double? = null
-                    var costoOi: Double? = null
-                    var costoMontura: Double? = null
-                    var costoBiselado: Double? = null
-                    var costoLc: Double? = null
-
-                    // R5: contact lenses are priced by type, material and laboratory, never by prescription.
-                    val isLc = item.tipoLente.contains("Contacto", ignoreCase = true)
-                    if (isLc) {
-                        val lcTipo = when {
-                            item.tipoLente.contains("Cosmét", ignoreCase = true) -> "lente_contacto_cosmetico"
-                            item.tipoLente.contains("Medida", ignoreCase = true) -> "lente_contacto_medida"
-                            else -> item.tipoLente
-                        }
-                        val lcMaterial = evaluacion.lcMaterial?.ifBlank { item.materialLente } ?: item.materialLente
-                        val lcLab = evaluacion.lcLaboratorio?.ifBlank { null }
-                        val lcLookup = costoProductoDao.lookupLc(
-                            opticaId = opticaId,
-                            material = lcMaterial,
-                            tipoLente = lcTipo,
-                            stockOFabricacion = "stock",
-                            laboratorioId = lcLab,
-                        )
-                        costoLc = lcLookup?.costoUnitario
-                    } else {
-                        val material = item.materialLente
-                        val tipoLente = item.tipoLente
-
-                        val tratamientoStr = item.tratamientos.sorted().joinToString(" + ").ifBlank { null }
-
-                        if (odEsf != null) {
-                            val tipo = determineTipoLente(odEsf, odCil)
-                            val serie = determineSeriePorCilindro(odCil)
-                            val lookupResult = costoProductoDao.lookup(
-                                opticaId = opticaId,
-                                material = material,
-                                tipoLente = tipoLente,
-                                stockOFabricacion = tipo,
-                                tratamiento = tratamientoStr,
-                                serie = serie,
-                            )
-                            costoOd = lookupResult?.costoUnitario
-                        }
-
-                        if (oiEsf != null) {
-                            val tipo = determineTipoLente(oiEsf, oiCil)
-                            val serie = determineSeriePorCilindro(oiCil)
-                            val lookupResult = costoProductoDao.lookup(
-                                opticaId = opticaId,
-                                material = material,
-                                tipoLente = tipoLente,
-                                stockOFabricacion = tipo,
-                                tratamiento = tratamientoStr,
-                                serie = serie,
-                            )
-                            costoOi = lookupResult?.costoUnitario
-                        }
-
-                        // The optica's cost matrix wins over the frame's catalog cost when both exist.
-                        if (item.origenMontura == "Tienda" && item.monturaId.isNotBlank()) {
-                            val monturaLookup = costoProductoDao.lookup(
-                                opticaId = opticaId,
-                                material = material,
-                                tipoLente = "montura",
-                                stockOFabricacion = "montura",
-                                tratamiento = null,
-                                serie = null,
-                            )
-                            costoMontura = monturaLookup?.costoUnitario
-                            if (costoMontura == null) {
-                                val monturaResult = repository.getMonturaById(item.monturaId, opticaId)
-                                if (monturaResult is Resource.Success) {
-                                    costoMontura = monturaResult.data?.costo
-                                }
-                            }
-
-                            val tipoAro = normalizeTipoAro(item.tipoAro)
-                            val biseladoTipo = when {
-                                odEsf != null -> determineTipoLente(odEsf, odCil)
-                                oiEsf != null -> determineTipoLente(oiEsf, oiCil)
-                                else -> "stock"
-                            }
-                            val biseladoLookup = costoBiseladoDao.lookup(
-                                opticaId = opticaId,
-                                material = item.materialMontura.ifBlank { "Resina" },
-                                tipoAro = tipoAro,
-                                stockOFabricacion = biseladoTipo,
-                                serie = 1,
-                                altoIndice = null,
-                            )
-                            costoBiselado = biseladoLookup?.costoPorPar
-                        }
-                    }
-
-                    // R6: a manual cost override persists even if the cost matrix changes.
-                    val updatedItem = item.copy(
-                        costoRealOd = item.costoRealOd ?: costoOd,
-                        costoRealOi = item.costoRealOi ?: costoOi,
-                        costoRealMontura = item.costoRealMontura ?: costoMontura,
-                        costoRealBiselado = item.costoRealBiselado ?: costoBiselado,
-                        costoRealLc = item.costoRealLc ?: costoLc,
-                    )
-                    updateItem(itemIndex, updatedItem)
-                }
-                else -> Unit
-            }
+            val s = _uiState.value
+            val itemUi = s.items.getOrNull(itemIndex) ?: return@launch
+            val opticaId = sessionManager.opticaId.first()
+            val receta = recetaDe(s.evaluacionId, opticaId)
+            val previo = repository.getDispensacionItemsByDispensacion(s.generatedId, opticaId).find { it.id == itemUi.id }
+            val recetaPrevia = recetaPrevia(previo?.dispensacionId, s.evaluacionId, receta, opticaId)
+            val capturado = capturarCosto(
+                itemUi.toEntity(s.generatedId, opticaId),
+                previo,
+                itemUi.costoOverrides,
+                receta,
+                recetaPrevia,
+                s.fecha,
+            )
+            val actual = _uiState.value.items.getOrNull(itemIndex)?.takeIf { it.id == itemUi.id } ?: return@launch
+            updateItem(
+                itemIndex,
+                actual.copy(
+                    costoRealOd = capturado.costoRealOd,
+                    costoRealOi = capturado.costoRealOi,
+                    costoRealMontura = capturado.costoRealMontura,
+                    costoRealBiselado = capturado.costoRealBiselado,
+                    costoRealLc = capturado.costoRealLc,
+                ),
+            )
         }
     }
 
-    private fun normalizeTipoAro(tipoAro: String): String = when {
-        tipoAro.contains("Completo", ignoreCase = true) -> "aro_completo"
-        tipoAro.contains("Semi", ignoreCase = true) -> "semi_aire"
-        tipoAro.contains("aire", ignoreCase = true) -> "al_aire"
-        else -> "aro_completo"
+    private suspend fun capturarCosto(
+        item: DispensacionItem,
+        previo: DispensacionItem?,
+        overrides: Map<ComponenteCosto, Double>,
+        receta: RecetaCosto?,
+        recetaPrevia: RecetaCosto?,
+        fecha: LocalDate,
+    ): DispensacionItem = CapturaCostoItem.capturar(item, previo, overrides, receta, recetaPrevia) {
+        calcularCostoItem(item.opticaId, it, receta, fecha)
+    }
+
+    private suspend fun recetaDe(evaluacionId: String?, opticaId: String): RecetaCosto? {
+        val id = evaluacionId?.takeIf { it.isNotBlank() } ?: return null
+        return (repository.getEvaluacionById(id, opticaId) as? Resource.Success)?.data?.let(RecetaCosto::from)
+    }
+
+    // The order only links its evaluation, so the prescription it was priced with is the one it linked before.
+    private suspend fun recetaPrevia(
+        dispensacionId: String?,
+        evaluacionId: String?,
+        receta: RecetaCosto?,
+        opticaId: String,
+    ): RecetaCosto? {
+        if (dispensacionId == null) return null
+        val previa = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data
+            ?.evaluacionId?.takeIf { it.isNotBlank() }
+        return if (previa == evaluacionId?.takeIf { it.isNotBlank() }) receta else recetaDe(previa, opticaId)
+    }
+
+    private fun DispensacionItemUi.toEntity(dispensacionId: String, opticaId: String): DispensacionItem {
+        val requiereAltura = tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")
+        return DispensacionItem(
+            id = id,
+            dispensacionId = dispensacionId,
+            tipoLente = tipoLente,
+            materialLente = materialLente,
+            tratamientos = tratamientos,
+            colorLente = colorLente,
+            distanciaLente = if (tipoLente == "Monofocal") distanciaLente else "",
+            altura = if (requiereAltura) altura.trim() else "",
+            subTipoBifocal = if (tipoLente == "Bifocal") subTipoBifocal else "",
+            notasDiseno = notasDiseno,
+            monturaId = monturaId,
+            origenMontura = origenMontura,
+            tipoAro = tipoAro,
+            materialMontura = materialMontura,
+            descripcionMontura = descripcionMontura,
+            tipoMontura = tipoMontura,
+            opticaId = opticaId,
+        )
     }
 
     companion object {
@@ -889,24 +835,5 @@ class DispensacionViewModel @Inject constructor(
         private const val ORIGEN_PACIENTE = "Paciente"
         private const val ORIGEN_PACIENTE_LEGACY = "Traída por paciente"
         private const val METODO_REEMBOLSO_POR_DEFECTO = "Efectivo"
-
-        fun determineTipoLente(esfera: Double, cilindro: Double?): String {
-            val absEsf = kotlin.math.abs(esfera)
-            val absCil = cilindro?.let { kotlin.math.abs(it) } ?: 0.0
-            return if (absEsf > 6.00 || absCil > 6.00) "fabricacion" else "stock"
-        }
-
-        /**
-         * Cylinder series for stock lenses:
-         * null or 0 to -2.00 → 1ra (serie=1)
-         * -2.25 to -4.00 → 2da (serie=2)
-         * -4.25 to -6.00 → 3ra (serie=3)
-         */
-        fun determineSeriePorCilindro(cilindro: Double?): Int? = when {
-            cilindro == null || kotlin.math.abs(cilindro) <= 2.00 -> 1
-            kotlin.math.abs(cilindro) <= 4.00 -> 2
-            kotlin.math.abs(cilindro) <= 6.00 -> 3
-            else -> null
-        }
     }
 }

@@ -5,9 +5,8 @@ import com.example.optoapp.data.FinanzasRemoteDefaults
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.AnularDispensacionUseCase
+import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -17,9 +16,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -66,8 +65,14 @@ class DispensacionViewModelCreateSaveTest {
 
     @After
     fun tearDown() {
-        Thread.sleep(200)
         Dispatchers.resetMain()
+    }
+
+    // The save transaction runs on Dispatchers.IO, outside the test scheduler, so completion is awaited in real time.
+    private suspend fun DispensacionViewModel.guardar(dispensacionId: String?) {
+        val guardado = CompletableDeferred<Unit>()
+        saveDispensacion("pac-1", dispensacionId) { guardado.complete(Unit) }
+        withContext(Dispatchers.Default) { withTimeout(10_000) { guardado.await() } }
     }
 
     private fun createViewModel() = DispensacionViewModel(
@@ -78,8 +83,7 @@ class DispensacionViewModelCreateSaveTest {
         calcularMontoPagadoUseCase,
         mockk<AnularDispensacionUseCase>(relaxed = true),
         mockk<ReclamarDispensacionUseCase>(relaxed = true),
-        mockk<CostoProductoDao>(relaxed = true),
-        mockk<CostoBiseladoDao>(relaxed = true),
+        mockk<CalcularCostoItemUseCase>(relaxed = true),
         mockk(relaxed = true),
     )
 
@@ -100,8 +104,9 @@ class DispensacionViewModelCreateSaveTest {
         }
         advanceUntilIdle()
 
-        viewModel.saveDispensacion("pac-1", null) {}
-        coVerify(timeout = 10_000) {
+        viewModel.guardar(null)
+
+        coVerify {
             repository.insertDispensacion(
                 withArg { disp ->
                     assertEquals(0.0, disp.montoTotal, 0.001)
@@ -109,13 +114,6 @@ class DispensacionViewModelCreateSaveTest {
                     assertNull(disp.fechaEntrega)
                 },
             )
-        }
-        withContext(Dispatchers.Default) {
-            withTimeout(5_000) {
-                while (viewModel.uiState.value.isLoading) {
-                    delay(10)
-                }
-            }
         }
         assertNull(viewModel.uiState.value.error)
     }
@@ -159,9 +157,9 @@ class DispensacionViewModelCreateSaveTest {
         stubPersisted(reclamoOrigenId = "disp-original")
 
         viewModel.updateUiState { it.copy(ot = "OT-2026-0001-R1", items = listOf(minimalItem()), montoTotal = "0") }
-        viewModel.saveDispensacion("pac-1", "disp-existing") {}
+        viewModel.guardar("disp-existing")
 
-        coVerify(timeout = 10_000) {
+        coVerify {
             repository.updateDispensacion(
                 withArg { disp ->
                     assertEquals(0.0, disp.montoTotal, 0.001)
@@ -169,7 +167,6 @@ class DispensacionViewModelCreateSaveTest {
                 },
             )
         }
-        withContext(Dispatchers.Default) { withTimeout(5_000) { while (viewModel.uiState.value.isLoading) delay(10) } }
         assertNull(viewModel.uiState.value.error)
     }
 
