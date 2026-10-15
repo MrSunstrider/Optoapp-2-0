@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncStateTracker
@@ -93,6 +94,7 @@ class CostosYGastosViewModelTest {
         syncFinanzas,
         syncStateTracker,
         mockk<MatrizVigenciaUseCase>(),
+        SavedStateHandle(),
     )
 
     @After

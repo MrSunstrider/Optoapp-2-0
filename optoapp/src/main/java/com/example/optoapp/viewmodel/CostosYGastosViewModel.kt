@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.AppRoles
@@ -21,7 +22,9 @@ import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.domain.ResultadoVigencia
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MesArg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -180,9 +183,17 @@ class CostosYGastosViewModel @Inject constructor(
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncStateTracker: SyncStateTracker,
     private val matrizVigenciaUseCase: MatrizVigenciaUseCase,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(CostosYGastosUiState())
+    private val tabInicial = CostosTab.fromArg(savedStateHandle.get<String>(CostosTab.KEY))
+
+    private val _uiState = MutableStateFlow(
+        CostosYGastosUiState(
+            selectedTab = tabInicial.ordinal,
+            mesGastos = MesArg.parseOrCurrent(savedStateHandle.get<String>(MesArg.KEY), YearMonth.from(DateUtils.today())),
+        ),
+    )
     val uiState: StateFlow<CostosYGastosUiState> = _uiState.asStateFlow()
 
     private var syncTriggered = false
@@ -190,8 +201,6 @@ class CostosYGastosViewModel @Inject constructor(
     companion object {
         private const val TAG = "CostosYGastosVM"
         private val FECHA_UI = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-        private const val TAB_BISELADO = 1
-        private const val TAB_LC = 2
         private const val TIPO_BISELADO = "costo_biselado"
         private const val TIPO_LC = "costo_lc"
         private const val PRECIO_DUPLICADO = "Ya existe un precio vigente para esta combinación. Tócalo en la lista para editarlo."
@@ -262,6 +271,7 @@ class CostosYGastosViewModel @Inject constructor(
                     _uiState.update { it.copy(puedeEditarGastos = gestion, puedeEditarMatrices = gestion) }
                 }
         }
+        selectTab(tabInicial.ordinal)
     }
 
     private fun conGastosDelMes(state: CostosYGastosUiState): CostosYGastosUiState {
@@ -305,8 +315,8 @@ class CostosYGastosViewModel @Inject constructor(
     fun selectTab(index: Int) {
         _uiState.update { it.copy(selectedTab = index) }
         when (index) {
-            TAB_BISELADO -> cargarMatriz("biselado", ::refrescarBiselado)
-            TAB_LC -> cargarMatriz("lentes de contacto", ::refrescarLc)
+            CostosTab.BISELADO.ordinal -> cargarMatriz("biselado", ::refrescarBiselado)
+            CostosTab.LC.ordinal -> cargarMatriz("lentes de contacto", ::refrescarLc)
         }
     }
 

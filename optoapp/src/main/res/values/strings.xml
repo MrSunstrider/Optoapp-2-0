@@ -191,6 +191,31 @@
     <string name="drawer_programacion">PROGRAMACIÓN</string>
     <string name="drawer_finanzas">FINANZAS</string>
     <string name="drawer_sistema">SISTEMA</string>
+    <string name="drawer_inventario_optico">INVENTARIO ÓPTICO</string>
+    <string name="drawer_sin_optica">Sin óptica</string>
+    <string name="drawer_version">v%1$s</string>
+    <string name="drawer_pacientes">Pacientes</string>
+    <string name="drawer_servicios_extra">Servicios Extra</string>
+    <string name="drawer_dashboard">Dashboard</string>
+    <string name="drawer_agenda">Agenda</string>
+    <string name="drawer_monturas">Monturas</string>
+    <string name="drawer_conteo_fisico">Conteo físico</string>
+    <string name="drawer_pedidos_proveedor">Pedidos a proveedor</string>
+    <string name="drawer_proveedores">Proveedores</string>
+    <string name="drawer_cierre_caja">Cierre de Caja</string>
+    <string name="drawer_analisis_financiero">Análisis Financiero</string>
+    <string name="drawer_reportes">Reportes</string>
+    <string name="drawer_costos_gastos">Costos y Gastos</string>
+    <string name="drawer_configuracion">Configuración</string>
+    <string name="drawer_conflictos">Conflictos</string>
+    <string name="drawer_sincronizando">Sincronizando...</string>
+    <string name="drawer_sincronizar_cloud">Sincronizar Cloud</string>
+    <string name="drawer_sincronizar_cd">Sincronizar</string>
+    <string name="drawer_cerrar_sesion">Cerrar Sesión</string>
+    <string name="drawer_salir_cd">Salir</string>
+    <string name="drawer_sync_error_title">Error de Sincronización</string>
+    <string name="drawer_sync_error_cd">Error</string>
+    <string name="drawer_sync_error_ok">Entendido</string>
 
     <!-- Dashboard -->
     <string name="dashboard_title">Dashboard</string>

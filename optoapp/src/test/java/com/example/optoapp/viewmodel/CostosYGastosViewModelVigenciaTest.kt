@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncStateTracker
@@ -88,6 +89,7 @@ class CostosYGastosViewModelVigenciaTest {
             mockk<SyncFinanzasUseCase>(relaxed = true),
             mockk<SyncStateTracker>(relaxed = true),
             matrizVigencia,
+            SavedStateHandle(),
         )
         viewModel.loadBlock("Stock Monofocal")
     }

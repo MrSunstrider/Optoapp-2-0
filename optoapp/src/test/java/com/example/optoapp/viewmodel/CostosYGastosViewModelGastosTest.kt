@@ -1,5 +1,6 @@
 package com.example.optoapp.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.SyncStateTracker
@@ -10,6 +11,7 @@ import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.util.DateUtils
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -89,17 +91,65 @@ class CostosYGastosViewModelGastosTest {
         isRecurring = isRecurring,
     )
 
-    private fun buildViewModel() = CostosYGastosViewModel(
+    private fun buildViewModel(
+        savedStateHandle: SavedStateHandle = SavedStateHandle(),
+        costoBiseladoDao: CostoBiseladoDao = mockk(relaxed = true),
+    ) = CostosYGastosViewModel(
         repository,
         mockk<CostoProductoDao>(relaxed = true),
-        mockk<CostoBiseladoDao>(relaxed = true),
+        costoBiseladoDao,
         mockk<CostoLcDao>(relaxed = true),
         sessionManager,
         scheduler,
         mockk<SyncFinanzasUseCase>(relaxed = true),
         mockk<SyncStateTracker>(relaxed = true),
         mockk<MatrizVigenciaUseCase>(),
+        savedStateHandle,
     )
+
+    @Test
+    fun routeArgumentsOpenTheScreenOnTheirTabAndMonth() = runTest(testDispatcher) {
+        val mayo = gasto("g-may", "alquiler", 900.0, LocalDate.of(2026, 5, 10))
+        every { repository.getGastosOperativos(opticaId) } returns flowOf(listOf(mayo))
+
+        val viewModel = buildViewModel(SavedStateHandle(mapOf("tab" to "gastos", "mes" to "2026-05")))
+        advanceUntilIdle()
+
+        val estado = viewModel.uiState.value
+        assertEquals(CostosTab.GASTOS.ordinal, estado.selectedTab)
+        assertEquals(YearMonth.of(2026, 5), estado.mesGastos)
+        assertEquals(0, BigDecimal("900.0").compareTo(estado.totalGastosMes))
+    }
+
+    @Test
+    fun unknownTabAndMalformedMonthFallBackToGastosAndTheCurrentMonth() = runTest(testDispatcher) {
+        val viewModel = buildViewModel(SavedStateHandle(mapOf("tab" to "xyz", "mes" to "mayo")))
+        advanceUntilIdle()
+
+        assertEquals(CostosTab.GASTOS.ordinal, viewModel.uiState.value.selectedTab)
+        assertEquals(YearMonth.of(2026, 7), viewModel.uiState.value.mesGastos)
+    }
+
+    @Test
+    fun entryWithoutArgumentsOpensGastosAndAFutureMonthIsClamped() = runTest(testDispatcher) {
+        val sinArgumentos = buildViewModel()
+        val futuro = buildViewModel(SavedStateHandle(mapOf("mes" to "2027-01")))
+        advanceUntilIdle()
+
+        assertEquals(CostosTab.GASTOS.ordinal, sinArgumentos.uiState.value.selectedTab)
+        assertEquals(YearMonth.of(2026, 7), futuro.uiState.value.mesGastos)
+    }
+
+    @Test
+    fun openingOnTheBiseladoTabLoadsItsMatrix() = runTest(testDispatcher) {
+        val biseladoDao = mockk<CostoBiseladoDao>(relaxed = true)
+
+        val viewModel = buildViewModel(SavedStateHandle(mapOf("tab" to "biselado")), biseladoDao)
+        advanceUntilIdle()
+
+        assertEquals(CostosTab.BISELADO.ordinal, viewModel.uiState.value.selectedTab)
+        coVerify(exactly = 1) { biseladoDao.getByOpticaIdList(opticaId) }
+    }
 
     @Test
     fun gastosAreExposedNewestFirst() = runTest(testDispatcher) {

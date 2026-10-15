@@ -31,6 +31,7 @@ import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
@@ -297,7 +298,10 @@ fun AnalisisNegocioScreen(
                             Text(stringResource(R.string.analisis_agregar), fontSize = 12.sp)
                         }
                         if (gastosMes.isNotEmpty()) {
-                            OutlinedButton(onClick = { navController.navigate(Route.Gastos.route) }, modifier = Modifier.weight(1f)) {
+                            OutlinedButton(
+                                onClick = { navController.navigate(rutaVerTodosGastos(YearMonth.from(uiState.mesSeleccionado))) },
+                                modifier = Modifier.weight(1f),
+                            ) {
                                 Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text(stringResource(R.string.analisis_ver_todos), fontSize = 12.sp)
@@ -416,6 +420,8 @@ fun AnalisisNegocioScreen(
         }
     }
 }
+
+internal fun rutaVerTodosGastos(mes: YearMonth): String = Route.CostosYGastos.createRoute(CostosTab.GASTOS, mes)
 
 @Composable
 private fun gastoEtiqueta(categoria: String, descripcion: String?): String =

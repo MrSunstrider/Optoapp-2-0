@@ -24,10 +24,12 @@ sealed class Route(val route: String) {
     data object Proveedores : Route("proveedores")
     data object OrdenesCompra : Route("ordenes_compra")
     data object InventarioFisico : Route("inventario_fisico")
-    data object Gastos : Route("gastos")
     data object CierreCaja : Route("cierre_caja")
     data object Reportes : Route("reportes")
-    data object CostosYGastos : Route("costos_y_gastos")
+    data object CostosYGastos : Route("costos_y_gastos?${CostosTab.KEY}={${CostosTab.KEY}}&${MesArg.KEY}={${MesArg.KEY}}") {
+        fun createRoute(tab: CostosTab = CostosTab.GASTOS, mes: YearMonth? = null): String =
+            "costos_y_gastos?${CostosTab.KEY}=${tab.arg}" + (mes?.let { "&${MesArg.KEY}=${MesArg.format(it)}" } ?: "")
+    }
     data object EstadisticasBI : Route("estadisticas_bi")
     data object AnalisisDetalle : Route("analisis_detalle?${MesArg.KEY}={${MesArg.KEY}}") {
         fun createRoute(mes: YearMonth): String = "analisis_detalle?${MesArg.KEY}=${MesArg.format(mes)}"

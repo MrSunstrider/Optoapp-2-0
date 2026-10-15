@@ -22,6 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OfflineBanner
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.costos.OtsSinCostoScreen
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
@@ -223,7 +224,6 @@ fun MainDrawerScreen(
                             composable(Route.Proveedores.route) { ProveedoresScreen(navController) }
                             composable(Route.OrdenesCompra.route) { OrdenesCompraScreen(navController) }
                             composable(Route.InventarioFisico.route) { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                            composable(Route.Gastos.route) { CostosYGastosScreen(navController, drawerState) }
                             composable(Route.OperacionHoy.route) { OperacionHoyScreen(navController, drawerState) }
                             composable(Route.NuevoServicio.route) {
                                 NuevoServicioScreen(navController, pacienteId = null)
@@ -235,7 +235,21 @@ fun MainDrawerScreen(
                                 NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
                             }
                             composable(Route.Reportes.route) { ReportesScreen(drawerState) }
-                            composable(Route.CostosYGastos.route) { CostosYGastosScreen(navController, drawerState) }
+                            composable(
+                                Route.CostosYGastos.route,
+                                arguments = listOf(
+                                    navArgument(CostosTab.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                    navArgument(MesArg.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { CostosYGastosScreen(navController, drawerState) }
                             composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
                             composable(
