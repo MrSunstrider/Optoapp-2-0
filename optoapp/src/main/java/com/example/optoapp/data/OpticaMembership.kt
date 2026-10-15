@@ -48,6 +48,8 @@ object AppRoles {
 
     fun canManagePlans(rol: String): Boolean = norm(rol) in ROLES_GESTION
 
+    fun canWriteGastos(rol: String): Boolean = norm(rol) in ROLES_GESTION
+
     fun canManageBackups(rol: String): Boolean = norm(rol) in SOLO_ADMIN
 
     fun canAssignAdminRole(rol: String): Boolean = norm(rol) in SOLO_ADMIN

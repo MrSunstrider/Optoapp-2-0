@@ -63,7 +63,7 @@ fun AnalisisNegocioScreen(
                 title = stringResource(R.string.analisis_title),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.analisis_atras_cd))
                     }
                 },
             )
@@ -85,7 +85,7 @@ fun AnalisisNegocioScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(16.dp))
                 Text(stringResource(R.string.analisis_acceso_restringido), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                 Text(stringResource(R.string.analisis_acceso_restringido_mensaje), color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -115,7 +115,7 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.analisis_datos_limitados), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.warningAmber)
                     }
@@ -128,7 +128,7 @@ fun AnalisisNegocioScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
                         Spacer(Modifier.height(8.dp))
                         Text(error, color = MaterialTheme.colorScheme.alertRed, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
@@ -157,7 +157,7 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
                             stringResource(R.string.analisis_estacionalidad_aviso),
@@ -193,7 +193,7 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Lightbulb, contentDescription = "Recomendacion", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Lightbulb, contentDescription = null, tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.analisis_sin_recomendaciones), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -221,18 +221,17 @@ fun AnalisisNegocioScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                var deleteTarget by remember { mutableStateOf<String?>(null) }
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin costo", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.MoneyOff, contentDescription = null, tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.analisis_gastos_mes), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             IconButton(
                                 modifier = Modifier.size(28.dp),
                                 onClick = { gastosViewModel.refreshGastos() },
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Actualizar gastos", modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.analisis_actualizar_gastos_cd), modifier = Modifier.size(16.dp))
                             }
                         }
                         Text(MoneyFormatter.format(totalGastos), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
@@ -245,7 +244,7 @@ fun AnalisisNegocioScreen(
                                     .fillMaxWidth()
                                     .combinedClickable(
                                         onClick = { gastosViewModel.editGasto(g) },
-                                        onLongClick = { deleteTarget = g.id },
+                                        onLongClick = { gastosViewModel.confirmDeleteGasto(g) },
                                     )
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -272,13 +271,13 @@ fun AnalisisNegocioScreen(
                                     modifier = Modifier.size(28.dp),
                                     onClick = { gastosViewModel.editGasto(g) },
                                 ) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.gastos_editar_cd), modifier = Modifier.size(14.dp))
                                 }
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
-                                    onClick = { deleteTarget = g.id },
+                                    onClick = { gastosViewModel.confirmDeleteGasto(g) },
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.alertRed)
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.gastos_eliminar_cd), modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.alertRed)
                                 }
                             }
                         }
@@ -293,37 +292,42 @@ fun AnalisisNegocioScreen(
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { gastosViewModel.showNewGasto() }, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
                             Text(stringResource(R.string.analisis_agregar), fontSize = 12.sp)
                         }
                         if (gastosMes.isNotEmpty()) {
                             OutlinedButton(onClick = { navController.navigate(Route.Gastos.route) }, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista", modifier = Modifier.size(16.dp))
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text(stringResource(R.string.analisis_ver_todos), fontSize = 12.sp)
                             }
                         }
                     }
 
-                    if (deleteTarget != null) {
-                        val target = gastos.find { it.id == deleteTarget } ?: return@Column
+                    gastosUiState.deletingGasto?.let { target ->
                         AlertDialog(
-                            onDismissRequest = { deleteTarget = null },
+                            onDismissRequest = { gastosViewModel.dismissDeleteGasto() },
                             title = { Text(stringResource(R.string.analisis_eliminar_gasto_titulo)) },
                             text = {
-                                val etiqueta = gastoEtiqueta(target.categoria, target.descripcion)
-                                Text(stringResource(R.string.analisis_eliminar_gasto_confirmacion, etiqueta, MoneyFormatter.format(target.monto.toDouble())))
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val etiqueta = gastoEtiqueta(target.categoria, target.descripcion)
+                                    Text(stringResource(R.string.analisis_eliminar_gasto_confirmacion, etiqueta, MoneyFormatter.format(target.monto.toDouble())))
+                                    gastosUiState.gastoDeleteError?.let {
+                                        Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                                    }
+                                }
                             },
                             confirmButton = {
-                                Button(onClick = {
-                                    gastosViewModel.deleteGasto(target)
-                                    deleteTarget = null
-                                }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed)) {
+                                Button(
+                                    onClick = { gastosViewModel.deleteGasto() },
+                                    enabled = !gastosUiState.isLoading,
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed),
+                                ) {
                                     Text(stringResource(R.string.analisis_eliminar))
                                 }
                             },
-                            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text(stringResource(R.string.analisis_cancelar)) } },
+                            dismissButton = { TextButton(onClick = { gastosViewModel.dismissDeleteGasto() }) { Text(stringResource(R.string.analisis_cancelar)) } },
                         )
                     }
                 }
@@ -336,7 +340,7 @@ fun AnalisisNegocioScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
                     @Suppress("DEPRECATION")
-                    Icon(Icons.Default.TrendingUp, contentDescription = "Tendencia")
+                    Icon(Icons.Default.TrendingUp, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.analisis_ver_analisis_completo))
                 }
@@ -388,7 +392,7 @@ fun AnalisisNegocioScreen(
                         )
                         OutlinedTextField(value = gastosUiState.descripcion, onValueChange = { gastosViewModel.updateDescripcion(it) }, label = { Text(stringResource(R.string.analisis_descripcion)) }, modifier = Modifier.fillMaxWidth())
                         OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Default.DateRange, contentDescription = "Fecha", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(com.example.optoapp.util.DateUtils.formatLocalized(gastosUiState.fecha))
                         }
@@ -397,9 +401,16 @@ fun AnalisisNegocioScreen(
                             Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.analisis_gasto_recurrente), fontSize = 13.sp)
                         }
+                        gastosUiState.gastoFormError?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                        }
                     }
                 },
-                confirmButton = { Button(onClick = { gastosViewModel.saveGasto() }) { Text(stringResource(R.string.analisis_guardar)) } },
+                confirmButton = {
+                    Button(onClick = { gastosViewModel.saveGasto() }, enabled = !gastosUiState.isLoading) {
+                        Text(stringResource(R.string.analisis_guardar))
+                    }
+                },
                 dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text(stringResource(R.string.analisis_cancelar)) } },
             )
         }
@@ -526,7 +537,7 @@ internal fun RecomendacionCard(
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
                     if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
-                    contentDescription = "Retroalimentacion",
+                    contentDescription = null,
                     tint = if (feedbackSent) MaterialTheme.colorScheme.positiveGreen else accentColor,
                     modifier = Modifier.size(20.dp),
                 )
@@ -579,7 +590,7 @@ internal fun RecomendacionCard(
                 ) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = "Completado",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.positiveGreen,
                         modifier = Modifier.size(16.dp),
                     )
@@ -601,7 +612,7 @@ internal fun RecomendacionCard(
                         onClick = { onFeedback(true) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.ThumbUp, contentDescription = "Positivo", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.analisis_util))
                     }
@@ -609,7 +620,7 @@ internal fun RecomendacionCard(
                         onClick = { onFeedback(false) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.ThumbDown, contentDescription = "Negativo", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(stringResource(R.string.analisis_no_me_sirve))
                     }

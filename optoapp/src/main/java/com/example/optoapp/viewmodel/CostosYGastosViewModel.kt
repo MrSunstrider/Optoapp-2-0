@@ -3,12 +3,14 @@ package com.example.optoapp.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.domain.GastoTipoResolver
 import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -20,6 +22,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.YearMonth
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 
@@ -39,19 +43,46 @@ fun blockToFilter(block: String): String = when (block) {
     else -> block
 }
 
+data class GastoFila(val gasto: GastoOperativoEntity, val tipo: String)
+
+data class GrupoGastos(
+    val categoria: String,
+    val etiqueta: String,
+    val subtotal: BigDecimal,
+    val filas: List<GastoFila>,
+)
+
+fun agruparGastosDelMes(gastos: List<GastoOperativoEntity>, mes: YearMonth): List<GrupoGastos> =
+    gastos
+        .filter { YearMonth.from(it.fecha) == mes }
+        .groupBy { it.categoria }
+        .map { (categoria, delGrupo) ->
+            GrupoGastos(
+                categoria = categoria,
+                etiqueta = categoria.replaceFirstChar { it.titlecase(Locale.ROOT) },
+                subtotal = delGrupo.fold(BigDecimal.ZERO) { acc, g -> acc + g.monto },
+                filas = delGrupo
+                    .sortedByDescending { it.fecha }
+                    .map { GastoFila(it, GastoTipoResolver.resolver(it.categoria, it.tipoGasto)) },
+            )
+        }
+        .sortedWith(compareByDescending<GrupoGastos> { it.subtotal }.thenBy { it.categoria })
+
 data class CostosYGastosUiState(
     val selectedTab: Int = 0,
     val selectedBlock: String? = null,
     val costosDelBloque: List<CostoProductoEntity> = emptyList(),
     val costosPorDispensacion: Map<String, List<CostoProductoEntity>> = emptyMap(),
     val dispensacionFilterId: String? = null,
-    // Edit cost dialog
     val editingCosto: CostoProductoEntity? = null,
     val nuevoCostoUnitario: String = "",
     val gastosOperativos: List<GastoOperativoEntity> = emptyList(),
+    val mesGastos: YearMonth = YearMonth.from(DateUtils.today()),
+    val gruposGastos: List<GrupoGastos> = emptyList(),
+    val totalGastosMes: BigDecimal = BigDecimal.ZERO,
+    val puedeEditarGastos: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
-    // Dialog state for gastos operativos CRUD
     val isDialogVisible: Boolean = false,
     val editingGasto: GastoOperativoEntity? = null,
     val categoria: String = "alquiler",
@@ -60,7 +91,9 @@ data class CostosYGastosUiState(
     val fecha: LocalDate = DateUtils.today(),
     val nota: String = "",
     val isRecurring: Boolean = false,
-    // Dialog state for costos productos CRUD (Tab 0)
+    val gastoFormError: String? = null,
+    val deletingGasto: GastoOperativoEntity? = null,
+    val gastoDeleteError: String? = null,
     val isCostoDialogVisible: Boolean = false,
     val creatingCosto: Boolean = false,
     val costoMaterial: String = "",
@@ -136,7 +169,7 @@ class CostosYGastosViewModel @Inject constructor(
                         Log.e(TAG, "autoGenerarSiFalta failed, showing raw gastos", e)
                         gastos
                     }
-                    _uiState.update { it.copy(gastosOperativos = visibles.sortedByDescending { g -> g.fecha }) }
+                    _uiState.update { conGastosDelMes(it.copy(gastosOperativos = visibles.sortedByDescending { g -> g.fecha })) }
                     if (!syncTriggered && gastos.isEmpty()) {
                         syncTriggered = true
                         val opticaId = sessionManager.opticaId.first()
@@ -147,6 +180,26 @@ class CostosYGastosViewModel @Inject constructor(
                     }
                 }
         }
+        viewModelScope.launch {
+            sessionManager.opticaRol
+                .catch { e ->
+                    Log.e(TAG, "Role flow crashed, gastos stay read-only", e)
+                    emit("")
+                }
+                .collect { rol -> _uiState.update { it.copy(puedeEditarGastos = AppRoles.canWriteGastos(rol)) } }
+        }
+    }
+
+    private fun conGastosDelMes(state: CostosYGastosUiState): CostosYGastosUiState {
+        val grupos = agruparGastosDelMes(state.gastosOperativos, state.mesGastos)
+        return state.copy(
+            gruposGastos = grupos,
+            totalGastosMes = grupos.fold(BigDecimal.ZERO) { acc, g -> acc + g.subtotal },
+        )
+    }
+
+    fun selectMesGastos(mes: YearMonth) {
+        _uiState.update { conGastosDelMes(it.copy(mesGastos = mes)) }
     }
 
     private suspend fun autoGenerarSiFalta(gastos: List<GastoOperativoEntity>): List<GastoOperativoEntity> {
@@ -231,26 +284,41 @@ class CostosYGastosViewModel @Inject constructor(
     val categorias = CATEGORIAS
 
     fun showNewGasto() {
-        _uiState.update { it.copy(isDialogVisible = true, editingGasto = null, categoria = "alquiler", descripcion = "", monto = "", fecha = DateUtils.today(), nota = "", isRecurring = false) }
+        if (!_uiState.value.puedeEditarGastos) return
+        _uiState.update {
+            it.copy(
+                isDialogVisible = true,
+                editingGasto = null,
+                categoria = "alquiler",
+                descripcion = "",
+                monto = "",
+                fecha = DateUtils.today(),
+                nota = "",
+                isRecurring = false,
+                gastoFormError = null,
+            )
+        }
     }
 
     fun editGasto(gasto: GastoOperativoEntity) {
+        if (!_uiState.value.puedeEditarGastos) return
         _uiState.update {
             it.copy(
                 isDialogVisible = true,
                 editingGasto = gasto,
                 categoria = gasto.categoria,
                 descripcion = gasto.descripcion ?: "",
-                monto = gasto.monto.toString(),
+                monto = gasto.monto.toPlainString(),
                 fecha = gasto.fecha,
                 nota = gasto.nota ?: "",
                 isRecurring = gasto.isRecurring,
+                gastoFormError = null,
             )
         }
     }
 
     fun dismissDialog() {
-        _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, error = null) }
+        _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, gastoFormError = null) }
     }
 
     fun updateCategoria(c: String) {
@@ -274,43 +342,77 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun saveGasto() {
         val s = _uiState.value
+        if (s.isLoading) return
         val monto = s.monto.toBigDecimalOrNull()
         if (monto == null || monto <= BigDecimal.ZERO) {
-            _uiState.update { it.copy(error = "Ingresa un monto válido") }
+            _uiState.update { it.copy(gastoFormError = "Ingresa un monto válido") }
             return
         }
+        _uiState.update { it.copy(isLoading = true, gastoFormError = null) }
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                val gasto = GastoOperativoEntity(
-                    id = s.editingGasto?.id ?: UUID.randomUUID().toString(),
-                    opticaId = opticaId,
-                    categoria = s.categoria,
-                    descripcion = s.descripcion.ifBlank { null },
-                    monto = monto,
-                    fecha = s.fecha,
-                    fechaProgramada = null,
-                    nota = s.nota.ifBlank { null },
-                    isRecurring = s.isRecurring,
-                )
+                val gasto = gastoDesdeFormulario(s, opticaId, monto)
                 repository.upsertGastoOperativo(gasto)
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
-                _uiState.update { it.copy(isDialogVisible = false, editingGasto = null, error = null) }
+                _uiState.update { it.copy(isDialogVisible = false, editingGasto = null) }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al guardar") }
+                Log.e(TAG, "saveGasto failed", e)
+                _uiState.update { it.copy(gastoFormError = "No se pudo guardar el gasto. Inténtalo de nuevo.") }
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    fun deleteGasto(gasto: GastoOperativoEntity) {
+    // Rebuilding the entity from the form alone would wipe fechaProgramada and tipoGasto, which the
+    // recurrence generator and margin reports rely on, every time a user edits a gasto.
+    private fun gastoDesdeFormulario(s: CostosYGastosUiState, opticaId: String, monto: BigDecimal): GastoOperativoEntity {
+        val base = s.editingGasto ?: GastoOperativoEntity(
+            id = UUID.randomUUID().toString(),
+            opticaId = opticaId,
+            categoria = s.categoria,
+            monto = monto,
+            fecha = s.fecha,
+        )
+        return base.copy(
+            categoria = s.categoria,
+            descripcion = s.descripcion.ifBlank { null },
+            monto = monto,
+            fecha = s.fecha,
+            nota = s.nota.ifBlank { null },
+            isRecurring = s.isRecurring,
+        )
+    }
+
+    fun confirmDeleteGasto(gasto: GastoOperativoEntity) {
+        if (!_uiState.value.puedeEditarGastos) return
+        _uiState.update { it.copy(deletingGasto = gasto, gastoDeleteError = null) }
+    }
+
+    fun dismissDeleteGasto() {
+        _uiState.update { it.copy(deletingGasto = null, gastoDeleteError = null) }
+    }
+
+    fun deleteGasto() {
+        val s = _uiState.value
+        val gasto = s.deletingGasto ?: return
+        if (s.isLoading || !s.puedeEditarGastos) return
+        _uiState.update { it.copy(isLoading = true, gastoDeleteError = null) }
         viewModelScope.launch {
             try {
                 repository.deleteGastoOperativo(gasto)
                 postSaveSyncScheduler.scheduleFinanzasSync(gasto.opticaId)
+                _uiState.update { it.copy(deletingGasto = null) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al eliminar el gasto") }
+                Log.e(TAG, "deleteGasto failed", e)
+                _uiState.update { it.copy(gastoDeleteError = "No se pudo eliminar el gasto. Inténtalo de nuevo.") }
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
