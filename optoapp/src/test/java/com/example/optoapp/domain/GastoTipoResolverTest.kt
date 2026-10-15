@@ -38,6 +38,20 @@ class GastoTipoResolverTest {
     }
 
     @Test
+    fun `a new gasto is preselected from its category`() {
+        assertEquals("variable", GastoTipoResolver.preseleccionar(categoria = "marketing"))
+        assertEquals("fijo", GastoTipoResolver.preseleccionar(categoria = "alquiler"))
+    }
+
+    @Test
+    fun `only fijo and variable are valid explicit types`() {
+        assertEquals(true, GastoTipoResolver.esValido("fijo"))
+        assertEquals(true, GastoTipoResolver.esValido("variable"))
+        assertEquals(false, GastoTipoResolver.esValido("mixto"))
+        assertEquals(false, GastoTipoResolver.esValido(null))
+    }
+
+    @Test
     fun `unrecognized explicit type falls back to the category rule`() {
         assertEquals("fijo", GastoTipoResolver.resolver(categoria = "alquiler", tipoGasto = "otro"))
     }

@@ -148,6 +148,8 @@ data class CostosYGastosUiState(
     val fecha: LocalDate = DateUtils.today(),
     val nota: String = "",
     val isRecurring: Boolean = false,
+    val tipoGasto: String = GastoTipoResolver.FIJO,
+    val tipoGastoElegido: Boolean = false,
     val gastoFormError: String? = null,
     val deletingGasto: GastoOperativoEntity? = null,
     val gastoDeleteError: String? = null,
@@ -653,16 +655,19 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun showNewGasto() {
         if (!_uiState.value.puedeEditarGastos) return
+        val categoria = CATEGORIAS.first()
         _uiState.update {
             it.copy(
                 isDialogVisible = true,
                 editingGasto = null,
-                categoria = "alquiler",
+                categoria = categoria,
                 descripcion = "",
                 monto = "",
                 fecha = DateUtils.today(),
                 nota = "",
                 isRecurring = false,
+                tipoGasto = GastoTipoResolver.preseleccionar(categoria),
+                tipoGastoElegido = false,
                 gastoFormError = null,
             )
         }
@@ -680,6 +685,8 @@ class CostosYGastosViewModel @Inject constructor(
                 fecha = gasto.fecha,
                 nota = gasto.nota ?: "",
                 isRecurring = gasto.isRecurring,
+                tipoGasto = GastoTipoResolver.resolver(gasto.categoria, gasto.tipoGasto),
+                tipoGastoElegido = GastoTipoResolver.esValido(gasto.tipoGasto),
                 gastoFormError = null,
             )
         }
@@ -690,7 +697,16 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun updateCategoria(c: String) {
-        _uiState.update { it.copy(categoria = c) }
+        _uiState.update {
+            it.copy(
+                categoria = c,
+                tipoGasto = if (it.tipoGastoElegido) it.tipoGasto else GastoTipoResolver.preseleccionar(c),
+            )
+        }
+    }
+    fun updateTipoGasto(tipo: String) {
+        if (!GastoTipoResolver.esValido(tipo)) return
+        _uiState.update { it.copy(tipoGasto = tipo, tipoGastoElegido = true) }
     }
     fun updateDescripcion(d: String) {
         _uiState.update { it.copy(descripcion = d) }
@@ -735,8 +751,8 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // Rebuilding the entity from the form alone would wipe fechaProgramada and tipoGasto, which the
-    // recurrence generator and margin reports rely on, every time a user edits a gasto.
+    // Rebuilding the entity from the form alone would wipe fechaProgramada, which the recurrence
+    // generator relies on, every time a user edits a gasto.
     private fun gastoDesdeFormulario(s: CostosYGastosUiState, opticaId: String, monto: BigDecimal): GastoOperativoEntity {
         val base = s.editingGasto ?: GastoOperativoEntity(
             id = UUID.randomUUID().toString(),
@@ -752,6 +768,7 @@ class CostosYGastosViewModel @Inject constructor(
             fecha = s.fecha,
             nota = s.nota.ifBlank { null },
             isRecurring = s.isRecurring,
+            tipoGasto = s.tipoGasto,
         )
     }
 

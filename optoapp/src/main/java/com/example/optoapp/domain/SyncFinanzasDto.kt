@@ -18,6 +18,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.util.Locale
 
 @Serializable
 data class DispensacionRemota(
@@ -249,8 +250,9 @@ data class GastoOperativoRemoto(
     val nota: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("es_recurrente") val isRecurring: Boolean = false,
-
     val frecuencia: String = "mensual",
+    // Null means "decided by category" on both sides; defaulting to fijo would misclassify legacy rows.
+    @SerialName("tipo_gasto") val tipoGasto: String? = null,
 )
 
 fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto(
@@ -265,6 +267,7 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     createdAt = createdAt,
     isRecurring = isRecurring,
     frecuencia = frecuencia,
+    tipoGasto = tipoGasto,
 )
 
 fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity(
@@ -279,6 +282,7 @@ fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity
     createdAt = createdAt,
     isRecurring = isRecurring,
     frecuencia = frecuencia,
+    tipoGasto = tipoGasto,
 )
 
 @Serializable
@@ -674,9 +678,9 @@ internal fun String.remotoServicioExtraMetodoToLocal(): String = if (this == Fin
 
 internal fun String.remotoOtServicioExtraToLocal(): String = if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
-internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
+internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase(Locale.ROOT)
 
-/** Lowest `<base>-R<n>` whose normalized OT is not taken; null when the OT has no base to number from. */
+/** A reclamo must stay traceable to its original OT while respecting the per-optica unique OT constraint. */
 internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): String? {
     val base = baseOtForReclamo(ot).ifBlank { return null }
     return generateSequence(1) { it + 1 }
@@ -684,7 +688,7 @@ internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): Str
         .first { normalizedOtForUnique(it) !in takenNormalizedOts }
 }
 
-/** Replaces [oldOt] only where it stands alone, so `-R1` never matches inside `-R12` or another order's OT. */
+/** Whole-token match so renaming `-R1` never corrupts `-R12` or another order's OT mentioned in the note. */
 internal fun replaceOtToken(nota: String, oldOt: String, newOt: String): String {
     if (oldOt.isBlank()) return nota
     return nota.replace(Regex("(?<![\\w-])${Regex.escape(oldOt)}(?![\\w-])"), Regex.escapeReplacement(newOt))

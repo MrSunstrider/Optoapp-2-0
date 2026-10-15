@@ -10,7 +10,11 @@ object GastoTipoResolver {
 
     private val CATEGORIAS_FIJAS = setOf("alquiler", "servicios", "personal", "impuestos")
 
+    fun esValido(tipoGasto: String?): Boolean = tipoGasto == FIJO || tipoGasto == VARIABLE
+
+    fun preseleccionar(categoria: String): String = resolver(categoria, tipoGasto = null)
+
     fun resolver(categoria: String, tipoGasto: String?): String =
-        tipoGasto?.takeIf { it == FIJO || it == VARIABLE }
+        tipoGasto?.takeIf(::esValido)
             ?: if (categoria in CATEGORIAS_FIJAS) FIJO else VARIABLE
 }

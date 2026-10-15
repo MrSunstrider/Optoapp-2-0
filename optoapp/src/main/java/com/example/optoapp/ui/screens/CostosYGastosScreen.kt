@@ -10,7 +10,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
@@ -33,6 +32,8 @@ import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.domain.GastoTipoResolver
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.common.GastoFormDialog
+import com.example.optoapp.ui.components.common.GastoFormValues
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
 import com.example.optoapp.ui.screens.costos.BiseladoTab
@@ -499,7 +500,29 @@ private fun GastosOperativosTab(
     }
 
     if (uiState.isDialogVisible) {
-        GastoFormularioDialog(uiState = uiState, viewModel = viewModel, showDatePicker = showDatePicker)
+        GastoFormDialog(
+            values = GastoFormValues(
+                editando = uiState.editingGasto != null,
+                categoria = uiState.categoria,
+                tipoGasto = uiState.tipoGasto,
+                monto = uiState.monto,
+                descripcion = uiState.descripcion,
+                fecha = uiState.fecha,
+                nota = uiState.nota,
+                isRecurring = uiState.isRecurring,
+                error = uiState.gastoFormError,
+            ),
+            categorias = viewModel.categorias,
+            onCategoria = viewModel::updateCategoria,
+            onTipoGasto = viewModel::updateTipoGasto,
+            onMonto = viewModel::updateMonto,
+            onDescripcion = viewModel::updateDescripcion,
+            onElegirFecha = showDatePicker,
+            onNota = viewModel::updateNota,
+            onToggleRecurrente = viewModel::toggleRecurrente,
+            onGuardar = viewModel::saveGasto,
+            onDismiss = viewModel::dismissDialog,
+        )
     }
 
     uiState.deletingGasto?.let { gasto ->
@@ -532,83 +555,6 @@ private fun GastosOperativosTab(
             },
         )
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun GastoFormularioDialog(
-    uiState: CostosYGastosUiState,
-    viewModel: CostosYGastosViewModel,
-    showDatePicker: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = { viewModel.dismissDialog() },
-        title = {
-            val tituloRes = if (uiState.editingGasto != null) R.string.analisis_editar_gasto else R.string.analisis_nuevo_gasto
-            Text(stringResource(tituloRes), fontWeight = FontWeight.Bold)
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                var expanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-                    OutlinedTextField(
-                        value = uiState.categoria,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.analisis_categoria)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                    )
-                    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        viewModel.categorias.forEach { cat ->
-                            DropdownMenuItem(text = { Text(cat) }, onClick = {
-                                viewModel.updateCategoria(cat)
-                                expanded = false
-                            })
-                        }
-                    }
-                }
-                OutlinedTextField(
-                    value = uiState.monto,
-                    onValueChange = { viewModel.updateMonto(it) },
-                    label = { Text(stringResource(R.string.analisis_monto)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = uiState.descripcion,
-                    onValueChange = { viewModel.updateDescripcion(it) },
-                    label = { Text(stringResource(R.string.analisis_descripcion)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedButton(onClick = { showDatePicker() }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text(DateUtils.formatLocalized(uiState.fecha))
-                }
-                OutlinedTextField(
-                    value = uiState.nota,
-                    onValueChange = { viewModel.updateNota(it) },
-                    label = { Text(stringResource(R.string.gastos_nota)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = uiState.isRecurring, onCheckedChange = { viewModel.toggleRecurrente() })
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.analisis_gasto_recurrente), fontSize = 13.sp)
-                }
-                uiState.gastoFormError?.let {
-                    Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = { viewModel.saveGasto() }, enabled = !uiState.isLoading) {
-                Text(stringResource(R.string.analisis_guardar))
-            }
-        },
-        dismissButton = { TextButton(onClick = { viewModel.dismissDialog() }) { Text(stringResource(R.string.analisis_cancelar)) } },
-    )
 }
 
 @Composable

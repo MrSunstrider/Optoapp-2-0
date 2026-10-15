@@ -307,6 +307,7 @@
     <string name="gastos_total_mes">Total del mes</string>
     <string name="gastos_vacio_mes">No hay gastos en este mes</string>
     <string name="gastos_agregar">Agregar gasto</string>
+    <string name="gastos_tipo">Tipo de gasto</string>
     <string name="gastos_tipo_fijo">Fijo</string>
     <string name="gastos_tipo_variable">Variable</string>
     <string name="gastos_nota">Nota (opcional)</string>

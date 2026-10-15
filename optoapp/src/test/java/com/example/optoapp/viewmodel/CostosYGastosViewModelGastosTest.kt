@@ -261,6 +261,63 @@ class CostosYGastosViewModelGastosTest {
     }
 
     @Test
+    fun newGastoPreselectsTheTypeFromTheCategoryAndPersistsItExplicitly() = runTest(testDispatcher) {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        viewModel.showNewGasto()
+        assertEquals("fijo", viewModel.uiState.value.tipoGasto)
+        viewModel.updateCategoria("marketing")
+        assertEquals("variable", viewModel.uiState.value.tipoGasto)
+        viewModel.updateMonto("300")
+        viewModel.saveGasto()
+        advanceUntilIdle()
+
+        coVerify { repository.upsertGastoOperativo(match { it.categoria == "marketing" && it.tipoGasto == "variable" }) }
+    }
+
+    @Test
+    fun manuallyChosenTypeSurvivesACategoryChange() = runTest(testDispatcher) {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        viewModel.showNewGasto()
+        viewModel.updateTipoGasto("variable")
+        viewModel.updateCategoria("impuestos")
+        viewModel.updateMonto("90")
+        viewModel.saveGasto()
+        advanceUntilIdle()
+
+        assertEquals("variable", viewModel.uiState.value.tipoGasto)
+        coVerify { repository.upsertGastoOperativo(match { it.categoria == "impuestos" && it.tipoGasto == "variable" }) }
+    }
+
+    @Test
+    fun editOfALegacyGastoShowsTheResolvedTypeAndStoresIt() = runTest(testDispatcher) {
+        val legacy = gasto("g_legacy", "marketing", 500.0, hoy)
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        viewModel.editGasto(legacy)
+        assertEquals("variable", viewModel.uiState.value.tipoGasto)
+        viewModel.saveGasto()
+        advanceUntilIdle()
+
+        coVerify { repository.upsertGastoOperativo(match { it.id == "g_legacy" && it.tipoGasto == "variable" }) }
+    }
+
+    @Test
+    fun unknownTypeIsIgnored() = runTest(testDispatcher) {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        viewModel.showNewGasto()
+        viewModel.updateTipoGasto("mixto")
+
+        assertEquals("fijo", viewModel.uiState.value.tipoGasto)
+    }
+
+    @Test
     fun monthTotalAndGroupsFollowTheSelectedMonth() = runTest(testDispatcher) {
         every { repository.getGastosOperativos(opticaId) } returns flowOf(
             listOf(
