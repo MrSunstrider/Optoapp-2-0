@@ -285,4 +285,12 @@
     <!-- MonthSelector -->
     <string name="month_selector_previous">Mes anterior</string>
     <string name="month_selector_next">Mes siguiente</string>
+
+    <!-- Charts -->
+    <string name="chart_ver_datos">Ver datos</string>
+    <string name="chart_ocultar_datos">Ocultar datos</string>
+    <string name="chart_columna_periodo">Período</string>
+    <string name="chart_columna_categoria">Categoría</string>
+    <string name="chart_columna_monto">Monto</string>
+    <string name="chart_columna_porcentaje">Porcentaje</string>
 </resources>

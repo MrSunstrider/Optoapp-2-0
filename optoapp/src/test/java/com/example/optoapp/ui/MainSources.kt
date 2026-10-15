@@ -17,6 +17,13 @@ object MainSources {
 
     fun read(relative: String): String = file(relative).readText(Charsets.UTF_8)
 
+    fun kotlinFilesUnder(relativeDir: String): List<File> {
+        val dir = listOf(File("src/main", relativeDir), File("optoapp/src/main", relativeDir))
+            .firstOrNull { it.isDirectory }
+            ?: error("Main source directory not found: $relativeDir")
+        return dir.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+    }
+
     fun stringValue(name: String): String? {
         val document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(file(STRINGS_XML))
         val nodes = document.getElementsByTagName("string")
