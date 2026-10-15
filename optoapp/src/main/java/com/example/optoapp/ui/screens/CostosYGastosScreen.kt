@@ -45,6 +45,7 @@ import com.example.optoapp.ui.screens.costos.MatrizDropdown
 import com.example.optoapp.ui.screens.costos.MatrizRow
 import com.example.optoapp.ui.screens.costos.MatrizSoloLectura
 import com.example.optoapp.ui.screens.costos.MatrizVacia
+import com.example.optoapp.ui.screens.costos.ServicioTiposTab
 import com.example.optoapp.ui.screens.costos.etiquetaMatriz
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.util.DateUtils
@@ -71,6 +72,7 @@ fun CostosYGastosScreen(
         stringResource(R.string.costos_tab_biselado),
         stringResource(R.string.costos_tab_lentes_contacto),
         stringResource(R.string.costos_tab_gastos),
+        stringResource(R.string.costos_tab_servicios),
     )
     var showDatePicker by remember { mutableStateOf(false) }
 
@@ -108,7 +110,7 @@ fun CostosYGastosScreen(
                 .padding(padding)
                 .navigationBarsPadding(),
         ) {
-            TabRow(selectedTabIndex = uiState.selectedTab) {
+            ScrollableTabRow(selectedTabIndex = uiState.selectedTab, edgePadding = 0.dp) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = uiState.selectedTab == index,
@@ -137,6 +139,7 @@ fun CostosYGastosScreen(
                     viewModel = viewModel,
                     showDatePicker = { showDatePicker = true },
                 )
+                4 -> ServicioTiposTab()
             }
         }
     }
