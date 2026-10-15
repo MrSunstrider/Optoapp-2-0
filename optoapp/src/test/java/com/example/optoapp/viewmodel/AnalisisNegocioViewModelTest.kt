@@ -12,7 +12,11 @@ import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.RecomendacionTipo
+import androidx.lifecycle.SavedStateHandle
+import com.example.optoapp.util.CurrentMonthProvider
+import com.example.optoapp.util.MesArg
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -35,6 +39,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
+import java.time.YearMonth
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnalisisNegocioViewModelTest {
@@ -47,8 +52,21 @@ class AnalisisNegocioViewModelTest {
     private lateinit var sessionManager: SessionManager
     private lateinit var viewModel: AnalisisNegocioViewModel
 
+    private lateinit var currentMonthProvider: CurrentMonthProvider
+
     private val opticaId = "optica-test-1"
-    private val currentMonth = LocalDate.now().withDayOfMonth(1)
+    private val currentYearMonth = YearMonth.of(2026, 7)
+    private val currentMonth = currentYearMonth.atDay(1)
+
+    private fun createViewModel(mes: String? = null) = AnalisisNegocioViewModel(
+        obtenerAnalisisMensual,
+        obtenerDeudores,
+        generarRecomendaciones,
+        feedbackRecomendacion,
+        sessionManager,
+        currentMonthProvider,
+        SavedStateHandle(if (mes == null) emptyMap() else mapOf(MesArg.KEY to mes)),
+    )
 
     @Before
     fun setUp() {
@@ -63,8 +81,10 @@ class AnalisisNegocioViewModelTest {
         generarRecomendaciones = mockk()
         feedbackRecomendacion = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
+        currentMonthProvider = mockk()
 
         every { sessionManager.opticaId } returns flowOf(opticaId)
+        every { currentMonthProvider.current() } returns currentYearMonth
     }
 
     @After
@@ -146,13 +166,7 @@ class AnalisisNegocioViewModelTest {
     fun `init loads data from all 3 use cases and populates state`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -166,57 +180,94 @@ class AnalisisNegocioViewModelTest {
     }
 
     @Test
-    fun `navigateMonth plusOne updates mesSeleccionado and reloads`() = runTest(testDispatcher) {
+    fun `selectMonth past month updates mesSeleccionado and reloads`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.navigateMonth(1)
+        viewModel.selectMonth(YearMonth.of(2026, 6))
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
-        assertEquals("mesSeleccionado should be July + 1 month = August", currentMonth.plusMonths(1), state.mesSeleccionado)
+        assertEquals(LocalDate.of(2026, 6, 1), state.mesSeleccionado)
         assertNotNull("analisis should be populated for new month", state.analisis)
+        coVerify(exactly = 1) { obtenerAnalisisMensual(opticaId, LocalDate.of(2026, 6, 1)) }
     }
 
     @Test
-    fun `navigateMonth minusOne updates mesSeleccionado and reloads`() = runTest(testDispatcher) {
+    fun `selectMonth future month keeps the current month without reloading`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.navigateMonth(-1)
+        viewModel.selectMonth(currentYearMonth.plusMonths(1))
         advanceUntilIdle()
 
-        val state = viewModel.uiState.first()
-        assertEquals("mesSeleccionado should be July - 1 month = June", currentMonth.minusMonths(1), state.mesSeleccionado)
+        assertEquals(currentMonth, viewModel.uiState.first().mesSeleccionado)
+        coVerify(exactly = 1) { obtenerAnalisisMensual(opticaId, any()) }
+        coVerify(exactly = 0) { obtenerAnalisisMensual(opticaId, currentMonth.plusMonths(1)) }
+    }
+
+    @Test
+    fun `mes nav arg in the past is honored`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel(mes = "2026-05")
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 5, 1), viewModel.uiState.first().mesSeleccionado)
+        coVerify(exactly = 1) { obtenerAnalisisMensual(opticaId, LocalDate.of(2026, 5, 1)) }
+    }
+
+    @Test
+    fun `absent mes nav arg falls back to the current month`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel(mes = null)
+        advanceUntilIdle()
+
+        assertEquals(currentMonth, viewModel.uiState.first().mesSeleccionado)
+        coVerify(exactly = 1) { obtenerAnalisisMensual(opticaId, currentMonth) }
+    }
+
+    @Test
+    fun `malformed mes nav arg falls back to the current month without crashing`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel(mes = "abc")
+        advanceUntilIdle()
+
+        assertEquals(currentMonth, viewModel.uiState.first().mesSeleccionado)
+        coVerify(exactly = 1) { obtenerAnalisisMensual(opticaId, currentMonth) }
+    }
+
+    @Test
+    fun `future mes nav arg falls back to the current month`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel(mes = "2026-09")
+        advanceUntilIdle()
+
+        assertEquals(currentMonth, viewModel.uiState.first().mesSeleccionado)
+        coVerify(exactly = 1) { obtenerAnalisisMensual(opticaId, currentMonth) }
+    }
+
+    @Test
+    fun `mesActual reflects the injected current month`() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel()
+
+        assertEquals(currentYearMonth, viewModel.mesActual)
     }
 
     @Test
     fun `isLoading is false after successful load completion`() = runTest(testDispatcher) {
         primeUseCases()
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -231,13 +282,7 @@ class AnalisisNegocioViewModelTest {
             recomendaciones = Resource.Error("No hay datos de analisis para generar recomendaciones"),
         )
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -254,13 +299,7 @@ class AnalisisNegocioViewModelTest {
             analisis = Resource.Success(createAnalisis(esOffline = true)),
         )
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -277,13 +316,7 @@ class AnalisisNegocioViewModelTest {
             recomendaciones = Resource.Error("Datos insuficientes para generar recomendaciones"),
         )
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -297,13 +330,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
         coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } returns Unit
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.onFeedback("r1", fueUtil = true)
@@ -318,13 +345,7 @@ class AnalisisNegocioViewModelTest {
         primeUseCases()
         coEvery { feedbackRecomendacion.marcarNoUtil("r2", opticaId) } returns Unit
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         viewModel.onFeedback("r2", fueUtil = false)
@@ -336,13 +357,7 @@ class AnalisisNegocioViewModelTest {
     fun `isSeasonalityWarning is false when online`() = runTest(testDispatcher) {
         primeUseCases(analisis = Resource.Success(createAnalisis(esOffline = false)))
 
-        viewModel = AnalisisNegocioViewModel(
-            obtenerAnalisisMensual,
-            obtenerDeudores,
-            generarRecomendaciones,
-            feedbackRecomendacion,
-            sessionManager,
-        )
+        viewModel = createViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.first()
@@ -356,13 +371,7 @@ class AnalisisNegocioViewModelTest {
         coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns Resource.Success(createRecomendaciones())
 
         try {
-            viewModel = AnalisisNegocioViewModel(
-                obtenerAnalisisMensual,
-                obtenerDeudores,
-                generarRecomendaciones,
-                feedbackRecomendacion,
-                sessionManager,
-            )
+            viewModel = createViewModel()
         } catch (_: CancellationException) {
             // Expected — cancellation should propagate, not be swallowed
         }

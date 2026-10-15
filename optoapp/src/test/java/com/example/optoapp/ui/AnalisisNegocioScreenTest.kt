@@ -174,11 +174,11 @@ class AnalisisNegocioScreenTest {
     }
 
     @Test
-    fun analisisNegocioViewModel_navigateMonth_isDeclared() {
+    fun analisisNegocioViewModel_selectMonth_isDeclared() {
         val methods = AnalisisNegocioViewModel::class.java.declaredMethods.map { it.name }
         assertTrue(
-            "AnalisisNegocioViewModel debe tener navigateMonth",
-            "navigateMonth" in methods,
+            "AnalisisNegocioViewModel debe tener selectMonth",
+            "selectMonth" in methods,
         )
     }
 

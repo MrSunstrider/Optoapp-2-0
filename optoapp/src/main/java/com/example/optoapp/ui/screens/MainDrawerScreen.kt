@@ -13,19 +13,22 @@ import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OfflineBanner
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
+import com.example.optoapp.util.MesArg
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import kotlinx.coroutines.launch
 
-/** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
+// Screens show snackbars without receiving the host through every composable signature.
 val LocalSnackbarHostState = staticCompositionLocalOf { SnackbarHostState() }
 
 @Composable
@@ -227,7 +230,16 @@ fun MainDrawerScreen(
                             }
                             composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
-                            composable(Route.AnalisisDetalle.route) { AnalisisDetalleScreen(navController) }
+                            composable(
+                                Route.AnalisisDetalle.route,
+                                arguments = listOf(
+                                    navArgument(MesArg.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { AnalisisDetalleScreen(navController) }
                             composable(Route.Configuracion.route) {
                                 if (!showConfiguracion) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }

@@ -207,4 +207,8 @@
     <string name="analisis_eliminar_gasto_confirmacion">¿Eliminar \"%1$s\" por %2$s?</string>
     <string name="analisis_categoria_ventas_margen">%1$s ventas · %2$s margen</string>
     <string name="analisis_stock_costo_unitario">Costo: %1$s c/u</string>
+
+    <!-- MonthSelector -->
+    <string name="month_selector_previous">Mes anterior</string>
+    <string name="month_selector_next">Mes siguiente</string>
 </resources>

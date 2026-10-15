@@ -1,6 +1,7 @@
 package com.example.optoapp.viewmodel
 
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Resource
@@ -12,7 +13,9 @@ import com.example.optoapp.domain.GenerarRecomendacionesUseCase
 import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
 import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.util.CurrentMonthProvider
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MesArg
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -23,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.YearMonth
 import javax.inject.Inject
 
 data class AnalisisNegocioUiState(
@@ -45,14 +49,25 @@ class AnalisisNegocioViewModel @Inject constructor(
     private val generarRecomendaciones: GenerarRecomendacionesUseCase,
     private val feedbackRecomendacion: FeedbackRecomendacionUseCase,
     private val sessionManager: SessionManager,
+    private val currentMonthProvider: CurrentMonthProvider,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "AnalisisNegocioVM"
     }
 
-    private val _uiState = MutableStateFlow(AnalisisNegocioUiState())
+    private val _uiState = MutableStateFlow(
+        AnalisisNegocioUiState(
+            mesSeleccionado = MesArg.parseOrCurrent(
+                savedStateHandle.get<String>(MesArg.KEY),
+                currentMonthProvider.current(),
+            ).atDay(1),
+        ),
+    )
     val uiState: StateFlow<AnalisisNegocioUiState> = _uiState.asStateFlow()
+
+    val mesActual: YearMonth get() = currentMonthProvider.current()
 
     private var loadJob: Job? = null
 
@@ -60,8 +75,9 @@ class AnalisisNegocioViewModel @Inject constructor(
         loadData(_uiState.value.mesSeleccionado)
     }
 
-    fun navigateMonth(delta: Int) {
-        val newMonth = _uiState.value.mesSeleccionado.plusMonths(delta.toLong())
+    fun selectMonth(mes: YearMonth) {
+        val newMonth = minOf(mes, mesActual).atDay(1)
+        if (newMonth == _uiState.value.mesSeleccionado) return
         _uiState.value = _uiState.value.copy(mesSeleccionado = newMonth)
         loadData(newMonth)
     }

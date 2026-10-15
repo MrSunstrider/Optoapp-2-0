@@ -1,5 +1,8 @@
 package com.example.optoapp.ui.navigation
 
+import com.example.optoapp.util.MesArg
+import java.time.YearMonth
+
 /**
  * Type-safe navigation routes for OptoApp.
  * Replaces all raw string routes in NavHost composables.
@@ -32,7 +35,9 @@ sealed class Route(val route: String) {
     data object Reportes : Route("reportes")
     data object CostosYGastos : Route("costos_y_gastos")
     data object EstadisticasBI : Route("estadisticas_bi")
-    data object AnalisisDetalle : Route("analisis_detalle")
+    data object AnalisisDetalle : Route("analisis_detalle?${MesArg.KEY}={${MesArg.KEY}}") {
+        fun createRoute(mes: YearMonth): String = "analisis_detalle?${MesArg.KEY}=${MesArg.format(mes)}"
+    }
     data object Configuracion : Route("configuracion")
     data object Conflictos : Route("conflictos")
 

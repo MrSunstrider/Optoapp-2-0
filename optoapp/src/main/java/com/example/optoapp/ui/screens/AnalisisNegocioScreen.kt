@@ -27,6 +27,8 @@ import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.common.MonthSelector
+import com.example.optoapp.ui.components.common.MonthSelectorState
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
@@ -35,8 +37,7 @@ import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.GastosViewModel
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -136,10 +137,9 @@ fun AnalisisNegocioScreen(
                 }
             }
 
-            MonthSwitcher(
-                currentMonth = uiState.mesSeleccionado,
-                onPrevious = { viewModel.navigateMonth(-1) },
-                onNext = { viewModel.navigateMonth(1) },
+            MonthSelector(
+                state = MonthSelectorState(YearMonth.from(uiState.mesSeleccionado), viewModel.mesActual),
+                onMonthSelected = viewModel::selectMonth,
             )
 
             uiState.analisis?.let { analisis ->
@@ -329,7 +329,7 @@ fun AnalisisNegocioScreen(
 
             if (uiState.analisis != null) {
                 Button(
-                    onClick = { navController.navigate(Route.AnalisisDetalle.route) },
+                    onClick = { navController.navigate(Route.AnalisisDetalle.createRoute(YearMonth.from(uiState.mesSeleccionado))) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
@@ -397,39 +397,6 @@ fun AnalisisNegocioScreen(
                 confirmButton = { Button(onClick = { gastosViewModel.save() }) { Text("Guardar") } },
                 dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text("Cancelar") } },
             )
-        }
-    }
-}
-
-@Composable
-private fun MonthSwitcher(
-    currentMonth: java.time.LocalDate,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("es-PE"))
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onPrevious) {
-                @Suppress("DEPRECATION")
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mes anterior")
-            }
-            Text(
-                text = currentMonth.format(formatter).replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            IconButton(onClick = onNext) {
-                @Suppress("DEPRECATION")
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mes siguiente")
-            }
         }
     }
 }
