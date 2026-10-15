@@ -147,9 +147,11 @@ class DispensacionStockHelper @Inject constructor(
         referenciaId = referenciaId,
         nota = nota,
         opticaId = montura.opticaId,
+        costoUnitario = if (tipo == TIPO_SALIDA_VENTA) montura.costo else 0.0,
     )
 
     private companion object {
         const val TIPO_AJUSTE = "AJUSTE"
+        const val TIPO_SALIDA_VENTA = "SALIDA_VENTA"
     }
 }
