@@ -6,28 +6,6 @@ import androidx.room.Upsert
 
 @Dao
 interface CostoBiseladoDao {
-    @Query(
-        """
-        SELECT * FROM costos_biselado
-        WHERE optica_id = :opticaId
-          AND material = :material
-          AND tipo_aro = :tipoAro
-          AND stock_o_fabricacion = :stockOFabricacion
-          AND (serie IS NULL AND :serie IS NULL OR serie = :serie)
-          AND (alto_indice IS NULL AND :altoIndice IS NULL OR alto_indice = :altoIndice)
-          AND vigente_hasta IS NULL
-        LIMIT 1
-    """,
-    )
-    suspend fun lookup(
-        opticaId: String,
-        material: String,
-        tipoAro: String,
-        stockOFabricacion: String,
-        serie: Int?,
-        altoIndice: String?,
-    ): CostoBiseladoEntity?
-
     // alto_indice is free text on both sides, so it is matched after normalization by the caller, not in SQL.
     @Query(
         """
@@ -36,7 +14,7 @@ interface CostoBiseladoDao {
           AND material = :material
           AND tipo_aro = :tipoAro
           AND stock_o_fabricacion = :stockOFabricacion
-          AND (serie IS NULL AND :serie IS NULL OR serie = :serie)
+          AND serie IS :serie
           AND vigente_desde <= :fecha
           AND (vigente_hasta IS NULL OR vigente_hasta >= :fecha)
         ORDER BY vigente_desde DESC

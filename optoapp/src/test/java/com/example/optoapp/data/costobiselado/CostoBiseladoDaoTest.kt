@@ -3,22 +3,16 @@ package com.example.optoapp.data.costobiselado
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.OptoDatabase
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.io.IOException
 
-/**
- * RED test: CostoBiseladoDao lookup queries, upsert, and empty fallback.
- *
- * References CostoBiseladoEntity and CostoBiseladoDao that don't exist yet.
- */
+// Real-Room DAO test (AGENTS.md exception): in-memory Room needs the Android Context Robolectric provides.
 @RunWith(RobolectricTestRunner::class)
 class CostoBiseladoDaoTest {
 
@@ -35,91 +29,26 @@ class CostoBiseladoDaoTest {
     }
 
     @After
-    @Throws(IOException::class)
     fun tearDown() {
         db.close()
     }
 
     @Test
-    fun lookup_byMaterialTipoAroStockSerieAltoIndice_returnsCorrectEntity() = runBlocking {
-        val entity = CostoBiseladoEntity(
-            id = "cb1",
-            opticaId = "optica1",
-            material = "Resina",
-            tipoAro = "aro_completo",
-            stockOFabricacion = "stock",
-            serie = 2,
-            altoIndice = "1.50",
-            costoPorPar = 15.0,
-            proveedor = "Lab1",
-            vigenteDesde = "2026-01-01",
-            vigenteHasta = null,
-        )
-        dao.upsertAll(listOf(entity))
-
-        val result = dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoAro = "aro_completo",
-            stockOFabricacion = "stock",
-            serie = 2,
-            altoIndice = "1.50",
-        )
-
-        assertTrue(result != null)
-        assertEquals("cb1", result!!.id)
-        assertEquals(15.0, result.costoPorPar, 0.001)
-    }
-
-    @Test
-    fun lookup_noMatchingEntity_returnsNull() = runBlocking {
-        // Per R4: if no rule matches, leave field empty (not a crash)
-        val result = dao.lookup(
+    fun lookupVigente_noMatchingRow_returnsNoCandidates() = runTest {
+        val candidatos = dao.lookupVigente(
             opticaId = "optica1",
             material = "Cristal",
             tipoAro = "taladro",
             stockOFabricacion = "fabricacion",
             serie = null,
-            altoIndice = "1.67",
+            fecha = "2026-06-01",
         )
 
-        assertNull(result)
+        assertTrue(candidatos.isEmpty())
     }
 
     @Test
-    fun lookup_withNullSerie_returnsCorrectEntity() = runBlocking {
-        // Fabricacion items have serie=null
-        val entity = CostoBiseladoEntity(
-            id = "cb2",
-            opticaId = "optica1",
-            material = "Cristal",
-            tipoAro = "ranurado",
-            stockOFabricacion = "fabricacion",
-            serie = null,
-            altoIndice = "1.67",
-            costoPorPar = 35.0,
-            proveedor = "Lab1",
-            vigenteDesde = "2026-01-01",
-            vigenteHasta = null,
-        )
-        dao.upsertAll(listOf(entity))
-
-        val result = dao.lookup(
-            opticaId = "optica1",
-            material = "Cristal",
-            tipoAro = "ranurado",
-            stockOFabricacion = "fabricacion",
-            serie = null,
-            altoIndice = "1.67",
-        )
-
-        assertTrue(result != null)
-        assertEquals("cb2", result!!.id)
-        assertEquals(35.0, result.costoPorPar, 0.001)
-    }
-
-    @Test
-    fun upsertAll_updatesExistingEntity() = runBlocking {
+    fun upsertAll_updatesExistingEntity() = runTest {
         val original = CostoBiseladoEntity(
             id = "cb1", opticaId = "optica1",
             material = "Resina", tipoAro = "aro_completo",
@@ -128,51 +57,16 @@ class CostoBiseladoDaoTest {
         )
         dao.upsertAll(listOf(original))
 
-        val updated = original.copy(costoPorPar = 14.0)
-        dao.upsertAll(listOf(updated))
+        dao.upsertAll(listOf(original.copy(costoPorPar = 14.0)))
 
-        val result = dao.lookup(
+        val candidatos = dao.lookupVigente(
             opticaId = "optica1",
             material = "Resina",
             tipoAro = "aro_completo",
             stockOFabricacion = "stock",
             serie = 1,
-            altoIndice = "1.50",
+            fecha = "2026-06-01",
         )
-        assertTrue(result != null)
-        assertEquals(14.0, result!!.costoPorPar, 0.001)
-    }
-
-    @Test
-    fun lookup_returnsNull_forForeignOptica() = runBlocking {
-        val entity = CostoBiseladoEntity(
-            id = "cb1",
-            opticaId = "optica1",
-            material = "Resina",
-            tipoAro = "aro_completo",
-            stockOFabricacion = "stock",
-            serie = 2,
-            altoIndice = "1.50",
-            costoPorPar = 15.0,
-            vigenteDesde = "2026-01-01",
-            vigenteHasta = null,
-        )
-        dao.upsertAll(listOf(entity))
-        assertNull(dao.lookup(
-            opticaId = "optica-other",
-            material = "Resina",
-            tipoAro = "aro_completo",
-            stockOFabricacion = "stock",
-            serie = 2,
-            altoIndice = "1.50",
-        ))
-        assertEquals("cb1", dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoAro = "aro_completo",
-            stockOFabricacion = "stock",
-            serie = 2,
-            altoIndice = "1.50",
-        )!!.id)
+        assertEquals(listOf(14.0), candidatos.map { it.costoPorPar })
     }
 }

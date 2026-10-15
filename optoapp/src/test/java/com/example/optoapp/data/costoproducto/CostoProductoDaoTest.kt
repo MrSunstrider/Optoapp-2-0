@@ -4,22 +4,16 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.OptoDatabase
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.io.IOException
 
-/**
- * RED test: CostoProductoDao lookup queries, upsert, and block filtering.
- *
- * References CostoProductoEntity and CostoProductoDao that don't exist yet.
- */
+// Real-Room DAO test (AGENTS.md exception): in-memory Room needs the Android Context Robolectric provides.
 @RunWith(RobolectricTestRunner::class)
 class CostoProductoDaoTest {
 
@@ -36,175 +30,84 @@ class CostoProductoDaoTest {
     }
 
     @After
-    @Throws(IOException::class)
     fun tearDown() {
         db.close()
     }
 
+    private fun fila(
+        id: String = "cp1",
+        opticaId: String = "optica1",
+        tratamiento: String? = "Antireflex",
+        stockOFabricacion: String = "stock",
+        serie: Int? = 2,
+        costo: Double = 18.0,
+    ) = CostoProductoEntity(
+        id = id,
+        opticaId = opticaId,
+        material = "Resina",
+        tipoLente = "Monofocal",
+        stockOFabricacion = stockOFabricacion,
+        tratamiento = tratamiento,
+        serie = serie,
+        costoUnitario = costo,
+        vigenteDesde = "2026-01-01",
+        vigenteHasta = null,
+    )
+
+    private suspend fun lookup(opticaId: String = "optica1", tratamiento: String? = "Antireflex", serie: Int? = 2) =
+        dao.lookupVigente(
+            opticaId = opticaId,
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            tratamiento = tratamiento,
+            serie = serie,
+            fecha = "2026-06-01",
+        )
+
     @Test
-    fun lookup_byMaterialTipoStockTratSerie_returnsCorrectEntity() = runBlocking {
-        val entity = CostoProductoEntity(
-            id = "cp1",
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 2,
-            costoUnitario = 18.0,
-            laboratorioId = "lab1",
-            vigenteDesde = "2026-01-01",
-            vigenteHasta = null,
-        )
-        dao.upsertAll(listOf(entity))
+    fun lookupVigente_byMaterialTipoStockTratamientoSerie_returnsTheRow() = runTest {
+        dao.upsertAll(listOf(fila()))
 
-        val result = dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 2,
-        )
-
-        assertTrue(result != null)
-        assertEquals("cp1", result!!.id)
-        assertEquals(18.0, result.costoUnitario, 0.001)
+        assertEquals(18.0, lookup()!!.costoUnitario, 0.001)
     }
 
     @Test
-    fun lookup_noMatchingEntity_returnsNull() = runBlocking {
-        val result = dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Nonexistent",
-            serie = 1,
-        )
+    fun lookupVigente_unknownTratamiento_returnsNull() = runTest {
+        dao.upsertAll(listOf(fila()))
 
-        assertNull(result)
+        assertNull(lookup(tratamiento = "Nonexistent"))
     }
 
     @Test
-    fun lookup_considersVigenteHastaNull_onlyActiveRules() = runBlocking {
-        val active = CostoProductoEntity(
-            id = "cp-active",
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 1,
-            costoUnitario = 5.0,
-            vigenteDesde = "2026-01-01",
-            vigenteHasta = null,
-        )
-        val expired = CostoProductoEntity(
-            id = "cp-expired",
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 1,
-            costoUnitario = 3.0,
-            vigenteDesde = "2025-01-01",
-            vigenteHasta = "2025-12-31",
-        )
-        dao.upsertAll(listOf(active, expired))
+    fun lookupVigente_isScopedToTheOptica() = runTest {
+        dao.upsertAll(listOf(fila()))
 
-        val result = dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 1,
-        )
-
-        assertTrue(result != null)
-        assertEquals("Only active (vigenteHasta IS NULL) entity should be returned", "cp-active", result!!.id)
-        assertEquals(5.0, result.costoUnitario, 0.001)
+        assertNull(lookup(opticaId = "optica-other"))
+        assertEquals("cp1", lookup()!!.id)
     }
 
     @Test
-    fun getByBloque_returnsEntitiesForBlock() = runBlocking {
-        val stockEntity = CostoProductoEntity(
-            id = "cp-s1", opticaId = "optica1",
-            material = "Resina", tipoLente = "Monofocal",
-            stockOFabricacion = "stock", tratamiento = "AR", serie = 1,
-            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
+    fun getByBloque_returnsEntitiesForBlock() = runTest {
+        dao.upsertAll(
+            listOf(
+                fila(id = "cp-s1", tratamiento = "AR", serie = 1),
+                fila(id = "cp-f1", tratamiento = "Simple", stockOFabricacion = "fabricacion", serie = null),
+            ),
         )
-        val fabricacionEntity = CostoProductoEntity(
-            id = "cp-f1", opticaId = "optica1",
-            material = "Resina", tipoLente = "Bifocal",
-            stockOFabricacion = "fabricacion", tratamiento = "Simple", serie = null,
-            costoUnitario = 20.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
-        )
-        dao.upsertAll(listOf(stockEntity, fabricacionEntity))
 
         val stockResults = dao.getByBloque(opticaId = "optica1", bloque = "stock").first()
 
-        assertEquals(1, stockResults.size)
-        assertEquals("cp-s1", stockResults[0].id)
+        assertEquals(listOf("cp-s1"), stockResults.map { it.id })
     }
 
     @Test
-    fun upsertAll_updatesExistingEntity() = runBlocking {
-        val original = CostoProductoEntity(
-            id = "cp1", opticaId = "optica1",
-            material = "Resina", tipoLente = "Monofocal",
-            stockOFabricacion = "stock", tratamiento = "AR", serie = 1,
-            costoUnitario = 5.0, vigenteDesde = "2026-01-01", vigenteHasta = null,
-        )
+    fun upsertAll_updatesExistingEntity() = runTest {
+        val original = fila(costo = 5.0)
         dao.upsertAll(listOf(original))
 
-        val updated = original.copy(costoUnitario = 6.0)
-        dao.upsertAll(listOf(updated))
+        dao.upsertAll(listOf(original.copy(costoUnitario = 6.0)))
 
-        val result = dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "AR",
-            serie = 1,
-        )
-        assertTrue(result != null)
-        assertEquals(6.0, result!!.costoUnitario, 0.001)
-    }
-
-    @Test
-    fun lookup_returnsNull_forForeignOptica() = runBlocking {
-        val entity = CostoProductoEntity(
-            id = "cp1",
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 2,
-            costoUnitario = 18.0,
-            vigenteDesde = "2026-01-01",
-            vigenteHasta = null,
-        )
-        dao.upsertAll(listOf(entity))
-        assertNull(dao.lookup(
-            opticaId = "optica-other",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 2,
-        ))
-        assertEquals("cp1", dao.lookup(
-            opticaId = "optica1",
-            material = "Resina",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            tratamiento = "Antireflex",
-            serie = 2,
-        )!!.id)
+        assertEquals(6.0, lookup()!!.costoUnitario, 0.001)
     }
 }
