@@ -29,6 +29,32 @@ interface CostoProductoDao {
         serie: Int?,
     ): CostoProductoEntity?
 
+    // ISO yyyy-MM-dd strings compare chronologically; two open rows after a sync conflict resolve to the newest.
+    @Query(
+        """
+        SELECT * FROM costos_productos
+        WHERE optica_id = :opticaId
+          AND material = :material
+          AND tipo_lente = :tipoLente
+          AND stock_o_fabricacion = :stockOFabricacion
+          AND (tratamiento IS NULL AND :tratamiento IS NULL OR tratamiento = :tratamiento)
+          AND (serie IS NULL AND :serie IS NULL OR serie = :serie)
+          AND vigente_desde <= :fecha
+          AND (vigente_hasta IS NULL OR vigente_hasta >= :fecha)
+        ORDER BY vigente_desde DESC
+        LIMIT 1
+    """,
+    )
+    suspend fun lookupVigente(
+        opticaId: String,
+        material: String,
+        tipoLente: String,
+        stockOFabricacion: String,
+        tratamiento: String?,
+        serie: Int?,
+        fecha: String,
+    ): CostoProductoEntity?
+
     @Query(
         """
         SELECT * FROM costos_productos
