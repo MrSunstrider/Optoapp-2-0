@@ -6,6 +6,7 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -95,6 +96,7 @@ class CostosYGastosViewModelGastosTest {
         scheduler,
         mockk<SyncFinanzasUseCase>(relaxed = true),
         mockk<SyncStateTracker>(relaxed = true),
+        mockk<MatrizVigenciaUseCase>(),
     )
 
     @Test

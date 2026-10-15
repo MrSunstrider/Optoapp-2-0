@@ -43,6 +43,7 @@ import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import com.example.optoapp.viewmodel.GastoFila
 import com.example.optoapp.viewmodel.GrupoGastos
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,6 +119,16 @@ fun CostosYGastosScreen(
             }
         }
     }
+}
+
+@Composable
+private fun HistorialCostoRow(version: CostoProductoEntity) {
+    val monto = MoneyFormatter.format(version.costoUnitario)
+    val desde = DateUtils.formatLocalized(LocalDate.parse(version.vigenteDesde))
+    val texto = version.vigenteHasta?.let { hasta ->
+        stringResource(R.string.costos_historial_cerrado, monto, desde, DateUtils.formatLocalized(LocalDate.parse(hasta)))
+    } ?: stringResource(R.string.costos_historial_vigente, monto, desde)
+    Text(texto, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -206,11 +217,23 @@ private fun MatrizDeCostosTab(
 
             uiState.editingCosto?.let { costo ->
                 var editValue by remember { mutableStateOf(uiState.nuevoCostoUnitario) }
+                var showVigenciaPicker by remember { mutableStateOf(false) }
+                val vigenteDesde = uiState.vigenteDesde
+                if (showVigenciaPicker && vigenteDesde != null) {
+                    OptoDatePickerDialog(
+                        initialDate = vigenteDesde,
+                        onDateSelected = { viewModel.updateVigenteDesde(it) },
+                        onDismiss = { showVigenciaPicker = false },
+                    )
+                }
                 AlertDialog(
                     onDismissRequest = { viewModel.dismissEditCosto() },
                     title = { Text(stringResource(R.string.costos_editar_titulo), fontWeight = FontWeight.Bold) },
                     text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             Text(
                                 "${costo.material} · ${costo.tipoLente}",
                                 fontSize = 13.sp,
@@ -228,6 +251,28 @@ private fun MatrizDeCostosTab(
                             )
                             uiState.error?.let { e ->
                                 Text(e, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                            }
+                            Text(stringResource(R.string.costos_vigente_desde), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            OutlinedButton(onClick = { showVigenciaPicker = true }, modifier = Modifier.fillMaxWidth()) {
+                                Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(vigenteDesde?.let { DateUtils.formatLocalized(it) }.orEmpty())
+                            }
+                            Text(
+                                uiState.vigenteDesdeError ?: stringResource(R.string.costos_vigente_desde_ayuda),
+                                color = if (uiState.vigenteDesdeError != null) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                fontSize = 12.sp,
+                            )
+                            if (uiState.historialCosto.isNotEmpty()) {
+                                HorizontalDivider()
+                                Text(stringResource(R.string.costos_historial_titulo), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                uiState.historialCosto.forEach { version ->
+                                    HistorialCostoRow(version)
+                                }
                             }
                         }
                     },

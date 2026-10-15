@@ -331,6 +331,11 @@
     <string name="costos_bloque_vacio">No hay costos registrados en este bloque.</string>
     <string name="costos_editar_titulo">Editar Costo</string>
     <string name="costos_costo_unitario">Costo unitario</string>
+    <string name="costos_vigente_desde">Vigente desde</string>
+    <string name="costos_vigente_desde_ayuda">Las OTs anteriores a esta fecha conservan el precio anterior.</string>
+    <string name="costos_historial_titulo">Historial de precios</string>
+    <string name="costos_historial_vigente">%1$s · desde %2$s</string>
+    <string name="costos_historial_cerrado">%1$s · del %2$s al %3$s</string>
     <string name="costos_anadir_cd">Añadir Costo</string>
     <string name="costos_nuevo_titulo">Nuevo Costo</string>
     <string name="costos_material_requerido">Material *</string>

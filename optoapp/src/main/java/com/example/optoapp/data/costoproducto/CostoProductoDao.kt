@@ -54,6 +54,29 @@ interface CostoProductoDao {
     )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoProductoEntity>
 
+    @Query(
+        """
+        SELECT * FROM costos_productos
+        WHERE optica_id = :opticaId
+          AND material = :material
+          AND tipo_lente = :tipoLente
+          AND stock_o_fabricacion = :stockOFabricacion
+          AND tratamiento IS :tratamiento
+          AND serie IS :serie
+          AND laboratorio_id IS :laboratorioId
+        ORDER BY vigente_desde DESC
+    """,
+    )
+    suspend fun getHistorial(
+        opticaId: String,
+        material: String,
+        tipoLente: String,
+        stockOFabricacion: String,
+        tratamiento: String?,
+        serie: Int?,
+        laboratorioId: String?,
+    ): List<CostoProductoEntity>
+
     // Closed versions are included because closing a row is itself an edit the server must receive.
     @Query("SELECT * FROM costos_productos WHERE optica_id = :opticaId")
     suspend fun getAllByOpticaIdList(opticaId: String): List<CostoProductoEntity>

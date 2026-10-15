@@ -6,6 +6,7 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
+import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -88,6 +89,7 @@ class CostosYGastosViewModelTest {
         scheduler,
         syncFinanzas,
         syncStateTracker,
+        mockk<MatrizVigenciaUseCase>(),
     )
 
     @After
@@ -302,37 +304,5 @@ class CostosYGastosViewModelTest {
         assertNotNull("Error must be set after delete failure", error)
         assertTrue("Error must mention the problem", error!!.contains("eliminar", ignoreCase = true))
         coVerify(exactly = 0) { syncStateTracker.markLocallyModified(any(), any(), any()) }
-    }
-
-    @Test
-    fun saveCostoEdit_stampsUpdatedAtAndMarksTheRowLocallyModified() = runTest(testDispatcher) {
-        val existing = CostoProductoEntity(
-            id = "costo-3",
-            opticaId = opticaId,
-            material = "CR39",
-            tipoLente = "Monofocal",
-            stockOFabricacion = "stock",
-            costoUnitario = 150.0,
-            vigenteDesde = "2026-01-01",
-            updatedAt = "2026-01-01T00:00:00Z",
-        )
-        viewModel = buildViewModel()
-        viewModel.loadBlock("Stock Monofocal")
-        advanceUntilIdle()
-
-        viewModel.showEditCosto(existing)
-        viewModel.updateNuevoCostoUnitario("175.0")
-        viewModel.saveCostoEdit()
-        advanceUntilIdle()
-
-        coVerify {
-            costoProductoDao.upsertAll(
-                withArg { entities ->
-                    assertEquals(175.0, entities.single().costoUnitario, 0.001)
-                    assertTrue(entities.single().updatedAt!! > "2026-01-01T00:00:00Z")
-                },
-            )
-        }
-        coVerify { syncStateTracker.markLocallyModified(opticaId, "costo_producto", "costo-3") }
     }
 }

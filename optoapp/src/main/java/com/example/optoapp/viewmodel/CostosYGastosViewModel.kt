@@ -12,7 +12,9 @@ import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.domain.GastoTipoResolver
+import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.OpticalCatalog
+import com.example.optoapp.domain.ResultadoVigencia
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -25,6 +27,7 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -74,6 +77,9 @@ data class CostosYGastosUiState(
     val costosDelBloque: List<CostoProductoEntity> = emptyList(),
     val editingCosto: CostoProductoEntity? = null,
     val nuevoCostoUnitario: String = "",
+    val vigenteDesde: LocalDate? = null,
+    val vigenteDesdeError: String? = null,
+    val historialCosto: List<CostoProductoEntity> = emptyList(),
     val gastosOperativos: List<GastoOperativoEntity> = emptyList(),
     val mesGastos: YearMonth = YearMonth.from(DateUtils.today()),
     val gruposGastos: List<GrupoGastos> = emptyList(),
@@ -114,6 +120,7 @@ class CostosYGastosViewModel @Inject constructor(
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
     private val syncStateTracker: SyncStateTracker,
+    private val matrizVigenciaUseCase: MatrizVigenciaUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CostosYGastosUiState())
@@ -123,6 +130,7 @@ class CostosYGastosViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "CostosYGastosVM"
+        private val FECHA_UI = DateTimeFormatter.ofPattern("dd/MM/yyyy")
         val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
 
         fun autoGenerarRecurrentes(
@@ -247,20 +255,49 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun showEditCosto(costo: CostoProductoEntity) {
-        _uiState.update { it.copy(editingCosto = costo, nuevoCostoUnitario = costo.costoUnitario.toString(), error = null) }
+        _uiState.update {
+            it.copy(
+                editingCosto = costo,
+                nuevoCostoUnitario = costo.costoUnitario.toString(),
+                vigenteDesde = MatrizVigenciaUseCase.fechaMinima(costo.vigenteDesde, DateUtils.today()),
+                vigenteDesdeError = null,
+                historialCosto = emptyList(),
+                error = null,
+            )
+        }
+        viewModelScope.launch {
+            try {
+                val historial = costoProductoDao.getHistorial(
+                    costo.opticaId, costo.material, costo.tipoLente, costo.stockOFabricacion,
+                    costo.tratamiento, costo.serie, costo.laboratorioId,
+                )
+                _uiState.update { if (it.editingCosto?.id == costo.id) it.copy(historialCosto = historial) else it }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Loading price history failed", e)
+            }
+        }
     }
 
     fun dismissEditCosto() {
-        _uiState.update { it.copy(editingCosto = null, nuevoCostoUnitario = "") }
+        _uiState.update {
+            it.copy(editingCosto = null, nuevoCostoUnitario = "", vigenteDesde = null, vigenteDesdeError = null, historialCosto = emptyList())
+        }
     }
 
     fun updateNuevoCostoUnitario(value: String) {
         _uiState.update { it.copy(nuevoCostoUnitario = value) }
     }
 
+    fun updateVigenteDesde(fecha: LocalDate) {
+        _uiState.update { it.copy(vigenteDesde = fecha, vigenteDesdeError = null) }
+    }
+
     fun saveCostoEdit() {
         val s = _uiState.value
         val costo = s.editingCosto ?: return
+        val desde = s.vigenteDesde ?: return
         val nuevoValor = s.nuevoCostoUnitario.toDoubleOrNull()
         if (nuevoValor == null || nuevoValor <= 0) {
             _uiState.update { it.copy(error = "Ingresa un costo válido") }
@@ -269,14 +306,34 @@ class CostosYGastosViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                saveCostoLocal(opticaId, costo.copy(costoUnitario = nuevoValor))
-                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
-                val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
-                _uiState.update { it.copy(editingCosto = null, nuevoCostoUnitario = "", costosDelBloque = refreshed, error = null) }
+                when (val resultado = matrizVigenciaUseCase.editarProducto(costo, nuevoValor, desde, DateUtils.today())) {
+                    is ResultadoVigencia.Rechazado -> _uiState.update {
+                        it.copy(vigenteDesdeError = "La fecha debe ser el ${resultado.fechaMinima.format(FECHA_UI)} o posterior")
+                    }
+                    is ResultadoVigencia.Aplicado -> {
+                        postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+                        dismissEditCosto()
+                        refrescarBloque(opticaId)
+                    }
+                    ResultadoVigencia.YaNoVigente -> {
+                        dismissEditCosto()
+                        _uiState.update { it.copy(error = "Este precio ya no está vigente. Revisa la lista actualizada.") }
+                        refrescarBloque(opticaId)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Error al guardar: ${e.message}") }
+                Log.e(TAG, "saveCostoEdit failed", e)
+                _uiState.update { it.copy(error = "No se pudo guardar el precio. Inténtalo de nuevo.") }
             }
         }
+    }
+
+    private suspend fun refrescarBloque(opticaId: String) {
+        val bloque = _uiState.value.selectedBlock ?: return
+        val refreshed = costoProductoDao.getByBloque(opticaId, blockToFilter(bloque)).first()
+        _uiState.update { it.copy(costosDelBloque = refreshed) }
     }
 
     val categorias = CATEGORIAS

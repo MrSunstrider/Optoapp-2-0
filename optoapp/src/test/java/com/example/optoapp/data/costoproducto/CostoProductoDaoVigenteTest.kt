@@ -110,4 +110,19 @@ class CostoProductoDaoVigenteTest {
         assertEquals(18.0, costoEn("2026-07-15", serie = 2)!!, 0.001)
         assertNull(costoEn("2026-07-15", serie = 3))
     }
+
+    @Test
+    fun getHistorial_listsEveryVersionOfTheSameKeyNewestFirst() = runTest {
+        dao.upsertAll(
+            listOf(
+                fila("p18", 18.0, desde = "2026-01-01", hasta = "2026-07-31"),
+                fila("p20", 20.0, desde = "2026-08-01"),
+                fila("otraSerie", 25.0, desde = "2026-02-01", serie = 3),
+            ),
+        )
+
+        val historial = dao.getHistorial("o1", "Resina", "Monofocal", "stock", "Antireflex", 2, null)
+
+        assertEquals(listOf("p20", "p18"), historial.map { it.id })
+    }
 }
