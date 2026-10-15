@@ -13,11 +13,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
@@ -151,9 +150,9 @@ class UploadSyncCoordinatorChildBatchesTest {
     fun aBlankOpticaIsRefusedBeforeAnyUpload() = runTest {
         coEvery { repository.getGastosOperativosList("") } returns listOf(gasto)
 
-        assertThrows(IllegalArgumentException::class.java) {
-            runBlocking { coordinator.uploadGastosOperativos("") }
-        }
+        val error = runCatching { coordinator.uploadGastosOperativos("") }.exceptionOrNull()
+
+        assertTrue(error is IllegalArgumentException)
         coVerify(exactly = 0) { networkRetryHelper.retryNetwork(any(), any()) }
     }
 }

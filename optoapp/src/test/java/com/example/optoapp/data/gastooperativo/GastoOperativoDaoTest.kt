@@ -4,7 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.OptoDatabase
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -17,6 +17,7 @@ import java.io.IOException
 import java.math.BigDecimal
 import java.time.LocalDate
 
+// Real-Room DAO test (AGENTS.md exception): in-memory Room needs the Android Context Robolectric provides.
 @RunWith(RobolectricTestRunner::class)
 class GastoOperativoDaoTest {
     private lateinit var db: OptoDatabase
@@ -38,7 +39,7 @@ class GastoOperativoDaoTest {
     }
 
     @Test
-    fun insertAndGetAll_returnsInsertedGasto() = runBlocking {
+    fun insertAndGetAll_returnsInsertedGasto() = runTest {
         val gasto = GastoOperativoEntity(
             id = "g1",
             opticaId = "optica1",
@@ -56,7 +57,7 @@ class GastoOperativoDaoTest {
     }
 
     @Test
-    fun delete_removesGasto() = runBlocking {
+    fun delete_removesGasto() = runTest {
         val gasto = GastoOperativoEntity(
             id = "g1",
             opticaId = "optica1",
@@ -73,7 +74,7 @@ class GastoOperativoDaoTest {
     }
 
     @Test
-    fun upsert_updatesExisting() = runBlocking {
+    fun upsert_updatesExisting() = runTest {
         val original = GastoOperativoEntity(
             id = "g1",
             opticaId = "optica1",
@@ -94,7 +95,7 @@ class GastoOperativoDaoTest {
     }
 
     @Test
-    fun getByOpticaBetween_returnsOnlyThatOpticasMonthWithInclusiveBoundsOldestFirst() = runBlocking {
+    fun getByOpticaBetween_returnsOnlyThatOpticasMonthWithInclusiveBoundsOldestFirst() = runTest {
         fun gasto(id: String, opticaId: String, fecha: String) = GastoOperativoEntity(
             id = id,
             opticaId = opticaId,
@@ -115,7 +116,7 @@ class GastoOperativoDaoTest {
     }
 
     @Test
-    fun tipoGasto_roundTripsAndALegacyNullStaysNull() = runBlocking {
+    fun tipoGasto_roundTripsAndALegacyNullStaysNull() = runTest {
         val base = GastoOperativoEntity(
             id = "g-var",
             opticaId = "optica1",
