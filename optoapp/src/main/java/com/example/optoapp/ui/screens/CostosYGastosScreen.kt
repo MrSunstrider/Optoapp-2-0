@@ -9,10 +9,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -107,7 +107,7 @@ fun CostosYGastosScreen(
                             scope.launch { drawerState.open() }
                         }
                     }) {
-                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.costos_menu_cd))
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.costos_atras_cd))
                     }
                 },
             )

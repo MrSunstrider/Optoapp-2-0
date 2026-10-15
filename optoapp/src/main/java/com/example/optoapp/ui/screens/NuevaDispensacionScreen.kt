@@ -53,6 +53,7 @@ import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtModel
 import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtSection
 import com.example.optoapp.ui.screens.dispensacion.PASO_PRODUCTOS
 import com.example.optoapp.ui.screens.dispensacion.pasoInicialDispensacion
+import com.example.optoapp.ui.theme.saldoColor
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.DispensacionItemUi
@@ -61,8 +62,8 @@ import com.example.optoapp.viewmodel.OrderLifecycleState
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-internal fun wizardStepsForMode(isEditMode: Boolean): List<String> =
-    if (isEditMode) listOf("Orden", "Productos", "Gestión") else listOf("Orden", "Productos")
+internal fun wizardStepsForMode(isEditMode: Boolean): List<Int> =
+    if (isEditMode) listOf(R.string.disp_paso_orden, R.string.disp_productos, R.string.disp_paso_gestion) else listOf(R.string.disp_paso_orden, R.string.disp_productos)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,7 +200,7 @@ fun NuevaDispensacionScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             WizardStepHeader(
-                labels = wizardSteps,
+                labels = wizardSteps.map { stringResource(it) },
                 currentStep = currentStep,
                 totalSteps = wizardSteps.size,
                 modifier = Modifier.fillMaxWidth(),
@@ -557,7 +558,7 @@ private fun StepGestion(
                 Text(
                     MoneyFormatter.format(saldo),
                     fontWeight = FontWeight.Bold,
-                    color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                    color = saldoColor(saldo),
                 )
             }
             Row(
@@ -744,12 +745,13 @@ private fun buildItemSummary(item: DispensacionItemUi): String {
     }
 }
 
+@Composable
 private fun buildPrismaDisplay(valor: String, base: String): String {
     val v = valor.replace(",", ".").trim()
     val b = base.trim()
     return when {
-        v.isNotBlank() && b.isNotBlank() -> "${v}Δ base $b"
-        v.isNotBlank() -> "${v}Δ"
-        else -> "—"
+        v.isNotBlank() && b.isNotBlank() -> stringResource(R.string.disp_prisma_valor_base, v, b)
+        v.isNotBlank() -> stringResource(R.string.disp_prisma_valor, v)
+        else -> stringResource(R.string.disp_prisma_vacio)
     }
 }

@@ -116,7 +116,7 @@
     <string name="config_sync_bg_errors_copy">Copiar (%1$d)</string>
     <string name="config_sync_repair_session">Reparar sesión</string>
     <string name="config_sync_repair_working">Reparando…</string>
-    <string name="config_sync_repair_desc">El ID de óptica no es válido. Revisá la sesión contra el servidor para corregirlo.</string>
+    <string name="config_sync_repair_desc">El ID de óptica no es válido. Revisa la sesión contra el servidor para corregirlo.</string>
     <string name="config_section_security">SEGURIDAD Y ACCESO</string>
     <string name="config_section_system">SISTEMA</string>
     <string name="config_section_optica_data">DATOS DE LA ÓPTICA</string>
@@ -132,19 +132,19 @@
     <!-- Recovery -->
     <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
     <string name="recovery_title">Recuperar cuenta</string>
-    <string name="recovery_subtitle">Ingresá el correo con el que te registraste</string>
+    <string name="recovery_subtitle">Ingresa el correo con el que te registraste</string>
     <string name="recovery_email_label">Correo electrónico</string>
     <string name="recovery_send_button">Enviar enlace de recuperación</string>
     <string name="recovery_sending">Enviando…</string>
     <string name="recovery_success_title">Correo enviado</string>
     <string name="recovery_success_message">Si existe una cuenta con ese correo, vas a recibir un enlace para restablecer tu contraseña.</string>
-    <string name="recovery_error_email_invalid">Ingresá un correo electrónico válido</string>
-    <string name="recovery_error_generic">No se pudo enviar el correo. Intentá de nuevo más tarde.</string>
+    <string name="recovery_error_email_invalid">Ingresa un correo electrónico válido</string>
+    <string name="recovery_error_generic">No se pudo enviar el correo. Intenta de nuevo más tarde.</string>
     <string name="recovery_back_to_login">Volver a inicio de sesión</string>
 
     <!-- New Password -->
     <string name="new_password_title">Nueva contraseña</string>
-    <string name="new_password_subtitle">Elegí una contraseña nueva para tu cuenta</string>
+    <string name="new_password_subtitle">Elige una contraseña nueva para tu cuenta</string>
     <string name="new_password_label">Nueva contraseña</string>
     <string name="new_password_confirm_label">Confirmar contraseña</string>
     <string name="new_password_save_button">Guardar contraseña</string>
@@ -409,7 +409,7 @@
     <string name="costos_tab_biselado">Biselado</string>
     <string name="costos_tab_lentes_contacto">Lentes Contacto</string>
     <string name="costos_tab_gastos">Gastos Operativos</string>
-    <string name="costos_menu_cd">Menú</string>
+    <string name="costos_atras_cd">Atrás</string>
     <string name="costos_seleccionar_bloque">Seleccionar bloque</string>
     <string name="costos_bloque_label">Bloque de Costos</string>
     <string name="costos_bloque_titulo">Bloque: %1$s</string>
@@ -484,6 +484,11 @@
     <string name="disp_od">OD:</string>
     <string name="disp_oi">OI:</string>
     <string name="disp_productos">Productos</string>
+    <string name="disp_paso_orden">Orden</string>
+    <string name="disp_paso_gestion">Gestión</string>
+    <string name="disp_prisma_valor_base">%1$sΔ base %2$s</string>
+    <string name="disp_prisma_valor">%1$sΔ</string>
+    <string name="disp_prisma_vacio">—</string>
     <string name="disp_agregar_cd">Agregar</string>
     <string name="disp_agregar_producto">Agregar otro producto (lente + montura)</string>
     <string name="disp_orden_reemplazo">Orden de reemplazo por garantía</string>
@@ -533,6 +538,8 @@
     <string name="ot_costo_aplicar">Aplicar</string>
     <string name="ot_costo_cancelar">Cancelar</string>
     <string name="analisis_atras_cd">Atrás</string>
+    <string name="analisis_contraer_cd">Contraer</string>
+    <string name="analisis_expandir_cd">Expandir</string>
     <string name="analisis_actualizar_gastos_cd">Actualizar gastos</string>
     <string name="servicio_realizado_por">Realizado por</string>
     <string name="servicio_realizado_yo">Yo</string>

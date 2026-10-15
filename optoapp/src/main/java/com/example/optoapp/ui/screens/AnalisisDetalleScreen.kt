@@ -10,7 +10,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +37,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
@@ -65,7 +74,7 @@ fun AnalisisDetalleScreen(
                 title = stringResource(R.string.analisis_detalle_title),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.analisis_atras_cd))
                     }
                 },
             )
@@ -133,16 +142,7 @@ fun AnalisisDetalleScreen(
                             saldo = deudor.saldo,
                             diasDeuda = deudor.diasDeuda,
                             onClick = {
-                                if (deudor.pacienteId.isNotBlank()) {
-                                    val origenId = deudor.ventaId
-                                        .removePrefix("v_disp_")
-                                        .removePrefix("v_serv_")
-                                    if (deudor.ventaId.startsWith("v_disp_")) {
-                                        navController.navigate("editarDispensacion/${deudor.pacienteId}/$origenId")
-                                    } else {
-                                        navController.navigate("editar_servicio/$origenId")
-                                    }
-                                }
+                                rutaEdicionDeudor(deudor.ventaId, deudor.pacienteId)?.let { navController.navigate(it) }
                             },
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
@@ -172,7 +172,7 @@ fun AnalisisDetalleScreen(
 
             ExpandableSection(
                 title = stringResource(R.string.analisis_seccion_proyeccion),
-                icon = Icons.Default.TrendingUp,
+                icon = Icons.AutoMirrored.Filled.TrendingUp,
             ) {
                 val proyeccion = analisis.proyeccionCaja
                 if (proyeccion == null) {
@@ -212,13 +212,13 @@ private fun ExpandableSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(icon, contentDescription = "Seccion", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(title, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Icon(
                     if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Contraer" else "Expandir",
+                    contentDescription = stringResource(if (expanded) R.string.analisis_contraer_cd else R.string.analisis_expandir_cd),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -293,7 +293,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
             .clickable { onClick() },
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Person, contentDescription = "Persona", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(4.dp))
             Text(nombre, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         }
@@ -348,7 +348,7 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
                 ) {
                     Icon(
                         Icons.Default.Warning,
-                        contentDescription = "Advertencia",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.warningAmber,
                         modifier = Modifier.size(18.dp),
                     )
@@ -375,4 +375,15 @@ private fun EmptyPlaceholder(text: String) {
     }
 }
 
+private const val VENTA_DISPENSACION = "v_disp_"
+private const val VENTA_SERVICIO = "v_serv_"
+
+internal fun rutaEdicionDeudor(ventaId: String, pacienteId: String): String? {
+    if (pacienteId.isBlank()) return null
+    return if (ventaId.startsWith(VENTA_DISPENSACION)) {
+        Route.EditarDispensacion(pacienteId, ventaId.removePrefix(VENTA_DISPENSACION)).route
+    } else {
+        Route.EditarServicio(ventaId.removePrefix(VENTA_SERVICIO)).route
+    }
+}
 private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value)
