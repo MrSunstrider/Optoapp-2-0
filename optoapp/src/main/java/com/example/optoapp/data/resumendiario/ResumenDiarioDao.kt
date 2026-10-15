@@ -13,12 +13,11 @@ interface ResumenDiarioDao {
     @Query(
         """
         SELECT * FROM resumen_diario
-        WHERE opticaId = :opticaId
-          AND strftime('%Y-%m', fecha) = :yearMonth
+        WHERE opticaId = :opticaId AND fecha >= :desde AND fecha <= :hasta
         ORDER BY fecha ASC
     """,
     )
-    suspend fun getByOpticaAndMonth(opticaId: String, yearMonth: String): List<ResumenDiarioEntity>
+    suspend fun getByOpticaBetween(opticaId: String, desde: String, hasta: String): List<ResumenDiarioEntity>
 
     @Query(
         """

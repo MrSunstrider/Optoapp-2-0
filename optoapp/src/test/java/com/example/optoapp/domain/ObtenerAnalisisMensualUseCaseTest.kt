@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
@@ -11,7 +12,6 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -93,17 +93,19 @@ class ObtenerAnalisisMensualUseCaseTest {
         gastos: List<GastoOperativoEntity> = emptyList(),
     ): ObtenerAnalisisMensualUseCase {
         val resumenDao = mockk<ResumenDiarioDao>()
-        coEvery { resumenDao.getByOpticaAndMonth("optica1", "2026-07") } returns resumenes
+        coEvery { resumenDao.getByOpticaBetween("optica1", "2026-02-01", "2026-07-31") } returns resumenes
         val gastoDao = mockk<GastoOperativoDao>()
-        every { gastoDao.getByOpticaIdAndDateRange("optica1", julio, LocalDate.of(2026, 7, 31)) } returns flowOf(gastos)
-        return object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), resumenDao, gastoDao) {
+        coEvery { gastoDao.getByOpticaBetween("optica1", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 7, 31)) } returns gastos
+        val configDao = mockk<ConfiguracionFinancieraDao>()
+        coEvery { configDao.getByOpticaIdOnce("optica1") } returns null
+        return object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), resumenDao, gastoDao, configDao) {
             override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw IOException("No network")
         }
     }
 
     @Test
     fun online_rpcSuccess_returnsAnalisisMensual() = runTest {
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk()) {
+        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpc(function: String, params: JsonObject): JsonObject = rpcSuccessJson()
         }
 
@@ -193,15 +195,12 @@ class ObtenerAnalisisMensualUseCaseTest {
         assertEquals(defaults.costosPorLinea, facts.costosPorLinea)
         assertEquals(defaults.margenServicios, facts.margenServicios)
         assertEquals(defaults.cobertura, facts.cobertura)
-        assertEquals(defaults.gastosPorCategoria, facts.gastosPorCategoria)
-        assertEquals(defaults.serie6m, facts.serie6m)
-        assertNull(facts.puntoEquilibrio)
         assertFalse(facts.detalleServidorDisponible)
     }
 
     @Test
     fun unexpectedError_returnsResourceError() = runTest {
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk()) {
+        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw RuntimeException("Unexpected")
         }
 
