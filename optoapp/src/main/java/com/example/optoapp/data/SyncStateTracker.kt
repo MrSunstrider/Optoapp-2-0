@@ -15,7 +15,7 @@ class SyncStateTracker @Inject constructor(
                 opticaId = opticaId,
                 entityType = entityType,
                 entityId = entityId,
-                status = "synced",
+                status = STATUS_SYNCED,
                 lastError = "",
                 updatedAt = System.currentTimeMillis(),
             ),
@@ -28,7 +28,7 @@ class SyncStateTracker @Inject constructor(
                 opticaId = opticaId,
                 entityType = entityType,
                 entityId = entityId,
-                status = "error",
+                status = STATUS_ERROR,
                 lastError = (err ?: "error").take(500),
                 updatedAt = System.currentTimeMillis(),
             ),
@@ -41,7 +41,7 @@ class SyncStateTracker @Inject constructor(
                 opticaId = opticaId,
                 entityType = entityType,
                 entityId = entityId,
-                status = "deleted",
+                status = STATUS_DELETED,
                 lastError = "",
                 updatedAt = System.currentTimeMillis(),
             ),
@@ -54,7 +54,7 @@ class SyncStateTracker @Inject constructor(
                 opticaId = opticaId,
                 entityType = entityType,
                 entityId = entityId,
-                status = "conflicted",
+                status = STATUS_CONFLICTED,
                 lastError = "",
                 updatedAt = System.currentTimeMillis(),
             ),
@@ -85,25 +85,49 @@ class SyncStateTracker @Inject constructor(
             .map { it.entityId }
             .toSet()
 
+    /**
+     * Flags a row edited on this device so the next upload sends it. Rows without this mark that
+     * came from a download stay local-only, because a stale device must not resend old versions.
+     */
+    suspend fun markLocallyModified(opticaId: String, entityType: String, entityId: String) {
+        dao.upsert(
+            SyncEntityState(
+                opticaId = opticaId,
+                entityType = entityType,
+                entityId = entityId,
+                status = STATUS_PENDING_UPLOAD,
+                lastError = "",
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
+    suspend fun syncedIds(opticaId: String, entityType: String): Set<String> =
+        dao.getByStatus(opticaId, STATUS_SYNCED)
+            .asSequence()
+            .filter { it.entityType == entityType }
+            .map { it.entityId }
+            .toSet()
+
     suspend fun isSynced(opticaId: String, entityType: String, entityId: String): Boolean =
-        dao.getState(opticaId, entityType, entityId)?.status == "synced"
+        dao.getState(opticaId, entityType, entityId)?.status == STATUS_SYNCED
 
     suspend fun clear(opticaId: String, entityType: String, entityId: String) =
         dao.clearEntityState(opticaId, entityType, entityId)
 
-    suspend fun getConflictedCount(opticaId: String): Int = dao.countByStatus(opticaId, "conflicted")
+    suspend fun getConflictedCount(opticaId: String): Int = dao.countByStatus(opticaId, STATUS_CONFLICTED)
 
-    suspend fun getErrorsCount(opticaId: String): Int = dao.countByStatus(opticaId, "error")
+    suspend fun getErrorsCount(opticaId: String): Int = dao.countByStatus(opticaId, STATUS_ERROR)
 
     suspend fun quarantinedEntityIds(opticaId: String, entityType: String): Set<String> =
-        dao.getByStatus(opticaId, "error")
+        dao.getByStatus(opticaId, STATUS_ERROR)
             .asSequence()
             .filter { it.entityType == entityType && it.lastError.startsWith("quarantine:") }
             .map { it.entityId }
             .toSet()
 
     suspend fun quarantineReasons(opticaId: String, entityType: String): Map<String, String> =
-        dao.getByStatus(opticaId, "error")
+        dao.getByStatus(opticaId, STATUS_ERROR)
             .asSequence()
             .filter { it.entityType == entityType && it.lastError.startsWith("quarantine:") }
             .associate { it.entityId to it.lastError }
@@ -117,6 +141,11 @@ class SyncStateTracker @Inject constructor(
     }
 
     private companion object {
+        const val STATUS_SYNCED = "synced"
+        const val STATUS_ERROR = "error"
+        const val STATUS_DELETED = "deleted"
+        const val STATUS_CONFLICTED = "conflicted"
         const val STATUS_AWAITING_REMOTE = "awaiting_remote"
+        const val STATUS_PENDING_UPLOAD = "pending_upload"
     }
 }

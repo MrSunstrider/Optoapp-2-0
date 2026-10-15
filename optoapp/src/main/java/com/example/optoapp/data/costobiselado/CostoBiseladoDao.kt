@@ -39,6 +39,13 @@ interface CostoBiseladoDao {
     )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoBiseladoEntity>
 
+    // Closed versions are included because closing a row is itself an edit the server must receive.
+    @Query("SELECT * FROM costos_biselado WHERE optica_id = :opticaId")
+    suspend fun getAllByOpticaIdList(opticaId: String): List<CostoBiseladoEntity>
+
+    @Query("SELECT * FROM costos_biselado WHERE id = :id")
+    suspend fun getById(id: String): CostoBiseladoEntity?
+
     @Upsert
     suspend fun upsertAll(entities: List<CostoBiseladoEntity>)
 }
