@@ -11,6 +11,9 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.regaloservicio.RegaloServicioExtraEntity
 import com.example.optoapp.data.servicio.ServicioExtraItem
+import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
+import com.example.optoapp.domain.CostoServicioDraft
+import com.example.optoapp.domain.CostoServicioResolver
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
@@ -61,6 +64,7 @@ data class ServiciosUiState(
     val isEdit: Boolean = false,
     val motivoAnulacion: String? = null,
     val fechaAnulacion: LocalDate? = null,
+    val costo: CostoServicioDraft = CostoServicioDraft(),
 ) {
     val isReadOnly: Boolean
         get() = OrderStatusPolicy.isTerminal(estado)
@@ -161,6 +165,22 @@ class ServiciosViewModel @Inject constructor(
         }
     }
 
+    fun seleccionarTipoServicio(tipo: ServicioTipoEntity?) {
+        _uiState.update { it.copy(costo = CostoServicioResolver.seleccionarTipo(it.costo, tipo)) }
+    }
+
+    fun seleccionarRealizadoPor(realizadoPor: String) {
+        _uiState.update { it.copy(costo = CostoServicioResolver.seleccionarRealizadoPor(it.costo, realizadoPor)) }
+    }
+
+    fun updateRealizadoPorNombre(nombre: String) {
+        _uiState.update { it.copy(costo = CostoServicioResolver.editarNombre(it.costo, nombre)) }
+    }
+
+    fun updateCostoServicio(costoDraft: String) {
+        _uiState.update { it.copy(costo = CostoServicioResolver.editarCosto(it.costo, costoDraft)) }
+    }
+
     fun addItem() {
         _uiState.update { s ->
             deriveHeader(s.copy(items = s.items + ServicioExtraItemUi()))
@@ -259,6 +279,7 @@ class ServiciosViewModel @Inject constructor(
                         error = null,
                         motivoAnulacion = s.motivoAnulacion,
                         fechaAnulacion = s.fechaAnulacion,
+                        costo = costoGuardado(s),
                     )
                     _uiState.value = deriveHeader(base)
                 }
@@ -358,16 +379,24 @@ class ServiciosViewModel @Inject constructor(
                     pacienteId = state.pacienteId?.takeIf { it.isNotBlank() },
                     metodoPago = FinanzasRemoteDefaults.ServicioExtra.METODO_PAGO_ROW,
                     opticaId = currentOpticaId,
+                    servicioTipoId = state.costo.servicioTipoId,
+                    realizadoPor = state.costo.realizadoPor,
+                    realizadoPorNombre = state.costo.realizadoPorNombre.trim()
+                        .takeIf { state.costo.realizadoPor == CostoServicioResolver.TERCERO && it.isNotBlank() },
+                    costoReal = state.costo.costoReal(),
                 )
 
                 val persistedItems = validItems.map { ui ->
+                    val itemId = ui.id.ifBlank { UUID.randomUUID().toString() }
+                    val monturaId = ui.monturaId?.takeIf { it.isNotBlank() }
                     ServicioExtraItem(
-                        id = ui.id.ifBlank { UUID.randomUUID().toString() },
+                        id = itemId,
                         servicioExtraId = finalId,
-                        monturaId = ui.monturaId?.takeIf { it.isNotBlank() },
+                        monturaId = monturaId,
                         descripcion = ui.descripcion.trim(),
                         monto = MontoDraftFormatting.parseDraft(ui.montoDraft) ?: 0.0,
                         opticaId = currentOpticaId,
+                        costoReal = costoRealDeItem(itemId, monturaId, previousItems, currentOpticaId),
                     )
                 }
 
@@ -546,6 +575,31 @@ class ServiciosViewModel @Inject constructor(
 
     private fun servicioAlreadyTerminalMessage(estado: String): String =
         if (estado == OrderStatusPolicy.ANULADO) "Este servicio ya fue anulado" else "Este servicio ya está en estado $estado"
+
+    private fun costoGuardado(servicio: ServicioExtra): CostoServicioDraft {
+        val costoDraft = MontoDraftFormatting.formatDraft(servicio.costoReal)
+        return CostoServicioDraft(
+            servicioTipoId = servicio.servicioTipoId,
+            realizadoPor = servicio.realizadoPor,
+            realizadoPorNombre = servicio.realizadoPorNombre.orEmpty(),
+            costoDraft = costoDraft,
+            // A stored cost is already the confirmed snapshot; a later selection must not replace it.
+            costoEditado = costoDraft.isNotEmpty(),
+        )
+    }
+
+    private suspend fun costoRealDeItem(
+        itemId: String,
+        monturaId: String?,
+        previousItems: List<ServicioExtraItem>,
+        opticaId: String,
+    ): Double {
+        val mid = monturaId ?: return 0.0
+        // An unchanged frame keeps its snapshot so a later purchase-order average never rewrites past margins.
+        previousItems.firstOrNull { it.id == itemId && it.monturaId?.trim() == mid.trim() }
+            ?.let { return it.costoReal }
+        return (repository.getMonturaById(mid, opticaId) as? Resource.Success)?.data?.costo ?: 0.0
+    }
 
     private fun deriveHeader(state: ServiciosUiState): ServiciosUiState {
         val nonBlank = state.items.filter { it.descripcion.isNotBlank() }

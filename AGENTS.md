@@ -54,7 +54,7 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 ## Sync Architecture
 
 - **Offline-first**: Room local → Supabase remote
-- **Order**: pacientes → historial → finanzas (upload 11 tables, download 13 tables, cost matrices including costos_lc) → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
+- **Order**: pacientes → historial → finanzas (upload 12 tables, download 14 tables, cost matrices including costos_lc, servicio_tipos before servicios_extra) → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
 - **JWT**: margin check at 300s before sync (`SyncSessionHelper`); auto-refresh + retry on 401 (`NetworkRetryHelper`)
 - **resumen_diario**: recalculado via RPC `recalcular_resumen_diario` en cada sync finanzas
 - **Conflict resolution**: local vs remote timestamps; conflicted entities skipped on upload
