@@ -166,10 +166,16 @@ BEGIN
         SELECT 1 FROM public.resumen_diario WHERE optica_id = 'zzt_trc_o1' AND fecha = DATE '2026-07-08'
     ), 'R9b FAIL: rejected call must not write a row';
 
-    SELECT p.prosecdef, p.proconfig, p.prosrc, pg_get_userbyid(p.proowner)
-    INTO v_definer, v_cfg, v_src, v_owner
+    SELECT p.prosecdef, p.proconfig, pg_get_userbyid(p.proowner)
+    INTO v_definer, v_cfg, v_owner
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = 'recalcular_resumen_diario';
+
+    -- The guard lives in the RPC and the aggregation in the shared core, so both bodies are inspected.
+    SELECT string_agg(p.prosrc, E'\n') INTO v_src
+    FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE (n.nspname, p.proname) IN (('public', 'recalcular_resumen_diario'),
+                                     ('app_private', 'recalcular_resumen_diario_core'));
 
     ASSERT v_definer, 'R10a FAIL: must stay SECURITY DEFINER';
     ASSERT array_to_string(v_cfg, ',') IN ('search_path=', 'search_path=""'),

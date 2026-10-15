@@ -55,9 +55,11 @@ BEGIN
        AND 'SUM( monto )' ~ c_raw_cash_sum,
         'B2b FAIL: raw-cash ban must match raw, qualified and spaced monto sums';
 
-    SELECT p.prosrc INTO v_src
+    -- The guard lives in the RPC and the aggregation in the shared core, so both bodies are inspected.
+    SELECT string_agg(p.prosrc, E'\n') INTO v_src
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'recalcular_resumen_diario';
+    WHERE (n.nspname, p.proname) IN (('public', 'recalcular_resumen_diario'),
+                                     ('app_private', 'recalcular_resumen_diario_core'));
 
     ASSERT v_src IS NOT NULL, 'B0 FAIL: recalcular_resumen_diario must exist';
     ASSERT v_src LIKE '%public.pago_effect(%',

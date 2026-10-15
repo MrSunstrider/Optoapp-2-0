@@ -15,12 +15,12 @@ DO $$
 DECLARE
     v_rpc_body TEXT;
 BEGIN
-    -- Verify the function exists after migration
-    SELECT prosrc INTO v_rpc_body
+    -- The RPC delegates the aggregation to the shared core, so both bodies are inspected.
+    SELECT string_agg(prosrc, E'\n') INTO v_rpc_body
     FROM pg_proc p
     JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public'
-      AND p.proname = 'recalcular_resumen_diario';
+    WHERE (n.nspname, p.proname) IN (('public', 'recalcular_resumen_diario'),
+                                     ('app_private', 'recalcular_resumen_diario_core'));
 
     ASSERT v_rpc_body IS NOT NULL,
         'recalcular_resumen_diario() function must exist';
