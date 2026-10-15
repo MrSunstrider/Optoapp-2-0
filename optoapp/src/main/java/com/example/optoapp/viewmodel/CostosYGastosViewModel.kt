@@ -55,7 +55,7 @@ fun blockToFilter(block: String): String = when (block) {
 
 val MATRIZ_BLOQUES_EDITABLES = COST_BLOCKS + listOf("Biselado", "Lentes de Contacto")
 
-// Codes mirror the server CHECK constraints and the cost lookup keys, so a free-text value would never be priced.
+// WHY: Codes mirror the server CHECK constraints and the cost lookup keys, so a free-text value would never be priced.
 val TIPOS_ARO_BISELADO = listOf("aro_completo", "semi_aire", "al_aire")
 val MODALIDADES_BISELADO = listOf("stock", "fabricacion")
 val TIPOS_LC = listOf("cosmetico", "graduado", "terapeutico")
@@ -423,7 +423,7 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // The dialog may be closed or switched to another row before the query returns; a late result must not leak into it.
+    // WHY: The dialog may be closed or switched to another row before the query returns; a late result must not leak into it.
     private fun cargarHistorial(sigueAbierta: (CostosYGastosUiState) -> Boolean, leer: suspend () -> List<VersionPrecio>) {
         viewModelScope.launch {
             try {
@@ -580,7 +580,7 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // A second open row for the same combination would make the cost lookup ambiguous; edits must version the existing one.
+    // WHY: A second open row for the same combination would make the cost lookup ambiguous; edits must version the existing one.
     private fun errorFormBiselado(form: FormBiselado, abiertas: List<CostoBiseladoEntity>): String? {
         val serie = form.serie.trim()
         val altoIndice = AltoIndiceNormalizer.normalize(form.altoIndice)
@@ -761,7 +761,7 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // Rebuilding the entity from the form alone would wipe fechaProgramada, which the recurrence
+    // WHY: Rebuilding the entity from the form alone would wipe fechaProgramada, which the recurrence
     // generator relies on, every time a user edits a gasto.
     private fun gastoDesdeFormulario(s: CostosYGastosUiState, opticaId: String, monto: BigDecimal): GastoOperativoEntity {
         val base = s.editingGasto ?: GastoOperativoEntity(
@@ -914,7 +914,7 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    // Matrix upload sends only rows marked here, so a price edit without the mark would never leave the device.
+    // WHY: Matrix upload sends only rows marked here, so a price edit without the mark would never leave the device.
     private suspend fun saveCostoLocal(opticaId: String, costo: CostoProductoEntity) {
         repository.withTransaction {
             costoProductoDao.upsertAll(listOf(costo.copy(updatedAt = Instant.now().toString())))
