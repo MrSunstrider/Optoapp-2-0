@@ -92,10 +92,35 @@ class CostosYGastosViewModel @Inject constructor(
     companion object {
         private const val TAG = "CostosYGastosVM"
         val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
+
+        fun autoGenerarRecurrentes(
+            templates: List<GastoOperativoEntity>,
+            existentes: List<GastoOperativoEntity>,
+            mesActual: LocalDate,
+        ): List<GastoOperativoEntity> {
+            val mesInicio = mesActual.withDayOfMonth(1)
+            val mesFin = mesActual.withDayOfMonth(mesActual.lengthOfMonth())
+            return templates
+                .filter { it.isRecurring }
+                .filter { template ->
+                    existentes.none { existente ->
+                        existente.categoria == template.categoria &&
+                            !existente.fecha.isBefore(mesInicio) &&
+                            !existente.fecha.isAfter(mesFin)
+                    }
+                }
+                .map { template ->
+                    template.copy(
+                        id = UUID.randomUUID().toString(),
+                        fecha = mesInicio,
+                        isRecurring = false,
+                        nota = "Auto-generado de ${template.categoria}",
+                    )
+                }
+        }
     }
 
     init {
-        // Load gastos operativos on init (same pattern as GastosViewModel)
         viewModelScope.launch {
             sessionManager.opticaId.flatMapLatest { repository.getGastosOperativos(it) }
                 .catch { e ->
@@ -103,7 +128,15 @@ class CostosYGastosViewModel @Inject constructor(
                     emit(emptyList())
                 }
                 .collect { gastos ->
-                    _uiState.update { it.copy(gastosOperativos = gastos) }
+                    val visibles = try {
+                        autoGenerarSiFalta(gastos)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Log.e(TAG, "autoGenerarSiFalta failed, showing raw gastos", e)
+                        gastos
+                    }
+                    _uiState.update { it.copy(gastosOperativos = visibles.sortedByDescending { g -> g.fecha }) }
                     if (!syncTriggered && gastos.isEmpty()) {
                         syncTriggered = true
                         val opticaId = sessionManager.opticaId.first()
@@ -113,6 +146,32 @@ class CostosYGastosViewModel @Inject constructor(
                         }
                     }
                 }
+        }
+    }
+
+    private suspend fun autoGenerarSiFalta(gastos: List<GastoOperativoEntity>): List<GastoOperativoEntity> {
+        val nuevos = autoGenerarRecurrentes(
+            templates = gastos.filter { it.isRecurring },
+            existentes = gastos,
+            mesActual = DateUtils.today(),
+        )
+        if (nuevos.isEmpty()) return gastos
+        val opticaId = sessionManager.opticaId.first()
+        nuevos.forEach { repository.upsertGastoOperativo(it) }
+        postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+        return gastos + nuevos
+    }
+
+    fun refreshGastos() {
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                syncFinanzasUseCase(opticaId, downloadAfterUpload = true, skipUpload = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "refreshGastos failed", e)
+            }
         }
     }
 
@@ -134,8 +193,6 @@ class CostosYGastosViewModel @Inject constructor(
             }
         }
     }
-
-    // R6: manual override persists
 
     fun showEditCosto(costo: CostoProductoEntity) {
         _uiState.update { it.copy(editingCosto = costo, nuevoCostoUnitario = costo.costoUnitario.toString(), error = null) }
@@ -161,7 +218,7 @@ class CostosYGastosViewModel @Inject constructor(
             try {
                 val updated = costo.copy(costoUnitario = nuevoValor)
                 costoProductoDao.upsertAll(listOf(updated))
-                                val opticaId = sessionManager.opticaId.first()
+                val opticaId = sessionManager.opticaId.first()
                 val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update { it.copy(editingCosto = null, nuevoCostoUnitario = "", costosDelBloque = refreshed, error = null) }
@@ -308,7 +365,7 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun saveCosto() {
         val s = _uiState.value
-                if (s.costoMaterial.isBlank()) {
+        if (s.costoMaterial.isBlank()) {
             _uiState.update { it.copy(costoSaveError = "Selecciona un material") }
             return
         }
@@ -336,7 +393,7 @@ class CostosYGastosViewModel @Inject constructor(
                     vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
                 costoProductoDao.upsertAll(listOf(entity))
-                                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
+                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update {
                     it.copy(

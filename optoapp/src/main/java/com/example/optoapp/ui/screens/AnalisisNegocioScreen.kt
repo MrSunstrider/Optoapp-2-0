@@ -38,7 +38,7 @@ import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
-import com.example.optoapp.viewmodel.GastosViewModel
+import com.example.optoapp.viewmodel.CostosYGastosViewModel
 import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -47,11 +47,11 @@ fun AnalisisNegocioScreen(
     navController: NavController,
     viewModel: AnalisisNegocioViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
-    gastosViewModel: GastosViewModel = hiltViewModel(),
+    gastosViewModel: CostosYGastosViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val gastos by gastosViewModel.allGastos.collectAsState()
     val gastosUiState by gastosViewModel.uiState.collectAsState()
+    val gastos = gastosUiState.gastosOperativos
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
     val canView = opticaRol != null && AppRoles.canViewBiAndReports(opticaRol!!)
 
@@ -317,7 +317,7 @@ fun AnalisisNegocioScreen(
                             },
                             confirmButton = {
                                 Button(onClick = {
-                                    gastosViewModel.delete(target)
+                                    gastosViewModel.deleteGasto(target)
                                     deleteTarget = null
                                 }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed)) {
                                     Text(stringResource(R.string.analisis_eliminar))
@@ -399,7 +399,7 @@ fun AnalisisNegocioScreen(
                         }
                     }
                 },
-                confirmButton = { Button(onClick = { gastosViewModel.save() }) { Text(stringResource(R.string.analisis_guardar)) } },
+                confirmButton = { Button(onClick = { gastosViewModel.saveGasto() }) { Text(stringResource(R.string.analisis_guardar)) } },
                 dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text(stringResource(R.string.analisis_cancelar)) } },
             )
         }
