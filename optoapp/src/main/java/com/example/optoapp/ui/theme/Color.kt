@@ -1,11 +1,10 @@
 package com.example.optoapp.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// --- Paleta desde OptoTokens (fuente única de verdad) ---
 val Primary get() = OptoTokens.colors.primary
 val PrimaryDark get() = OptoTokens.colorsDark.primary
 
@@ -49,13 +48,11 @@ val Scrim get() = OptoTokens.colors.scrim
 val SurfaceTint get() = OptoTokens.colors.surfaceTint
 val SurfaceTintDark get() = OptoTokens.colorsDark.surfaceTint
 
-// --- Advertencia (independiente de M3) ---
 @Deprecated("Use MaterialTheme.colorScheme.warningGold instead", ReplaceWith("warningGold"))
 val WarningGold = Color(0xFFD97706)
 @Deprecated("Use OptoTokens.semantic.warningGoldDark instead", ReplaceWith("OptoTokens.semantic.warningGoldDark"))
 val WarningGoldDark = Color(0xFFFBBF24)
 
-// --- Colores semánticos para Análisis de Negocio ---
 @Deprecated("Use MaterialTheme.colorScheme.positiveGreen instead", ReplaceWith("positiveGreen"))
 val PositiveGreen = Color(0xFF27AE60)
 @Deprecated("Use MaterialTheme.colorScheme.alertRed instead", ReplaceWith("alertRed"))
@@ -68,24 +65,62 @@ val TextPrimaryDark = OnBackgroundDark
 val TextSecondaryDark = OnSurfaceVariantDark
 val SurfaceDarkMuted = SurfaceVariantDark
 
-// --- Semantic ColorScheme extensions (dark-mode-aware) ---
+// Provided by OptoAppTheme so semantic colors follow the in-app theme, not the system setting.
+val LocalOptoDarkTheme = staticCompositionLocalOf { false }
+
+data class SemanticPalette(
+    val positiveGreen: Color,
+    val alertRed: Color,
+    val warningGold: Color,
+    val warningAmber: Color,
+    val textDark: Color,
+    val maleBlue: Color,
+    val femaleRose: Color,
+) {
+    companion object {
+        private val light = SemanticPalette(
+            positiveGreen = OptoTokens.semantic.positiveGreenLight,
+            alertRed = OptoTokens.semantic.alertRedLight,
+            warningGold = OptoTokens.semantic.warningGoldLight,
+            warningAmber = OptoTokens.semantic.warningAmberLight,
+            textDark = OptoTokens.semantic.textDarkLight,
+            maleBlue = OptoTokens.semantic.maleBlueLight,
+            femaleRose = OptoTokens.semantic.femaleRoseLight,
+        )
+        private val dark = SemanticPalette(
+            positiveGreen = OptoTokens.semantic.positiveGreenDark,
+            alertRed = OptoTokens.semantic.alertRedDark,
+            warningGold = OptoTokens.semantic.warningGoldDark,
+            warningAmber = OptoTokens.semantic.warningAmberDark,
+            textDark = OptoTokens.semantic.textDarkDark,
+            maleBlue = OptoTokens.semantic.maleBlueDark,
+            femaleRose = OptoTokens.semantic.femaleRoseDark,
+        )
+
+        fun forDarkTheme(darkTheme: Boolean): SemanticPalette = if (darkTheme) dark else light
+    }
+}
+
+private val inAppThemePalette: SemanticPalette
+    @Composable get() = SemanticPalette.forDarkTheme(LocalOptoDarkTheme.current)
+
 val ColorScheme.positiveGreen: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.positiveGreenDark else OptoTokens.semantic.positiveGreenLight
+    @Composable get() = inAppThemePalette.positiveGreen
 
 val ColorScheme.alertRed: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.alertRedDark else OptoTokens.semantic.alertRedLight
+    @Composable get() = inAppThemePalette.alertRed
 
 val ColorScheme.warningGold: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.warningGoldDark else OptoTokens.semantic.warningGoldLight
+    @Composable get() = inAppThemePalette.warningGold
 
 val ColorScheme.warningAmber: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.warningAmberDark else OptoTokens.semantic.warningAmberLight
+    @Composable get() = inAppThemePalette.warningAmber
 
 val ColorScheme.textDark: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.textDarkDark else OptoTokens.semantic.textDarkLight
+    @Composable get() = inAppThemePalette.textDark
 
 val ColorScheme.maleBlue: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.maleBlueDark else OptoTokens.semantic.maleBlueLight
+    @Composable get() = inAppThemePalette.maleBlue
 
 val ColorScheme.femaleRose: Color
-    @Composable get() = if (isSystemInDarkTheme()) OptoTokens.semantic.femaleRoseDark else OptoTokens.semantic.femaleRoseLight
+    @Composable get() = inAppThemePalette.femaleRose

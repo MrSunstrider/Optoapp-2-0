@@ -29,13 +29,14 @@ object OptoTokens {
     }
 
     object semantic {
-        val positiveGreenLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF27AE60)
+        // Light variants are darkened to reach WCAG AA 4.5:1 on the light background (FinanceColorContrastTest).
+        val positiveGreenLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF1E7E45)
         val positiveGreenDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2ECC71)
-        val alertRedLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE74C3C)
+        val alertRedLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFC0392B)
         val alertRedDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFF6B6B)
-        val warningGoldLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFD97706)
+        val warningGoldLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFB45309)
         val warningGoldDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFBBF24)
-        val warningAmberLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF39C12)
+        val warningAmberLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFA35C00)
         val warningAmberDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFF7DC6F)
         val textDarkLight: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF2C3E50)
         val textDarkDark: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFE0E3E3)
@@ -53,7 +54,6 @@ object OptoTokens {
     }
 
     object colors {
-        // Primary — deep teal (premium medical)
         val primary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFF006D6F)
         val onPrimary: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFFFFFFF)
         val primaryContainer: androidx.compose.ui.graphics.Color = androidx.compose.ui.graphics.Color(0xFFA0F0F0)
