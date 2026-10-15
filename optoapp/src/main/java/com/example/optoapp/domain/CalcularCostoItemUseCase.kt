@@ -3,8 +3,10 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.util.AppLogger
 import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.math.abs
@@ -39,6 +41,7 @@ class CalcularCostoItemUseCase @Inject constructor(
     private val costoProductoDao: CostoProductoDao,
     private val costoBiseladoDao: CostoBiseladoDao,
     private val monturaDao: MonturaDao,
+    private val costoLcDao: CostoLcDao,
 ) {
 
     suspend operator fun invoke(
@@ -49,7 +52,7 @@ class CalcularCostoItemUseCase @Inject constructor(
     ): CostoItemCalculado {
         val fechaIso = fecha.toString()
         if (esLenteDeContacto(item)) {
-            return CostoItemCalculado(mapOf(ComponenteCosto.LC to costoLc(opticaId, item, receta)))
+            return CostoItemCalculado(mapOf(ComponenteCosto.LC to costoLc(opticaId, item, receta, fechaIso)))
         }
         val componentes = linkedMapOf<ComponenteCosto, Double?>()
         val ojos = ojosConEsfera(receta)
@@ -105,23 +108,29 @@ class CalcularCostoItemUseCase @Inject constructor(
         ).firstOrNull { AltoIndiceNormalizer.matches(it.altoIndice, altoIndice) }?.costoPorPar
     }
 
-    // Contact lenses keep the costos_productos lookup until costos_lc sync and TipoLcMapper replace it.
-    private suspend fun costoLc(opticaId: String, item: DispensacionItem, receta: RecetaCosto?): Double? {
-        val tipo = when {
-            item.tipoLente.contains("Cosmét", ignoreCase = true) -> "lente_contacto_cosmetico"
-            item.tipoLente.contains("Medida", ignoreCase = true) -> "lente_contacto_medida"
-            else -> item.tipoLente
+    // The LC form stores the LC type in materialLente, the material in colorLente and the modalidad in
+    // notasDiseno; tipoLente is only consulted for legacy items that carried the type there.
+    private suspend fun costoLc(opticaId: String, item: DispensacionItem, receta: RecetaCosto?, fecha: String): Double? {
+        val tipoLc = TipoLcMapper.map(item.materialLente) ?: TipoLcMapper.map(item.tipoLente)
+        if (tipoLc == null) {
+            AppLogger.w(TAG, "Unmapped contact lens type for item ${item.id}; cost left missing")
+            return null
         }
-        return costoProductoDao.lookupLc(
+        val material = item.colorLente.ifBlank { receta?.lcMaterial.orEmpty() }
+        if (material.isBlank()) return null
+        val candidatos = costoLcDao.lookupVigente(
             opticaId = opticaId,
-            material = receta?.lcMaterial ?: item.materialLente,
-            tipoLente = tipo,
-            stockOFabricacion = STOCK,
+            tipoLc = tipoLc,
+            materialLc = material,
             laboratorioId = receta?.lcLaboratorio,
-        )?.costoUnitario
+            fecha = fecha,
+        )
+        val modalidad = ModalidadLcMapper.inferir(item.notasDiseno) ?: ModalidadLcMapper.inferir(item.tipoLente)
+        return ModalidadLcMapper.elegir(candidatos, modalidad)?.costoUnitario
     }
 
     companion object {
+        private const val TAG = "CalcularCostoItem"
         private const val ORIGEN_TIENDA = "Tienda"
         private const val STOCK = "stock"
         private const val FABRICACION = "fabricacion"

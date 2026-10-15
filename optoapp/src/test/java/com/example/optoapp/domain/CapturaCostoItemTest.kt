@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.domain.ComponenteCosto.BISELADO
+import com.example.optoapp.domain.ComponenteCosto.LC
 import com.example.optoapp.domain.ComponenteCosto.MONTURA
 import com.example.optoapp.domain.ComponenteCosto.OD
 import com.example.optoapp.domain.ComponenteCosto.OI
@@ -108,6 +109,24 @@ class CapturaCostoItemTest {
         assertEquals(9.0, guardado.costoRealBiselado!!, 0.001)
         assertEquals(30.0, guardado.costoRealMontura!!, 0.001)
         assertEquals("matriz", guardado.costoOrigen)
+    }
+
+    @Test
+    fun `a changed contact lens modality or material re-looks-up the lc cost`() = runTest {
+        val lc = item.copy(
+            tipoLente = "Lentes de Contacto", materialLente = "Graduado",
+            colorLente = "HEMA", notasDiseno = "Mensual",
+            monturaId = "", origenMontura = "", tipoAro = "",
+        )
+        val previo = lc.copy(costoRealLc = 40.0, costoOrigen = "matriz")
+        val nuevoPrecio = mapOf(LC to 55.0)
+
+        val otraModalidad = capturar(nuevo = lc.copy(notasDiseno = "Diario"), previo = previo, resultado = nuevoPrecio)
+        val otroMaterial = capturar(nuevo = lc.copy(colorLente = "RGP"), previo = previo, resultado = nuevoPrecio)
+
+        assertEquals(55.0, otraModalidad.costoRealLc!!, 0.001)
+        assertEquals(55.0, otroMaterial.costoRealLc!!, 0.001)
+        assertEquals(2, lookups)
     }
 
     @Test

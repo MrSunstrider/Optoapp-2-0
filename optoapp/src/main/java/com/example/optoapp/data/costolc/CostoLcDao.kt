@@ -8,25 +8,26 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CostoLcDao {
 
+    // Modalidad is resolved by the caller: an item without a known modalidad may only use a unique candidate.
     @Query(
         """
         SELECT * FROM costos_lc
         WHERE optica_id = :opticaId
           AND tipo_lc = :tipoLc
           AND material_lc = :materialLc
-          AND modalidad = :modalidad
-          AND ((laboratorio_id IS NULL AND :laboratorioId IS NULL) OR laboratorio_id = :laboratorioId)
-          AND vigente_hasta IS NULL
-        LIMIT 1
+          AND (:laboratorioId IS NULL OR laboratorio_id = :laboratorioId)
+          AND vigente_desde <= :fecha
+          AND (vigente_hasta IS NULL OR vigente_hasta >= :fecha)
+        ORDER BY vigente_desde DESC
     """,
     )
-    suspend fun lookup(
+    suspend fun lookupVigente(
         opticaId: String,
         tipoLc: String,
         materialLc: String,
-        modalidad: String,
         laboratorioId: String?,
-    ): CostoLcEntity?
+        fecha: String,
+    ): List<CostoLcEntity>
 
     @Query(
         """

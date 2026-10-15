@@ -63,24 +63,4 @@ interface CostoProductoDao {
 
     @Upsert
     suspend fun upsertAll(entities: List<CostoProductoEntity>)
-
-    @Query(
-        """
-        SELECT * FROM costos_productos
-        WHERE optica_id = :opticaId
-          AND material = :material
-          AND tipo_lente = :tipoLente
-          AND stock_o_fabricacion = :stockOFabricacion
-          AND (laboratorio_id IS NULL OR laboratorio_id = :laboratorioId)
-          AND vigente_hasta IS NULL
-        LIMIT 1
-    """,
-    )
-    suspend fun lookupLc(
-        opticaId: String,
-        material: String,
-        tipoLente: String,
-        stockOFabricacion: String,
-        laboratorioId: String?,
-    ): CostoProductoEntity?
 }

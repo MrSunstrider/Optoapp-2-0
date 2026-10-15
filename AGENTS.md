@@ -54,7 +54,7 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 ## Sync Architecture
 
 - **Offline-first**: Room local → Supabase remote
-- **Order**: pacientes → historial → finanzas (upload 8 tables, download 10 tables) → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
+- **Order**: pacientes → historial → finanzas (upload 11 tables, download 13 tables, cost matrices including costos_lc) → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
 - **JWT**: margin check at 300s before sync (`SyncSessionHelper`); auto-refresh + retry on 401 (`NetworkRetryHelper`)
 - **resumen_diario**: recalculado via RPC `recalcular_resumen_diario` en cada sync finanzas
 - **Conflict resolution**: local vs remote timestamps; conflicted entities skipped on upload
@@ -96,7 +96,7 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 - **No AI attribution** in commits. Conventional commits only (`feat:`, `fix:`, `chore:`).
 - **No WHAT comments** — code is self-documenting. Only WHY.
 - **Naming**: Kotlin `camelCase/PascalCase`, PostgreSQL `snake_case`, Android resources `snake_case`.
-- **Room columns** are camelCase (mirror Kotlin fields). snake_case in queries silently matches nothing.
+- **Room columns** are camelCase (mirror Kotlin fields) unless the entity renames them with `@ColumnInfo(name = ...)`; queries must use the entity's actual column name, and a mismatched name silently matches nothing. The cost matrices (`costos_productos`, `costos_biselado`, `costos_lc`) use `@ColumnInfo` snake_case names.
 - **Gradle**: config cache enabled; clean with `--no-configuration-cache` if stale.
 - **Web companion**: separate repo `optoapp-web`, shares same Supabase DB.
 - **`IMPROVEMENT-PLAN.md`**: known issues C1-C4 (critical), H1-H11 (high).

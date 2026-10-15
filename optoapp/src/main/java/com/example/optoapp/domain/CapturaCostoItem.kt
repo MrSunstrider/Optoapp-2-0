@@ -94,7 +94,14 @@ object CapturaCostoItem {
                 bloqueBiselado(receta?.odEsf, receta?.odCil),
                 bloqueBiselado(receta?.oiEsf, receta?.oiCil),
             )
-            ComponenteCosto.LC -> listOf(item.tipoLente, item.materialLente, receta?.lcMaterial, receta?.lcLaboratorio)
+            ComponenteCosto.LC -> listOf(
+                item.tipoLente,
+                item.materialLente,
+                item.colorLente,
+                item.notasDiseno,
+                receta?.lcMaterial,
+                receta?.lcLaboratorio,
+            )
         }
     }
 

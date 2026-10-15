@@ -4,6 +4,8 @@ import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcDao
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.montura.MonturaDao
@@ -30,6 +32,7 @@ class CalcularCostoItemUseCaseTest {
     private lateinit var costoProductoDao: CostoProductoDao
     private lateinit var costoBiseladoDao: CostoBiseladoDao
     private lateinit var monturaDao: MonturaDao
+    private lateinit var costoLcDao: CostoLcDao
     private lateinit var useCase: CalcularCostoItemUseCase
 
     @Before
@@ -37,10 +40,12 @@ class CalcularCostoItemUseCaseTest {
         costoProductoDao = mockk()
         costoBiseladoDao = mockk()
         monturaDao = mockk()
+        costoLcDao = mockk()
         coEvery { costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any()) } returns null
         coEvery { costoBiseladoDao.lookupVigente(any(), any(), any(), any(), any(), any()) } returns emptyList()
         coEvery { monturaDao.getMonturaByIdForOptica(any(), any()) } returns null
-        useCase = CalcularCostoItemUseCase(costoProductoDao, costoBiseladoDao, monturaDao)
+        coEvery { costoLcDao.lookupVigente(any(), any(), any(), any(), any()) } returns emptyList()
+        useCase = CalcularCostoItemUseCase(costoProductoDao, costoBiseladoDao, monturaDao, costoLcDao)
     }
 
     private fun item(
@@ -219,19 +224,71 @@ class CalcularCostoItemUseCaseTest {
         assertEquals(11.0, result.componentes.getValue(BISELADO))
     }
 
-    @Test
-    fun contactLensStaysOnTheExistingLcLookupOnly() = runTest {
-        coEvery {
-            costoProductoDao.lookupLc(opticaId, "Hydrogel", "lente_contacto_medida", "stock", "lab1")
-        } returns lente(45.0)
+    private fun lcItem(tipoLc: String = "Graduado", material: String = "Hydrogel", modalidad: String = "Mensual") =
+        item(tipoLente = "Lentes de Contacto", tipoAro = "Aro Completo", origenMontura = "Tienda", monturaId = "m1")
+            .copy(materialLente = tipoLc, colorLente = material, notasDiseno = modalidad)
 
-        val receta = recetaSerie2.copy(lcMaterial = "Hydrogel", lcLaboratorio = "lab1")
-        val result = useCase(
-            opticaId,
-            item(tipoLente = "Lentes de Contacto Medida", tipoAro = "Aro Completo", origenMontura = "Tienda", monturaId = "m1"),
-            receta,
-            fecha,
-        )
+    private fun filaLc(id: String, modalidad: String, costo: Double) = CostoLcEntity(
+        id = id,
+        opticaId = opticaId,
+        tipoLc = "graduado",
+        materialLc = "Hydrogel",
+        modalidad = modalidad,
+        costoUnitario = costo,
+        vigenteDesde = "2026-01-01",
+    )
+
+    private fun stubLc(vararg candidatos: CostoLcEntity, laboratorioId: String? = null) {
+        coEvery { costoLcDao.lookupVigente(opticaId, "graduado", "Hydrogel", laboratorioId, fechaIso) } returns candidatos.toList()
+    }
+
+    @Test
+    fun contactLensIsLookedUpOnCostosLcAtTheOtDateAndOnlyPricesTheLcComponent() = runTest {
+        stubLc(filaLc("m", "mensual", 45.0), laboratorioId = "lab1")
+
+        val result = useCase(opticaId, lcItem(), recetaSerie2.copy(lcLaboratorio = "lab1"), fecha)
+
+        assertEquals(mapOf(LC to 45.0), result.componentes)
+        coVerify(exactly = 0) { costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun lcModalidadFromTheItemPicksItsRow() = runTest {
+        stubLc(filaLc("d", "diario", 60.0), filaLc("m", "mensual", 45.0))
+
+        assertEquals(45.0, useCase(opticaId, lcItem(modalidad = "Mensual"), null, fecha).componentes.getValue(LC))
+        assertEquals(60.0, useCase(opticaId, lcItem(modalidad = "Diario"), null, fecha).componentes.getValue(LC))
+    }
+
+    @Test
+    fun unknownLcModalidadUsesOnlyAUniqueCandidate() = runTest {
+        stubLc(filaLc("m", "mensual", 45.0))
+        val unica = useCase(opticaId, lcItem(modalidad = ""), null, fecha)
+
+        stubLc(filaLc("d", "diario", 60.0), filaLc("m", "mensual", 45.0))
+        val varias = useCase(opticaId, lcItem(modalidad = ""), null, fecha)
+
+        stubLc()
+        val ninguna = useCase(opticaId, lcItem(modalidad = ""), null, fecha)
+
+        assertEquals(mapOf(LC to 45.0), unica.componentes)
+        assertEquals(mapOf(LC to null), varias.componentes)
+        assertEquals(mapOf(LC to null), ninguna.componentes)
+    }
+
+    @Test
+    fun unmappedLcTypeIsFaltanteWithoutAnyLookup() = runTest {
+        val result = useCase(opticaId, lcItem(tipoLc = "desconocido"), null, fecha)
+
+        assertEquals(mapOf(LC to null), result.componentes)
+        coVerify(exactly = 0) { costoLcDao.lookupVigente(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun lcMaterialFallsBackToTheLinkedEvaluation() = runTest {
+        stubLc(filaLc("m", "mensual", 45.0))
+
+        val result = useCase(opticaId, lcItem(material = ""), recetaSerie2.copy(lcMaterial = "Hydrogel"), fecha)
 
         assertEquals(mapOf(LC to 45.0), result.componentes)
     }
