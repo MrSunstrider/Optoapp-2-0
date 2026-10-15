@@ -6,6 +6,11 @@
 -- (20260815005859_converge_daily_cash_pago_effect.sql, section 1). Only
 -- recalcular_resumen_diario is copied: rpc_cierre_caja_resumen from that file was
 -- redefined later (20260915085406) and must not be re-created here.
+--
+-- Only the daily_ventas CTE changes: servicio cost was hardcoded to 0 and gifts
+-- were ignored, which overstated margins. Signature, security context,
+-- search_path, guard, cobros/saldo/inventario aggregates, upsert and grants keep
+-- their prior contract.
 -- Rollback (manual, never auto-applied):
 --   supabase/rollback/20261015120000_recalcular_resumen_diario_restore_20260815005859.sql
 -- ============================================================================
@@ -33,7 +38,10 @@ BEGIN
     END IF;
 
     -- Daily sales: UNION ALL of source-of-truth tables
-    -- Cost = real-cost from dispensacion_items (fallback 0 if no items)
+    -- Cost = stored snapshots only (never recomputed from current prices):
+    --   dispensacion = item costs (0 if no items) + gifts
+    --   servicio     = labor cost + frame item costs + gifts
+    -- Gift costo_unitario is REAL on regalos_dispensacion, cast so sums stay exact NUMERIC.
     -- Excludes cancelled (Anulado) and claimed (Reclamada) records
     WITH daily_ventas AS (
         SELECT d.monto_total,
@@ -46,13 +54,29 @@ BEGIN
                     COALESCE(di.costo_real_lc, 0)
                 ) FROM public.dispensacion_items di
                 WHERE di.dispensacion_id = d.id
+            ), 0)
+            + COALESCE((
+                SELECT SUM(rd.cantidad * rd.costo_unitario::numeric)
+                FROM public.regalos_dispensacion rd
+                WHERE rd.dispensacion_id = d.id
             ), 0) AS costo
         FROM public.dispensaciones d
         WHERE d.optica_id = p_optica_id AND d.fecha = p_fecha
           AND d.estado_entrega IS DISTINCT FROM 'Anulado'
           AND d.estado_entrega IS DISTINCT FROM 'Reclamada'
         UNION ALL
-        SELECT se.monto_total, 0::numeric AS costo
+        SELECT se.monto_total,
+            COALESCE(se.costo_real, 0)
+            + COALESCE((
+                SELECT SUM(sei.costo_real)
+                FROM public.servicio_extra_items sei
+                WHERE sei.servicio_extra_id = se.id
+            ), 0)
+            + COALESCE((
+                SELECT SUM(rse.cantidad * rse.costo_unitario)
+                FROM public.regalos_servicio_extra rse
+                WHERE rse.servicio_extra_id = se.id
+            ), 0) AS costo
         FROM public.servicios_extra se
         WHERE se.optica_id = p_optica_id AND se.fecha = p_fecha
           AND se.estado IS DISTINCT FROM 'Anulado'
