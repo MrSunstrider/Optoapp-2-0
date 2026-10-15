@@ -196,4 +196,10 @@
     <string name="dashboard_title">Dashboard</string>
     <string name="dashboard_quick_patient">Nuevo Paciente</string>
     <string name="dashboard_quick_service">Nuevo Servicio</string>
+
+    <!-- Reportes -->
+    <string name="reportes_costo">Costo</string>
+    <string name="reportes_margen">Margen</string>
+    <string name="reportes_margen_movimiento">Margen: s/. %1$s</string>
+    <string name="reportes_costo_incompleto">Costo incompleto</string>
 </resources>

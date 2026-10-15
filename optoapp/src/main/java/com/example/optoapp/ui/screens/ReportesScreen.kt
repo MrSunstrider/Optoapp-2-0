@@ -16,12 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.R
+import com.example.optoapp.domain.MovimientoFinanciero
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoKpiCard
@@ -62,6 +65,9 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val periodoLabel by viewModel.periodoLabel.collectAsState()
 
     val totalVendido by viewModel.totalVendido.collectAsState()
+    val costoTotal by viewModel.costoTotal.collectAsState()
+    val margenTotal by viewModel.margenTotal.collectAsState()
+    val movimientosPorOrigenId by viewModel.movimientosPorOrigenId.collectAsState()
     val totalPagado by viewModel.totalPagado.collectAsState()
     val totalCobrado by viewModel.totalCobrado.collectAsState()
     val cobrosPeriodo by viewModel.cobrosPeriodo.collectAsState()
@@ -194,6 +200,24 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     OptoKpiCard("Pendiente", "s/. ${porCobrar.fmt()}", MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
                 }
             }
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OptoKpiCard(
+                        stringResource(R.string.reportes_costo),
+                        "s/. ${costoTotal.fmt()}",
+                        MaterialTheme.colorScheme.secondary,
+                        Icons.Default.Inventory,
+                        Modifier.weight(1f),
+                    )
+                    OptoKpiCard(
+                        stringResource(R.string.reportes_margen),
+                        "s/. ${margenTotal.fmt()}",
+                        if (margenTotal >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed,
+                        Icons.AutoMirrored.Filled.TrendingUp,
+                        Modifier.weight(1f),
+                    )
+                }
+            }
 
             item {
                 Card(
@@ -260,6 +284,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                 fontSize = 11.sp,
                                 color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                             )
+                            movimientosPorOrigenId[disp.id]?.let { MargenMovimiento(it) }
                         }
                     }
                 }
@@ -282,6 +307,7 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                 fontSize = 11.sp,
                                 color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
                             )
+                            movimientosPorOrigenId[serv.id]?.let { MargenMovimiento(it) }
                         }
                     }
                 }
@@ -289,6 +315,20 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
 
             item { Spacer(Modifier.height(16.dp)) }
         }
+    }
+}
+
+@Composable
+private fun MargenMovimiento(movimiento: MovimientoFinanciero) {
+    // A margin built on a missing cost overstates profit, so the row names the gap instead of a number.
+    if (movimiento.costoIncompleto) {
+        Text(stringResource(R.string.reportes_costo_incompleto), fontSize = 11.sp, color = MaterialTheme.colorScheme.warningAmber)
+    } else {
+        Text(
+            stringResource(R.string.reportes_margen_movimiento, (movimiento.montoTotal - movimiento.costo).fmt()),
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

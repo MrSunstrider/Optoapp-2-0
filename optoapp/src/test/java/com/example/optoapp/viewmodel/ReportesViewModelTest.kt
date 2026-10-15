@@ -1,10 +1,13 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -20,6 +23,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -76,7 +81,6 @@ class ReportesViewModelTest {
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
 
-        // totalVendido from movimientos created from dispensaciones+servicios, filtered by period
         assertEquals(
             "totalVendido must sum all movimientos in period",
             350.0,
@@ -212,8 +216,6 @@ class ReportesViewModelTest {
         )
     }
 
-    // ── pagosSumByDispensacion: reactive sum (abonos only, exclude Anulación) ──
-
     @Test
     fun `pagosSumByDispensacion nets via PagoEffect Reverso`() = runTest(testDispatcher) {
         val pagos = listOf(
@@ -244,8 +246,6 @@ class ReportesViewModelTest {
         assertEquals("d1 sum should be 100", 100.0, result["d1"] ?: 0.0, 0.001)
     }
 
-    // ── aCuentaSumByServicio: reactive sum (abonos only, exclude Anulación) ──
-
     @Test
     fun `aCuentaSumByServicio nets via PagoEffect Reverso`() = runTest(testDispatcher) {
         val pagos = listOf(
@@ -273,5 +273,83 @@ class ReportesViewModelTest {
 
         val result = viewModel.aCuentaSumByServicio.first()
         assertEquals("s1 sum should be 100", 100.0, result["s1"] ?: 0.0, 0.001)
+    }
+
+    private fun stubMensualConCostos(regalos: List<RegaloDispensacionEntity> = emptyList()) {
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(
+            listOf(DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 200.0, opticaId = opticaId)),
+        )
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(
+            listOf(
+                ServicioExtra(
+                    id = "s1", descripcion = "Srv", montoTotal = 100.0, estado = "Entregado", fecha = today,
+                    opticaId = opticaId, realizadoPor = "tercero", costoReal = 60.0,
+                ),
+            ),
+        )
+        coEvery { repository.getDispensacionItemsSnapshotForOptica(opticaId) } returns listOf(
+            DispensacionItem(id = "i1", dispensacionId = "d1", opticaId = opticaId, costoRealOd = 70.0, costoRealOi = 70.0, costoOrigen = "matriz"),
+        )
+        coEvery { repository.getRegalosSnapshotForOptica(opticaId) } returns regalos
+        coEvery { repository.getServicioExtraItemsSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { repository.getRegalosServicioExtraSnapshotForOptica(opticaId) } returns emptyList()
+    }
+
+    private fun mensualViewModel(): ReportesViewModel = ReportesViewModel(repository, sessionManager).apply {
+        setPeriodo("Mensual")
+        setFechaDiario(today)
+    }
+
+    @Test
+    fun `Mensual cost and margin use real item and executor costs`() = runTest(testDispatcher) {
+        stubMensualConCostos()
+
+        viewModel = mensualViewModel()
+        advanceUntilIdle()
+
+        assertEquals(200.0, viewModel.costoTotal.first(), 0.001)
+        assertEquals(100.0, viewModel.margenTotal.first(), 0.001)
+    }
+
+    @Test
+    fun `Mensual cost adds dispensacion gifts`() = runTest(testDispatcher) {
+        stubMensualConCostos(
+            regalos = listOf(
+                RegaloDispensacionEntity(
+                    id = "r1", dispensacionId = "d1", productoId = "pr1", cantidad = 2, costoUnitario = 5.0,
+                    descripcion = "Estuche", opticaId = opticaId,
+                ),
+            ),
+        )
+
+        viewModel = mensualViewModel()
+        advanceUntilIdle()
+
+        assertEquals(210.0, viewModel.costoTotal.first(), 0.001)
+        assertEquals(90.0, viewModel.margenTotal.first(), 0.001)
+    }
+
+    @Test
+    fun `empty period has zero cost and margin`() = runTest(testDispatcher) {
+        viewModel = mensualViewModel()
+        advanceUntilIdle()
+
+        assertEquals(0.0, viewModel.costoTotal.first(), 0.001)
+        assertEquals(0.0, viewModel.margenTotal.first(), 0.001)
+    }
+
+    @Test
+    fun `movimientosPorOrigenId flags a servicio without executor as incomplete cost`() = runTest(testDispatcher) {
+        stubMensualConCostos()
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(
+            listOf(ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 100.0, estado = "Entregado", fecha = today, opticaId = opticaId)),
+        )
+
+        viewModel = mensualViewModel()
+        advanceUntilIdle()
+
+        val movimientos = viewModel.movimientosPorOrigenId.first()
+        assertTrue(movimientos.getValue("s1").costoIncompleto)
+        assertFalse(movimientos.getValue("d1").costoIncompleto)
     }
 }

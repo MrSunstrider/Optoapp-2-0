@@ -15,6 +15,7 @@ data class MovimientoFinanciero(
     val opticaId: String,
     val descripcion: String,
     val vinculadoA: String? = null,
+    val costoIncompleto: Boolean = false,
 )
 
 enum class TipoMovimiento {

@@ -6,20 +6,6 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DispensacionItemDao {
 
-    @Suppress("DEPRECATION")
-    @MapInfo(keyColumn = "dispensacionId", valueColumn = "costoTotal")
-    @Query(
-        """
-        SELECT dispensacion_id AS dispensacionId,
-        COALESCE(SUM(COALESCE(costo_real_od, 0) + COALESCE(costo_real_oi, 0) + COALESCE(costo_real_montura, 0) + COALESCE(costo_real_biselado, 0) + COALESCE(costo_real_lc, 0)), 0) AS costoTotal
-        FROM dispensacion_items 
-        WHERE dispensacion_id IN (:ids)
-          AND optica_id = :opticaId
-        GROUP BY dispensacion_id
-    """,
-    )
-    suspend fun getCostosByDispensacionIds(ids: Set<String>, opticaId: String): Map<String, Double>
-
     @Query("SELECT * FROM dispensacion_items WHERE dispensacion_id = :dispensacionId AND optica_id = :opticaId ORDER BY rowid")
     fun getItemsByDispensacion(dispensacionId: String, opticaId: String): Flow<List<DispensacionItem>>
 

@@ -1,13 +1,11 @@
 package com.example.optoapp.domain
 
-import com.example.optoapp.data.DispensacionItemDao
 import com.example.optoapp.data.OptoRepository
 import java.time.LocalDate
 import javax.inject.Inject
 
 class ObtenerMovimientosFinancierosUseCase @Inject constructor(
     private val repository: OptoRepository,
-    private val dispensacionItemDao: DispensacionItemDao,
 ) {
     suspend operator fun invoke(
         opticaId: String,
@@ -30,13 +28,13 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
             .mapValues { (_, pags) -> pags.sumOf { it.monto } }
 
         val dispIds = dispensaciones.map { it.id }.toSet()
-        val costosByDisp = if (dispIds.isNotEmpty()) {
-            dispensacionItemDao.getCostosByDispensacionIds(dispIds, opticaId)
-        } else {
-            emptyMap()
-        }
+        val itemsByDisp = repository.getDispensacionItemsSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
+        val servItemsByServ = repository.getServicioExtraItemsSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
+        val servRegalosByServ = repository.getRegalosServicioExtraSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
 
         val dispMovs = dispensaciones.map { d ->
+            // Dispensacion gifts are emitted as their own REGALO movements, so they stay out of the sale cost here.
+            val costo = CostoVentaCalculator.dispensacion(itemsByDisp[d.id].orEmpty(), costoUnitarioSnapshot = null, regalos = emptyList())
             MovimientoFinanciero(
                 id = d.id,
                 fecha = d.fecha,
@@ -45,15 +43,17 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
                 origenId = d.id,
                 montoTotal = d.montoTotal,
                 montoPagado = pagosSumByDisp[d.id] ?: 0.0,
-                costo = costosByDisp[d.id] ?: 0.0,
+                costo = costo.costo,
                 pacienteId = d.pacienteId,
                 opticaId = d.opticaId,
                 descripcion = "OT ${d.ot}",
                 vinculadoA = d.ot.takeIf { it.isNotBlank() },
+                costoIncompleto = costo.costoIncompleto,
             )
         }
 
         val servMovs = servicios.map { s ->
+            val costo = CostoVentaCalculator.servicio(s, servItemsByServ[s.id].orEmpty(), servRegalosByServ[s.id].orEmpty())
             MovimientoFinanciero(
                 id = s.id,
                 fecha = s.fecha,
@@ -62,11 +62,12 @@ class ObtenerMovimientosFinancierosUseCase @Inject constructor(
                 origenId = s.id,
                 montoTotal = s.montoTotal,
                 montoPagado = aCuentaSumByServ[s.id] ?: 0.0,
-                costo = 0.0,
+                costo = costo.costo,
                 pacienteId = s.pacienteId ?: "",
                 opticaId = s.opticaId,
                 descripcion = s.descripcion.takeIf { it.isNotBlank() } ?: "Servicio OT ${s.ot}",
                 vinculadoA = s.ot.takeIf { it.isNotBlank() },
+                costoIncompleto = costo.costoIncompleto,
             )
         }
 
