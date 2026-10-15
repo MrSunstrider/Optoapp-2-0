@@ -27,6 +27,7 @@ import com.example.optoapp.data.regaloservicio.RegaloServicioExtraDao
 import com.example.optoapp.data.servicio.ServicioExtraItemDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.serviciotipo.ServicioTipoDao
 import com.example.optoapp.data.sync.SyncSnapshotCoordinator
 import com.example.optoapp.domain.SyncLogger
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -148,6 +149,9 @@ object DatabaseModule {
 
     @Provides
     fun provideSyncTelemetryLogDao(database: OptoDatabase): SyncTelemetryLogDao = database.syncTelemetryLogDao()
+
+    @Provides
+    fun provideServicioTipoDao(database: OptoDatabase): ServicioTipoDao = database.servicioTipoDao()
 
     @Provides
     @Singleton
