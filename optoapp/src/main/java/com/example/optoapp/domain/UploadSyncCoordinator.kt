@@ -6,10 +6,15 @@ import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
+import com.example.optoapp.domain.sync.ConflictHelper
+import com.example.optoapp.domain.sync.LEGACY_NULL_UPDATED_AT
+import com.example.optoapp.domain.sync.RemoteTimestamp
+import com.example.optoapp.domain.sync.coalesceUpdatedAt
 import com.example.optoapp.util.AppLogger
 import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.CancellationException
 import java.io.IOException
 import java.time.Instant
@@ -824,41 +829,108 @@ open class UploadSyncCoordinator @Inject constructor(
         ) { supabase.postgrest[TABLE_REGALOS_SERVICIO].upsert(it) }
     }
 
-    suspend fun uploadCostosProductos(opticaId: String): Int {
-        val localCostos = costoProductoDao.getByOpticaIdList(opticaId)
-        if (localCostos.isEmpty()) {
-            syncStateTracker.markSynced(opticaId, "upload_costos_productos", "batch")
-            return 0
-        }
-        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
-        val opticaRemota = opticaId.trim()
-        val rows = localCostos.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
-        return executeSimpleUpsert(
-            opticaId,
-            TABLE_COSTOS_PRODUCTOS,
-            "costo_producto",
-            "upload_costos_productos",
-            rows,
-            { it.id },
-        ) { supabase.postgrest[TABLE_COSTOS_PRODUCTOS].upsert(it) }
+    internal open suspend fun upsertCostosProductosChunk(chunk: List<CostoProductoRemoto>) {
+        supabase.postgrest[TABLE_COSTOS_PRODUCTOS].upsert(chunk)
     }
 
-    suspend fun uploadCostosBiselado(opticaId: String): Int {
-        val localBiselado = costoBiseladoDao.getByOpticaIdList(opticaId)
-        if (localBiselado.isEmpty()) {
-            syncStateTracker.markSynced(opticaId, "upload_costos_biselado", "batch")
+    internal open suspend fun upsertCostosBiseladoChunk(chunk: List<CostoBiseladoRemoto>) {
+        supabase.postgrest[TABLE_COSTOS_BISELADO].upsert(chunk)
+    }
+
+    internal open suspend fun selectRemoteUpdatedAtChunk(
+        tableName: String,
+        opticaId: String,
+        ids: List<String>,
+    ): List<RemoteTimestamp> = supabase.postgrest[tableName]
+        .select(Columns.list("id", "updated_at")) {
+            filter {
+                eq("optica_id", opticaId)
+                isIn("id", ids)
+            }
+        }
+        .decodeList()
+
+    // Unlike ConflictHelper.selectRemoteRows, a failed chunk fails the whole lookup: treating a missing
+    // timestamp as "absent remotely" would let a stale row overwrite a newer remote version.
+    private suspend fun fetchRemoteUpdatedAt(tableName: String, opticaId: String, ids: List<String>): Map<String, String?> {
+        val remote = mutableMapOf<String, String?>()
+        ids.chunked(UPSERT_BATCH_SIZE).forEachIndexed { index, chunk ->
+            networkRetryHelper.retryNetwork("updated_at:$tableName:chunk${index + 1}") {
+                selectRemoteUpdatedAtChunk(tableName, opticaId, chunk).forEach { remote[it.id] = it.updatedAt }
+            }
+        }
+        return remote
+    }
+
+    /**
+     * Sends only rows edited on this device (no `synced` state), because a full snapshot from a stale
+     * device would reopen closed versions and overwrite newer prices. Among those, a row whose remote
+     * copy is newer loses and stays pending until the download replaces it.
+     */
+    private suspend fun <E, R> uploadLocallyModified(
+        opticaId: String,
+        tableName: String,
+        entityType: String,
+        batchTrackingType: String,
+        localRows: List<E>,
+        localId: (E) -> String,
+        localUpdatedAt: (E) -> String?,
+        toRemoto: (E, String) -> R,
+        remoteId: (R) -> String,
+        upsertChunk: suspend (List<R>) -> Unit,
+    ): Int {
+        val synced = syncStateTracker.syncedIds(opticaId, entityType)
+        val modified = localRows.filter { localId(it) !in synced }
+        if (modified.isEmpty()) {
+            syncStateTracker.markSynced(opticaId, batchTrackingType, "batch")
             return 0
         }
         require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
         val opticaRemota = opticaId.trim()
-        val rows = localBiselado.map { it.toRemoto().copy(opticaId = opticaRemota) }.distinctBy { it.id }
-        return executeSimpleUpsert(
-            opticaId,
-            TABLE_COSTOS_BISELADO,
-            "costo_biselado",
-            "upload_costos_biselado",
-            rows,
-            { it.id },
-        ) { supabase.postgrest[TABLE_COSTOS_BISELADO].upsert(it) }
+        val remoteUpdatedAt = try {
+            fetchRemoteUpdatedAt(tableName, opticaRemota, modified.map(localId))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            AppLogger.e(TAG, "Error en red leyendo updated_at de $entityType: ${e.message}", e)
+            syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
+            throw UploadPartialException(0, e)
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error inesperado leyendo updated_at de $entityType: ${e.message}", e)
+            syncStateTracker.markError(opticaId, batchTrackingType, "batch", e.message)
+            throw e
+        }
+        val rows = modified
+            .filter { row ->
+                val remote = remoteUpdatedAt[localId(row)]
+                remote == null ||
+                    ConflictHelper.isLocalNewerOrEqual(localUpdatedAt(row) ?: LEGACY_NULL_UPDATED_AT, remote)
+            }
+            .map { row -> toRemoto(row, coalesceUpdatedAt(localUpdatedAt(row))) }
+        return executeSimpleUpsert(opticaId, tableName, entityType, batchTrackingType, rows, remoteId, upsertChunk)
     }
+
+    suspend fun uploadCostosProductos(opticaId: String): Int = uploadLocallyModified(
+        opticaId,
+        TABLE_COSTOS_PRODUCTOS,
+        "costo_producto",
+        "upload_costos_productos",
+        costoProductoDao.getAllByOpticaIdList(opticaId),
+        localId = { it.id },
+        localUpdatedAt = { it.updatedAt },
+        toRemoto = { row, updatedAt -> row.toRemoto().copy(opticaId = opticaId.trim(), updatedAt = updatedAt) },
+        remoteId = { it.id },
+    ) { upsertCostosProductosChunk(it) }
+
+    suspend fun uploadCostosBiselado(opticaId: String): Int = uploadLocallyModified(
+        opticaId,
+        TABLE_COSTOS_BISELADO,
+        "costo_biselado",
+        "upload_costos_biselado",
+        costoBiseladoDao.getAllByOpticaIdList(opticaId),
+        localId = { it.id },
+        localUpdatedAt = { it.updatedAt },
+        toRemoto = { row, updatedAt -> row.toRemoto().copy(opticaId = opticaId.trim(), updatedAt = updatedAt) },
+        remoteId = { it.id },
+    ) { upsertCostosBiseladoChunk(it) }
 }

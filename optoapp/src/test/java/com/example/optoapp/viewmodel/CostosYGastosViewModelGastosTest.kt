@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
@@ -93,6 +94,7 @@ class CostosYGastosViewModelGastosTest {
         sessionManager,
         scheduler,
         mockk<SyncFinanzasUseCase>(relaxed = true),
+        mockk<SyncStateTracker>(relaxed = true),
     )
 
     @Test

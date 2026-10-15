@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
@@ -21,6 +22,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.util.Locale
@@ -111,6 +113,7 @@ class CostosYGastosViewModel @Inject constructor(
     private val sessionManager: SessionManager,
     private val postSaveSyncScheduler: PostSaveSyncScheduler,
     private val syncFinanzasUseCase: SyncFinanzasUseCase,
+    private val syncStateTracker: SyncStateTracker,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CostosYGastosUiState())
@@ -265,9 +268,8 @@ class CostosYGastosViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                val updated = costo.copy(costoUnitario = nuevoValor)
-                costoProductoDao.upsertAll(listOf(updated))
                 val opticaId = sessionManager.opticaId.first()
+                saveCostoLocal(opticaId, costo.copy(costoUnitario = nuevoValor))
                 val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update { it.copy(editingCosto = null, nuevoCostoUnitario = "", costosDelBloque = refreshed, error = null) }
@@ -490,7 +492,7 @@ class CostosYGastosViewModel @Inject constructor(
                     costoUnitario = costoUnitario,
                     vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
-                costoProductoDao.upsertAll(listOf(entity))
+                saveCostoLocal(opticaId, entity)
                 val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update {
@@ -514,6 +516,14 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
+    // Matrix upload sends only rows marked here, so a price edit without the mark would never leave the device.
+    private suspend fun saveCostoLocal(opticaId: String, costo: CostoProductoEntity) {
+        repository.withTransaction {
+            costoProductoDao.upsertAll(listOf(costo.copy(updatedAt = Instant.now().toString())))
+            syncStateTracker.markLocallyModified(opticaId, "costo_producto", costo.id)
+        }
+    }
+
     fun confirmDeleteCosto(costo: CostoProductoEntity) {
         _uiState.update { it.copy(deletingCosto = costo) }
     }
@@ -526,9 +536,8 @@ class CostosYGastosViewModel @Inject constructor(
         val costo = _uiState.value.deletingCosto ?: return
         viewModelScope.launch {
             try {
-                val updated = costo.copy(vigenteHasta = DateUtils.toIso(DateUtils.today()))
-                costoProductoDao.upsertAll(listOf(updated))
                 val opticaId = sessionManager.opticaId.first()
+                saveCostoLocal(opticaId, costo.copy(vigenteHasta = DateUtils.toIso(DateUtils.today())))
                 val bloqueFilter = blockToFilter(_uiState.value.selectedBlock ?: return@launch)
                 val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
                 _uiState.update {

@@ -423,13 +423,14 @@ data class CostoProductoRemoto(
     @SerialName("laboratorio_id") val laboratorioId: String? = null,
     @SerialName("vigente_desde") val vigenteDesde: String,
     @SerialName("vigente_hasta") val vigenteHasta: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     fun toEntity() = CostoProductoEntity(
         id = id, opticaId = opticaId, material = material,
         tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
         tratamiento = tratamiento, serie = serie,
         costoUnitario = costoUnitario, laboratorioId = laboratorioId,
-        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
     )
 }
 
@@ -446,13 +447,14 @@ data class CostoBiseladoRemoto(
     val proveedor: String? = null,
     @SerialName("vigente_desde") val vigenteDesde: String,
     @SerialName("vigente_hasta") val vigenteHasta: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     fun toEntity() = CostoBiseladoEntity(
         id = id, opticaId = opticaId, material = material,
         tipoAro = tipoAro, stockOFabricacion = stockOFabricacion,
         serie = serie, altoIndice = altoIndice,
         costoPorPar = costoPorPar, proveedor = proveedor,
-        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
     )
 }
 
@@ -461,7 +463,7 @@ fun CostoProductoEntity.toRemoto(): CostoProductoRemoto = CostoProductoRemoto(
     tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
     tratamiento = tratamiento, serie = serie,
     costoUnitario = costoUnitario, laboratorioId = laboratorioId,
-    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
 )
 
 fun CostoBiseladoEntity.toRemoto(): CostoBiseladoRemoto = CostoBiseladoRemoto(
@@ -469,7 +471,7 @@ fun CostoBiseladoEntity.toRemoto(): CostoBiseladoRemoto = CostoBiseladoRemoto(
     tipoAro = tipoAro, stockOFabricacion = stockOFabricacion,
     serie = serie, altoIndice = altoIndice,
     costoPorPar = costoPorPar, proveedor = proveedor,
-    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
 )
 
 data class FinanzasSyncResult(

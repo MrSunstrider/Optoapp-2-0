@@ -6,6 +6,7 @@ import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraD
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
+import com.example.optoapp.domain.sync.ConflictHelper
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
@@ -331,23 +332,53 @@ class DownloadSyncCoordinator @Inject constructor(
         0
     }
 
-    suspend fun downloadCostosProductos(opticaId: String): Int = downloadTable<CostoProductoRemoto>(
-        opticaId,
-        TABLE_COSTOS_PRODUCTOS,
-        "costo_producto",
-        skipDeletions = true,
-        getId = { it.id },
-    ) { r ->
-        costoProductoDao.upsertAll(listOf(r.toEntity()))
+    suspend fun downloadCostosProductos(opticaId: String): Int {
+        val remotos = fetchRemoteRows<CostoProductoRemoto>(opticaId, TABLE_COSTOS_PRODUCTOS, "costo_producto") ?: return 0
+        return persistCostosProductos(opticaId, remotos)
     }
 
-    suspend fun downloadCostosBiselado(opticaId: String): Int = downloadTable<CostoBiseladoRemoto>(
-        opticaId,
-        TABLE_COSTOS_BISELADO,
-        "costo_biselado",
-        skipDeletions = true,
-        getId = { it.id },
-    ) { r ->
-        costoBiseladoDao.upsertAll(listOf(r.toEntity()))
+    internal suspend fun persistCostosProductos(opticaId: String, remotos: List<CostoProductoRemoto>): Int =
+        persistRemoteRows(
+            opticaId,
+            "costo_producto",
+            skipDeletions = true,
+            remotos = remotos,
+            getId = { it.id },
+            shouldSkip = { r ->
+                keepPendingLocalEdit(opticaId, "costo_producto", r.id, costoProductoDao.getById(r.id)?.updatedAt, r.updatedAt)
+            },
+        ) { r ->
+            costoProductoDao.upsertAll(listOf(r.toEntity()))
+        }
+
+    suspend fun downloadCostosBiselado(opticaId: String): Int {
+        val remotos = fetchRemoteRows<CostoBiseladoRemoto>(opticaId, TABLE_COSTOS_BISELADO, "costo_biselado") ?: return 0
+        return persistCostosBiselado(opticaId, remotos)
+    }
+
+    internal suspend fun persistCostosBiselado(opticaId: String, remotos: List<CostoBiseladoRemoto>): Int =
+        persistRemoteRows(
+            opticaId,
+            "costo_biselado",
+            skipDeletions = true,
+            remotos = remotos,
+            getId = { it.id },
+            shouldSkip = { r ->
+                keepPendingLocalEdit(opticaId, "costo_biselado", r.id, costoBiseladoDao.getById(r.id)?.updatedAt, r.updatedAt)
+            },
+        ) { r ->
+            costoBiseladoDao.upsertAll(listOf(r.toEntity()))
+        }
+
+    // A pending edit survives only when strictly newer, so equal timestamps converge on the server copy.
+    private suspend fun keepPendingLocalEdit(
+        opticaId: String,
+        entityType: String,
+        id: String,
+        localUpdatedAt: String?,
+        remoteUpdatedAt: String?,
+    ): Boolean {
+        if (localUpdatedAt == null || syncStateTracker.isSynced(opticaId, entityType, id)) return false
+        return remoteUpdatedAt == null || !ConflictHelper.isLocalNewerOrEqual(remoteUpdatedAt, localUpdatedAt)
     }
 }
