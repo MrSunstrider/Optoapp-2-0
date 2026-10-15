@@ -14,10 +14,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.optoapp.R
 import com.example.optoapp.data.Montura
 import com.example.optoapp.data.Pago
 import com.example.optoapp.domain.OrderStatusPolicy
@@ -26,11 +28,12 @@ import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.DropdownField
 import com.example.optoapp.ui.components.FechaEntregaEditButton
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.saldoColor
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.DispensacionUiState
 import com.example.optoapp.viewmodel.RegaloDispensacionUi
 import java.time.LocalDate
-import java.util.*
 
 @Composable
 fun MonturaInfoSection(
@@ -59,18 +62,18 @@ fun FinancieraInfoSection(
 ) {
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.disp_informacion_financiera), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             OptoTextField(
                 value = uiState.montoTotal,
                 onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
-                label = "Monto Total",
+                label = stringResource(R.string.pagos_monto_total),
                 keyboardType = KeyboardType.Decimal,
             )
 
             HorizontalDivider()
 
-            Text("Historial de Abonos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.pagos_historial_abonos), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
             val pagado = uiState.pagos.sumOf { it.monto }
@@ -87,7 +90,10 @@ fun FinancieraInfoSection(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
+                            Text(
+                                stringResource(R.string.pagos_abono_linea, pago.metodoPago, MoneyFormatter.format(pago.monto)),
+                                fontWeight = FontWeight.Bold,
+                            )
                             if (pago.nota.isNotEmpty()) {
                                 Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -112,10 +118,10 @@ fun FinancieraInfoSection(
                                 )
                             }
                             IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.pagos_editar_cd), tint = MaterialTheme.colorScheme.primary)
                             }
                             IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.pagos_borrar_cd), tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -143,9 +149,9 @@ fun FinancieraInfoSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar")
+                Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Agregar Abono")
+                Text(stringResource(R.string.pagos_agregar_abono))
             }
 
             HorizontalDivider()
@@ -154,19 +160,23 @@ fun FinancieraInfoSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("SALDO RESTANTE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
                 Text(
-                    text = "s/. " + formattedSaldo,
-                    color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                    stringResource(R.string.pagos_saldo_restante_titulo),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Text(
+                    text = MoneyFormatter.format(saldo),
+                    color = saldoColor(saldo),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
                 )
             }
 
             com.example.optoapp.ui.components.OptoDropdownMenuField(
-                label = "Estado de Entrega",
+                label = stringResource(R.string.pagos_estado_entrega),
                 selected = uiState.estadoEntrega,
                 options = OrderStatusPolicy.selectableEstados(uiState.estadoEntrega),
                 enabled = OrderStatusPolicy.isEditable(uiState.estadoEntrega),
@@ -200,7 +210,7 @@ fun FinancieraInfoSection(
                         ),
                     )
                 }) {
-                    Text("Asignar fecha de entrega", fontSize = 12.sp)
+                    Text(stringResource(R.string.disp_asignar_fecha_entrega), fontSize = 12.sp)
                 }
             }
         }
@@ -223,7 +233,7 @@ fun RegalosSection(
 
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Regalos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.disp_form_regalos), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             regalos.forEachIndexed { index, regalo ->
                 Card(
@@ -239,14 +249,14 @@ fun RegalosSection(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text(
-                                regalo.descripcion.ifBlank { "Producto sin nombre" },
+                                regalo.descripcion.ifBlank { stringResource(R.string.disp_form_regalo_sin_nombre) },
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.weight(1f),
                             )
                             IconButton(onClick = { onRemoveRegalo(index) }, modifier = Modifier.size(48.dp)) {
                                 Icon(
                                     Icons.Default.Delete,
-                                    contentDescription = "Eliminar regalo",
+                                    contentDescription = stringResource(R.string.disp_form_eliminar_regalo_cd),
                                     tint = MaterialTheme.colorScheme.error,
                                 )
                             }
@@ -254,18 +264,18 @@ fun RegalosSection(
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
-                                "Cantidad: ${regalo.cantidad}",
+                                stringResource(R.string.disp_form_regalo_cantidad, regalo.cantidad),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                             Text(
-                                "Costo: S/. ${String.format(Locale.getDefault(), "%.2f", regalo.costoUnitario)}",
+                                stringResource(R.string.disp_form_regalo_costo, MoneyFormatter.format(regalo.costoUnitario)),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
 
                         if (regalo.motivo.isNotBlank()) {
                             Text(
-                                "Motivo: ${regalo.motivo}",
+                                stringResource(R.string.disp_form_regalo_motivo, regalo.motivo),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -279,9 +289,9 @@ fun RegalosSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar")
+                Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Agregar Regalo")
+                Text(stringResource(R.string.disp_form_agregar_regalo))
             }
         }
     }
@@ -289,7 +299,7 @@ fun RegalosSection(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Agregar Regalo") },
+            title = { Text(stringResource(R.string.disp_form_agregar_regalo)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     var query by remember { mutableStateOf("") }
@@ -312,9 +322,9 @@ fun RegalosSection(
                             showResults = it.isNotBlank()
                             if (it.isEmpty()) selectedMonturaId = ""
                         },
-                        label = { Text("Buscar producto") },
-                        placeholder = { Text("Marca, modelo o SKU...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+                        label = { Text(stringResource(R.string.disp_form_buscar_producto)) },
+                        placeholder = { Text(stringResource(R.string.disp_form_buscar_producto_placeholder)) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -324,7 +334,11 @@ fun RegalosSection(
                             LazyColumn {
                                 items(filtered) { m ->
                                     Text(
-                                        text = "${m.marca} ${m.modelo} ${m.color} (Stock: ${m.stockActual})".trim(),
+                                        text = stringResource(
+                                            R.string.disp_form_resultado_stock,
+                                            "${m.marca} ${m.modelo} ${m.color}".trim(),
+                                            m.stockActual,
+                                        ),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable {
@@ -341,13 +355,13 @@ fun RegalosSection(
                     }
 
                     if (query.isNotBlank() && filtered.isEmpty() && showResults) {
-                        Text("Sin resultados", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                        Text(stringResource(R.string.common_no_results), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                     }
 
                     OutlinedTextField(
                         value = cantidad,
                         onValueChange = { cantidad = it.filter { c -> c.isDigit() } },
-                        label = { Text("Cantidad") },
+                        label = { Text(stringResource(R.string.disp_form_cantidad)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -355,13 +369,13 @@ fun RegalosSection(
                     OutlinedTextField(
                         value = motivo,
                         onValueChange = { motivo = it },
-                        label = { Text("Motivo") },
+                        label = { Text(stringResource(R.string.disp_form_motivo)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
 
                     if (selectedMontura != null) {
                         Text(
-                            "Costo unitario: S/. ${String.format(Locale.getDefault(), "%.2f", selectedMontura.costo)}",
+                            stringResource(R.string.disp_form_costo_unitario, MoneyFormatter.format(selectedMontura.costo)),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -388,10 +402,10 @@ fun RegalosSection(
                         }
                     },
                     enabled = selectedMontura != null && cantidad.toIntOrNull() != null && cantidad.toInt() > 0,
-                ) { Text("Agregar") }
+                ) { Text(stringResource(R.string.disp_form_agregar)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }

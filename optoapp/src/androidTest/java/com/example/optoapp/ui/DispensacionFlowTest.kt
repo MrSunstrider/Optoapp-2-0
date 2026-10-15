@@ -184,7 +184,7 @@ class DispensacionFlowTest {
             )
         }
 
-        composeTestRule.onNodeWithText("s/. 300.00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("S/ 300.00").assertIsDisplayed()
     }
 
     @Test

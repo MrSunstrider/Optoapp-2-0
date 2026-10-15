@@ -616,4 +616,73 @@
     <string name="servicios_extra_anular_dialog_title">¿Anular servicio?</string>
     <string name="servicios_extra_anular_dialog_fallback">Servicio</string>
     <string name="servicios_extra_anular_dialog_message">%1$s: se revierten los pagos y vuelven al stock los productos y regalos. No se puede deshacer.</string>
+
+    <!-- Payment sections -->
+    <string name="pagos_monto_total">Monto Total</string>
+    <string name="pagos_historial_abonos">Historial de Abonos</string>
+    <string name="pagos_abono_linea">%1$s: %2$s</string>
+    <string name="pagos_editar_cd">Editar</string>
+    <string name="pagos_borrar_cd">Borrar</string>
+    <string name="pagos_agregar_abono">Agregar Abono</string>
+    <string name="pagos_saldo_restante_titulo">SALDO RESTANTE</string>
+    <string name="pagos_saldo_restante_label">Saldo Restante:</string>
+    <string name="pagos_estado_entrega">Estado de Entrega</string>
+
+    <!-- Dispensation form: gifts -->
+    <string name="disp_form_regalos">Regalos</string>
+    <string name="disp_form_regalo_sin_nombre">Producto sin nombre</string>
+    <string name="disp_form_eliminar_regalo_cd">Eliminar regalo</string>
+    <string name="disp_form_regalo_cantidad">Cantidad: %1$s</string>
+    <string name="disp_form_regalo_costo">Costo: %1$s</string>
+    <string name="disp_form_regalo_motivo">Motivo: %1$s</string>
+    <string name="disp_form_agregar_regalo">Agregar Regalo</string>
+    <string name="disp_form_buscar_producto">Buscar producto</string>
+    <string name="disp_form_buscar_producto_placeholder">Marca, modelo o SKU...</string>
+    <string name="disp_form_resultado_stock">%1$s (Stock: %2$s)</string>
+    <string name="disp_form_cantidad">Cantidad</string>
+    <string name="disp_form_motivo">Motivo</string>
+    <string name="disp_form_costo_unitario">Costo unitario: %1$s</string>
+    <string name="disp_form_agregar">Agregar</string>
+
+    <!-- Patient detail: services tab -->
+    <string name="paciente_serv_vacio_titulo">Sin servicios</string>
+    <string name="paciente_serv_vacio_mensaje">No hay servicios varios registrados.</string>
+    <string name="paciente_serv_saldo">Saldo:</string>
+
+    <!-- Patient detail: dispensations tab and summary dialog -->
+    <string name="paciente_disp_vacio_titulo">Sin dispensaciones</string>
+    <string name="paciente_disp_vacio_mensaje">No hay dispensaciones registradas.</string>
+    <string name="paciente_disp_ticket_cd">Ticket de laboratorio</string>
+    <string name="paciente_disp_ver_resumen_cd">Ver Resumen</string>
+    <string name="paciente_disp_entregado_el">Entregado el %1$s</string>
+    <string name="paciente_disp_lente_resumen">%1$s - %2$s</string>
+    <string name="paciente_disp_resumen_titulo">Resumen de Dispensación</string>
+    <string name="paciente_disp_datos_paciente">Datos del Paciente</string>
+    <string name="paciente_disp_ot">OT: %1$s</string>
+    <string name="paciente_disp_nombre">Nombre: %1$s</string>
+    <string name="paciente_disp_edad">Edad: %1$s años</string>
+    <string name="paciente_disp_historia">Historia Optométrica: %1$s</string>
+    <string name="paciente_disp_fecha">Fecha: %1$s</string>
+    <string name="paciente_disp_info_montura">Información de Montura</string>
+    <string name="paciente_disp_origen">Origen: %1$s</string>
+    <string name="paciente_disp_tipo_aro">Tipo de Aro: %1$s</string>
+    <string name="paciente_disp_material">Material: %1$s</string>
+    <string name="paciente_disp_descripcion">Descripción: %1$s</string>
+    <string name="paciente_disp_info_lente">Información del Lente</string>
+    <string name="paciente_disp_tipo">Tipo: %1$s</string>
+    <string name="paciente_disp_tipo_subtipo">%1$s (%2$s)</string>
+    <string name="paciente_disp_tipo_distancia">%1$s - %2$s</string>
+    <string name="paciente_disp_altura">Altura: %1$s mm</string>
+    <string name="paciente_disp_color">Color: %1$s</string>
+    <string name="paciente_disp_tratamientos">Tratamientos: %1$s</string>
+    <string name="paciente_disp_notas">Notas: %1$s</string>
+    <string name="paciente_disp_resumen_financiero">Resumen Financiero</string>
+    <string name="paciente_disp_monto_total">Monto Total: %1$s</string>
+    <string name="paciente_disp_metodo_pago">Método de Pago: %1$s</string>
+    <string name="paciente_disp_a_cuenta">A Cuenta: %1$s</string>
+    <string name="paciente_disp_saldo_restante">Saldo Restante: %1$s</string>
+    <string name="paciente_disp_estado">Estado</string>
+    <string name="paciente_disp_entregado_el_dia">Entregado el día %1$s</string>
+    <string name="paciente_disp_editar_completo">Editar Completo</string>
+    <string name="paciente_disp_ir_financiero">Ir a Financiero</string>
 </resources>

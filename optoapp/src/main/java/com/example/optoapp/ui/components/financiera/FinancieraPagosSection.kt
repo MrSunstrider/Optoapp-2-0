@@ -28,13 +28,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.optoapp.R
 import com.example.optoapp.data.Pago
 import com.example.optoapp.ui.components.AbonoDialog
+import com.example.optoapp.ui.theme.saldoColor
 import com.example.optoapp.util.DateUtils
-import java.util.Locale
+import com.example.optoapp.util.MoneyFormatter
 
 enum class SaldoDisplayStyle { Hero, Card }
 
@@ -54,7 +57,7 @@ fun FinancieraPagosSection(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Historial de Abonos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text(stringResource(R.string.pagos_historial_abonos), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
         state.pagos.forEach { pago ->
             PagoRow(
@@ -69,9 +72,9 @@ fun FinancieraPagosSection(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Agregar")
+            Icon(Icons.Default.Add, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Agregar Abono")
+            Text(stringResource(R.string.pagos_agregar_abono))
         }
 
         HorizontalDivider()
@@ -124,7 +127,7 @@ private fun PagoRow(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "${pago.metodoPago}: s/. ${formatMonto(pago.monto)}",
+                    stringResource(R.string.pagos_abono_linea, pago.metodoPago, MoneyFormatter.format(pago.monto)),
                     fontWeight = FontWeight.Bold,
                 )
                 if (pago.nota.isNotEmpty()) {
@@ -138,10 +141,10 @@ private fun PagoRow(
             }
             Row {
                 IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.pagos_editar_cd), tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = onRemove, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.pagos_borrar_cd), tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -155,13 +158,13 @@ private fun SaldoHero(saldo: Double) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            "SALDO RESTANTE",
+            stringResource(R.string.pagos_saldo_restante_titulo),
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text = "s/. ${formatMonto(saldo)}",
+            text = MoneyFormatter.format(saldo),
             color = saldoColor(saldo),
             fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
@@ -176,9 +179,9 @@ private fun SaldoCard(saldo: Double) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Saldo Restante:", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.pagos_saldo_restante_label), fontWeight = FontWeight.Bold)
             Text(
-                text = "s/. ${formatMonto(saldo)}",
+                text = MoneyFormatter.format(saldo),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = saldoColor(saldo),
@@ -186,9 +189,3 @@ private fun SaldoCard(saldo: Double) {
         }
     }
 }
-
-@Composable
-private fun saldoColor(saldo: Double) =
-    if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
-
-private fun formatMonto(monto: Double): String = String.format(Locale.getDefault(), "%.2f", monto)
