@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,7 +62,7 @@ fun AnalisisDetalleScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             OptoTopAppBar(
-                title = "Análisis Completo",
+                title = stringResource(R.string.analisis_detalle_title),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
@@ -75,7 +76,7 @@ fun AnalisisDetalleScreen(
                 if (uiState.isLoading) {
                     LinearProgressIndicator()
                 } else {
-                    Text("Sin datos disponibles", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.analisis_sin_datos_disponibles), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             return@Scaffold
@@ -91,7 +92,7 @@ fun AnalisisDetalleScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             ExpandableSection(
-                title = "Plata que entró y salió",
+                title = stringResource(R.string.analisis_seccion_flujo),
                 defaultExpanded = true,
                 icon = Icons.Default.AccountBalance,
             ) {
@@ -99,11 +100,11 @@ fun AnalisisDetalleScreen(
             }
 
             ExpandableSection(
-                title = "Lo que más te deja",
+                title = stringResource(R.string.analisis_seccion_ranking),
                 icon = Icons.Default.StarBorder,
             ) {
                 if (analisis.margenPorCategoria.isEmpty()) {
-                    EmptyPlaceholder("Sin datos de categorías")
+                    EmptyPlaceholder(stringResource(R.string.analisis_sin_categorias))
                 } else {
                     analisis.margenPorCategoria.sortedByDescending { it.ventas - it.costos }.forEach { cat ->
                         CategoriaRankingRow(
@@ -118,12 +119,12 @@ fun AnalisisDetalleScreen(
             }
 
             ExpandableSection(
-                title = "Pacientes con deuda pendiente",
+                title = stringResource(R.string.analisis_seccion_deudores),
                 icon = Icons.Default.People,
             ) {
                 val deudoresTotales = uiState.deudores
                 if (deudoresTotales.isEmpty()) {
-                    EmptyPlaceholder("Sin deudores pendientes")
+                    EmptyPlaceholder(stringResource(R.string.analisis_sin_deudores))
                 } else {
                     deudoresTotales.forEach { deudor ->
                         DeudorRow(
@@ -150,11 +151,11 @@ fun AnalisisDetalleScreen(
             }
 
             ExpandableSection(
-                title = "Productos sin vender",
+                title = stringResource(R.string.analisis_seccion_stock),
                 icon = Icons.Default.Inventory2,
             ) {
                 if (analisis.stockEstancado.isEmpty()) {
-                    EmptyPlaceholder("Sin productos estancados")
+                    EmptyPlaceholder(stringResource(R.string.analisis_sin_stock_estancado))
                 } else {
                     analisis.stockEstancado.forEach { item ->
                         StockRow(
@@ -170,12 +171,12 @@ fun AnalisisDetalleScreen(
             }
 
             ExpandableSection(
-                title = "Plata que vas a tener",
+                title = stringResource(R.string.analisis_seccion_proyeccion),
                 icon = Icons.Default.TrendingUp,
             ) {
                 val proyeccion = analisis.proyeccionCaja
                 if (proyeccion == null) {
-                    EmptyPlaceholder("Sin datos de proyección")
+                    EmptyPlaceholder(stringResource(R.string.analisis_sin_proyeccion))
                 } else {
                     ProyeccionCard(proyeccion = proyeccion)
                 }
@@ -240,12 +241,12 @@ private fun BarraIngresosEgresos(analisis: AnalisisMensual) {
     val maxValor = maxOf(analisis.ventasMes, analisis.cobrosMes, analisis.costoDeVentas(), analisis.gastosMes, ganancia, 1.0)
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        BarItem(label = "Ventas", value = analisis.ventasMes, max = maxValor, color = MaterialTheme.colorScheme.positiveGreen)
-        BarItem(label = "Cobros", value = analisis.cobrosMes, max = maxValor, color = MaterialTheme.colorScheme.primary)
-        BarItem(label = "Costos", value = analisis.costoDeVentas(), max = maxValor, color = MaterialTheme.colorScheme.warningAmber)
-        BarItem(label = "Gastos", value = analisis.gastosMes, max = maxValor, color = MaterialTheme.colorScheme.alertRed)
+        BarItem(label = stringResource(R.string.analisis_ventas), value = analisis.ventasMes, max = maxValor, color = MaterialTheme.colorScheme.positiveGreen)
+        BarItem(label = stringResource(R.string.analisis_cobros), value = analisis.cobrosMes, max = maxValor, color = MaterialTheme.colorScheme.primary)
+        BarItem(label = stringResource(R.string.analisis_costos), value = analisis.costoDeVentas(), max = maxValor, color = MaterialTheme.colorScheme.warningAmber)
+        BarItem(label = stringResource(R.string.analisis_gastos), value = analisis.gastosMes, max = maxValor, color = MaterialTheme.colorScheme.alertRed)
         HorizontalDivider()
-        BarItem(label = "Ganancia", value = ganancia, max = maxValor, color = if (ganancia >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
+        BarItem(label = stringResource(R.string.analisis_ganancia), value = ganancia, max = maxValor, color = if (ganancia >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
     }
 }
 
@@ -301,7 +302,7 @@ private fun DeudorRow(nombre: String, telefono: String, saldo: Double, diasDeuda
             Text(telefono, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(MoneyFormatter.format(saldo), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
         }
-        Text("$diasDeuda días de deuda", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.warningAmber)
+        Text(pluralStringResource(R.plurals.analisis_dias_deuda, diasDeuda, diasDeuda), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.warningAmber)
     }
 }
 
@@ -310,8 +311,8 @@ private fun StockRow(modelo: String, sku: String, stock: Int, diasSinVenta: Int,
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(modelo, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("SKU: $sku · Stock: $stock", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("${diasSinVenta}d sin vender", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.alertRed)
+            Text(stringResource(R.string.analisis_stock_sku, sku, stock), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.analisis_dias_sin_vender, diasSinVenta), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.alertRed)
         }
         Text(stringResource(R.string.analisis_stock_costo_unitario, MoneyFormatter.format(costo)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
@@ -321,16 +322,16 @@ private fun StockRow(modelo: String, sku: String, stock: Int, diasSinVenta: Int,
 private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Ingresos esperados", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.analisis_ingresos_esperados), style = MaterialTheme.typography.bodyMedium)
             Text(MoneyFormatter.format(proyeccion.ingresosEsperados), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.positiveGreen)
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Egresos programados", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.analisis_egresos_programados), style = MaterialTheme.typography.bodyMedium)
             Text(MoneyFormatter.format(proyeccion.egresosProgramados), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.alertRed)
         }
         HorizontalDivider()
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Saldo neto proyectado", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.analisis_saldo_neto_proyectado), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Text(MoneyFormatter.format(proyeccion.saldoNeto), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = if (proyeccion.saldoNeto >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
         }
 
@@ -354,9 +355,9 @@ private fun ProyeccionCard(proyeccion: com.example.optoapp.domain.ProyeccionCaja
                     Spacer(Modifier.width(8.dp))
                     Text(
                         text = if (proyeccion.mesesHistoricos == 0) {
-                            "Proyección basada en datos limitados. Se recomienda al menos 3 meses de historial."
+                            stringResource(R.string.analisis_proyeccion_sin_historial)
                         } else {
-                            "Proyección basada en ${proyeccion.mesesHistoricos} mes${if (proyeccion.mesesHistoricos == 1) "" else "es"} de datos. Se recomienda al menos 3 meses."
+                            pluralStringResource(R.plurals.analisis_proyeccion_meses, proyeccion.mesesHistoricos, proyeccion.mesesHistoricos)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.warningAmber,

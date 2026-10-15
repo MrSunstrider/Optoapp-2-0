@@ -3,6 +3,7 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
+import com.example.optoapp.util.MoneyFormatter
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -64,17 +65,16 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val top3 = deudores.sortedByDescending { it.saldo }.take(3)
         val nombres = top3.joinToString(", ") { it.pacienteNombre }
-        val totalStr = java.text.NumberFormat.getIntegerInstance(java.util.Locale.US)
-            .format(deudaTotal)
+        val totalStr = MoneyFormatter.format(deudaTotal)
 
         val titulo = "Cobranza pendiente"
         return Recomendacion(
             id = "${RecomendacionTipo.COBRAR.name}::$titulo",
             tipo = RecomendacionTipo.COBRAR,
             titulo = titulo,
-            detalle = "Deuda total de S/ $totalStr en ${deudores.size} deudores. " +
+            detalle = "Deuda total de $totalStr en ${deudores.size} deudores. " +
                 "Principales: $nombres.",
-            impactoEstimado = "S/ $totalStr si se cobra todo",
+            impactoEstimado = "$totalStr si se cobra todo",
             prioridad = Prioridad.ALTA,
             accion = "Contactar a los deudores para coordinar pagos pendientes",
             datosAccion = DatosAccion(
@@ -129,7 +129,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             titulo = titulo,
             detalle = "${estancados.size} items llevan mas de ${config.stockEstancadoAlertaDias} " +
                 "dias sin venderse: $modelos. " +
-                "Costo total en inventario: S/ ${String.format("%.0f", costoTotal)}.",
+                "Costo total en inventario: ${MoneyFormatter.format(costoTotal)}.",
             impactoEstimado = null,
             prioridad = Prioridad.MEDIA,
             accion = "Ofrecer descuentos del 20-30% para liberar capital estancado",
@@ -215,8 +215,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             titulo = titulo,
             detalle = detalleBase +
                 "¿Estacionalidad o tendencia? " +
-                "Ventas actuales: S/ ${String.format("%.0f", analisis.ventasMes)} vs. " +
-                "S/ ${String.format("%.0f", ventasReferencia)} esperado.",
+                "Ventas actuales: ${MoneyFormatter.format(analisis.ventasMes)} vs. " +
+                "${MoneyFormatter.format(ventasReferencia)} esperado.",
             impactoEstimado = null,
             prioridad = Prioridad.ALTA,
             accion = "Revisar causas de la caida y evaluar acciones correctivas",
@@ -238,10 +238,10 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             tipo = RecomendacionTipo.REDUCIR_GASTO,
             titulo = titulo,
             detalle = "Los gastos representan el $ratioPct% de las ventas " +
-                "(S/ ${String.format("%.0f", analisis.gastosMes)} gastos vs. " +
-                "S/ ${String.format("%.0f", analisis.ventasMes)} ventas). " +
+                "(${MoneyFormatter.format(analisis.gastosMes)} gastos vs. " +
+                "${MoneyFormatter.format(analisis.ventasMes)} ventas). " +
                 "Reducir un 10% los gastos liberaria aproximadamente " +
-                "S/ ${String.format("%.0f", analisis.gastosMes * 0.1)}.",
+                "${MoneyFormatter.format(analisis.gastosMes * 0.1)}.",
             impactoEstimado = null,
             prioridad = Prioridad.MEDIA,
             accion = "Analizar partidas de gasto y eliminar las no esenciales",
