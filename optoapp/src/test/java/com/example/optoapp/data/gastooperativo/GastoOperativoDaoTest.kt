@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -90,5 +91,45 @@ class GastoOperativoDaoTest {
         assertEquals(1, gastos.size)
         assertEquals(BigDecimal.valueOf(1200.0), gastos[0].monto)
         assertEquals("Actualizado", gastos[0].descripcion)
+    }
+
+    @Test
+    fun getByOpticaBetween_returnsOnlyThatOpticasMonthWithInclusiveBoundsOldestFirst() = runBlocking {
+        fun gasto(id: String, opticaId: String, fecha: String) = GastoOperativoEntity(
+            id = id,
+            opticaId = opticaId,
+            categoria = "alquiler",
+            monto = BigDecimal.valueOf(100.0),
+            fecha = LocalDate.parse(fecha),
+        )
+        dao.insert(gasto("antes", "optica1", "2026-06-30"))
+        dao.insert(gasto("fin", "optica1", "2026-07-31"))
+        dao.insert(gasto("inicio", "optica1", "2026-07-01"))
+        dao.insert(gasto("medio", "optica1", "2026-07-15"))
+        dao.insert(gasto("despues", "optica1", "2026-08-01"))
+        dao.insert(gasto("ajena", "optica2", "2026-07-10"))
+
+        val delMes = dao.getByOpticaBetween("optica1", LocalDate.parse("2026-07-01"), LocalDate.parse("2026-07-31"))
+
+        assertEquals(listOf("inicio", "medio", "fin"), delMes.map { it.id })
+    }
+
+    @Test
+    fun tipoGasto_roundTripsAndALegacyNullStaysNull() = runBlocking {
+        val base = GastoOperativoEntity(
+            id = "g-var",
+            opticaId = "optica1",
+            categoria = "alquiler",
+            monto = BigDecimal.valueOf(300.0),
+            fecha = LocalDate.parse("2026-07-05"),
+            tipoGasto = "variable",
+        )
+        dao.upsert(base)
+        dao.upsert(base.copy(id = "g-legacy", tipoGasto = null))
+
+        val porId = dao.getByOpticaIdList("optica1").associateBy { it.id }
+
+        assertEquals("variable", porId.getValue("g-var").tipoGasto)
+        assertNull(porId.getValue("g-legacy").tipoGasto)
     }
 }

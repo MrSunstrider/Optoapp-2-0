@@ -3,6 +3,7 @@ package com.example.optoapp.data.costolc
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.example.optoapp.data.OptoDatabase
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -91,5 +92,27 @@ class CostoLcDaoTest {
 
         assertEquals(listOf("new", "old"), dao.getHistorial("o1", "graduado", "Hydrogel", "mensual", null).map { it.id })
         assertEquals(listOf("conLab"), dao.getHistorial("o1", "graduado", "Hydrogel", "mensual", "lab1").map { it.id })
+    }
+
+    @Test
+    fun theEditableMatrixListsOnlyOpenRowsOfThatOpticaWhileUploadSeesClosedOnesToo() = runTest {
+        dao.upsertAll(
+            listOf(
+                row("hydrogelCerrada", desde = "2026-01-01", hasta = "2026-07-31"),
+                row("hydrogel", desde = "2026-08-01"),
+                row("bSilicona", desde = "2026-01-01", materialLc = "Silicona"),
+                row("aCosmetico", desde = "2026-01-01").copy(tipoLc = "cosmetico"),
+                row("ajena", desde = "2026-01-01").copy(opticaId = "o2"),
+            ),
+        )
+
+        val abiertas = listOf("aCosmetico", "hydrogel", "bSilicona")
+        assertEquals(abiertas, dao.getByOpticaId("o1").first().map { it.id })
+        assertEquals(abiertas, dao.getByOpticaIdList("o1").map { it.id })
+        assertEquals(
+            setOf("hydrogelCerrada", "hydrogel", "bSilicona", "aCosmetico"),
+            dao.getAllByOpticaIdList("o1").map { it.id }.toSet(),
+        )
+        assertEquals("2026-07-31", dao.getById("hydrogelCerrada")?.vigenteHasta)
     }
 }
