@@ -36,6 +36,7 @@ import com.example.optoapp.ui.components.common.GastoFormDialog
 import com.example.optoapp.ui.components.common.GastoFormValues
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
+import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.costos.BiseladoTab
 import com.example.optoapp.ui.screens.costos.CostosCharts
 import com.example.optoapp.ui.screens.costos.CostosHeader
@@ -145,6 +146,7 @@ fun CostosYGastosScreen(
                 3 -> GastosOperativosTab(
                     uiState = uiState,
                     headerState = headerState,
+                    onVerOtsSinCosto = { navController.navigate(Route.OtsSinCosto.createRoute(headerState.mes)) },
                     viewModel = viewModel,
                     showDatePicker = { showDatePicker = true },
                 )
@@ -405,6 +407,7 @@ private fun MatrizDeCostosTab(
 private fun GastosOperativosTab(
     uiState: CostosYGastosUiState,
     headerState: CostosHeaderUiState,
+    onVerOtsSinCosto: () -> Unit,
     viewModel: CostosYGastosViewModel,
     showDatePicker: () -> Unit,
 ) {
@@ -421,7 +424,7 @@ private fun GastosOperativosTab(
                 )
             }
 
-            item { CostosHeader(state = headerState) }
+            item { CostosHeader(state = headerState, onVerOtsSinCosto = onVerOtsSinCosto) }
 
             item { CostosCharts(facts = headerState.facts) }
 

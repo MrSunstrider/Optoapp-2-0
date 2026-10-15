@@ -312,6 +312,15 @@
         <item quantity="many">%d OTs sin costo</item>
         <item quantity="other">%d OTs sin costo</item>
     </plurals>
+    <string name="ots_sin_costo_titulo">OTs sin costo</string>
+    <string name="ots_sin_costo_atras_cd">Volver</string>
+    <string name="ots_sin_costo_vacio">Todas las OTs de este mes tienen costo</string>
+    <string name="ots_sin_costo_sin_paciente">Paciente sin nombre</string>
+    <plurals name="ots_sin_costo_items_faltantes">
+        <item quantity="one">%d ítem sin costo</item>
+        <item quantity="many">%d ítems sin costo</item>
+        <item quantity="other">%d ítems sin costo</item>
+    </plurals>
     <string name="costos_chart_gastos_titulo">Gastos por categoría</string>
     <string name="costos_chart_componentes_titulo">Costo por componente</string>
     <string name="costos_chart_componentes_offline">El costo por componente no está disponible sin conexión</string>

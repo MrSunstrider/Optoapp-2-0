@@ -23,6 +23,7 @@ import androidx.navigation.navArgument
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OfflineBanner
 import com.example.optoapp.ui.navigation.Route
+import com.example.optoapp.ui.screens.costos.OtsSinCostoScreen
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
 import com.example.optoapp.util.MesArg
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -247,6 +248,16 @@ fun MainDrawerScreen(
                                     },
                                 ),
                             ) { AnalisisDetalleScreen(navController) }
+                            composable(
+                                Route.OtsSinCosto.route,
+                                arguments = listOf(
+                                    navArgument(MesArg.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { OtsSinCostoScreen(navController) }
                             composable(Route.Configuracion.route) {
                                 if (!showConfiguracion) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }

@@ -11,6 +11,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -22,7 +23,7 @@ import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.CostosHeaderUiState
 
 @Composable
-fun CostosHeader(state: CostosHeaderUiState, modifier: Modifier = Modifier) {
+fun CostosHeader(state: CostosHeaderUiState, onVerOtsSinCosto: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -44,12 +45,14 @@ fun CostosHeader(state: CostosHeaderUiState, modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else if (state.mostrarCtaOtsSinCosto) {
-                Text(
-                    pluralStringResource(R.plurals.ots_sin_costo, state.otsSinCosto, state.otsSinCosto),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.error,
-                )
+                TextButton(onClick = onVerOtsSinCosto) {
+                    Text(
+                        pluralStringResource(R.plurals.ots_sin_costo, state.otsSinCosto, state.otsSinCosto),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
     }

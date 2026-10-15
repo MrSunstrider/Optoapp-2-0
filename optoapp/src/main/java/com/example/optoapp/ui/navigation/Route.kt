@@ -32,6 +32,9 @@ sealed class Route(val route: String) {
     data object AnalisisDetalle : Route("analisis_detalle?${MesArg.KEY}={${MesArg.KEY}}") {
         fun createRoute(mes: YearMonth): String = "analisis_detalle?${MesArg.KEY}=${MesArg.format(mes)}"
     }
+    data object OtsSinCosto : Route("ots_sin_costo?${MesArg.KEY}={${MesArg.KEY}}") {
+        fun createRoute(mes: YearMonth): String = "ots_sin_costo?${MesArg.KEY}=${MesArg.format(mes)}"
+    }
     data object Configuracion : Route("configuracion")
     data object Conflictos : Route("conflictos")
 
