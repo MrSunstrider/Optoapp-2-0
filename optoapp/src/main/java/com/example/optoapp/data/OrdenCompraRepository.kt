@@ -1,16 +1,17 @@
 package com.example.optoapp.data
 
-import android.util.Log
+import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import com.example.optoapp.data.ordencompra.OrdenCompraDao
 import com.example.optoapp.data.ordencompra.OrdenCompraItemDao
+import com.example.optoapp.domain.CostoPromedioPonderado
 import com.example.optoapp.domain.movimientoReferenciaForOrdenCompraItem
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import dagger.Lazy
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
-import java.io.IOException
 import java.time.Instant
+import java.time.LocalDate
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,13 +22,11 @@ import javax.inject.Singleton
 open class OrdenCompraRepository @Inject constructor(
     private val ocDao: OrdenCompraDao,
     private val itemDao: OrdenCompraItemDao,
+    private val monturaDao: MonturaDao,
     private val monturaCoordinator: MonturaInventoryCoordinator,
+    private val transactionRunner: DatabaseTransactionRunner,
     private val postSaveSyncScheduler: Lazy<PostSaveSyncScheduler>,
 ) {
-    companion object {
-        private const val TAG = "OrdenCompraRepo"
-    }
-
     fun getByOptica(opticaId: String): Flow<List<OrdenCompra>> = ocDao.getByOptica(opticaId)
 
     suspend fun getListByOptica(opticaId: String): List<OrdenCompra> = ocDao.getListByOptica(opticaId)
@@ -58,77 +57,75 @@ open class OrdenCompraRepository @Inject constructor(
     }
 
     /**
-     * Updates recibido for individual items. If all items are fully received,
-     * transition estado to COMPLETADA and create ENTRADA movements.
+     * Records received quantities. Stock and weighted average cost move only when the whole order
+     * is received, using each item's cumulative quantity, so a partial receipt never averages a
+     * cost twice.
+     *
+     * Item quantities, order state, ENTRADA movements, stock and cost commit together or not at
+     * all: a failure throws and leaves the order exactly as it was, so the receipt can be retried.
+     * The ENTRADA is claimed first through its unique key, which makes a repeated receipt a no-op.
+     * Sync is scheduled only after the commit.
      */
     open suspend fun receiveItems(ocId: String, opticaId: String, receivedQuantities: Map<String, Int>) {
         val oc = ocDao.getById(ocId, opticaId) ?: return
-
-        var allFullyReceived = true
-        val items = itemDao.getByOrden(ocId)
-        val updatedItems = items.map { item ->
-            val qty = receivedQuantities[item.id] ?: item.recibido
-            val updated = item.copy(recibido = qty)
-            if (qty < item.cantidad) allFullyReceived = false
-            updated
-        }
-
-        updatedItems.forEach { itemDao.update(it) }
-
-        val total = updatedItems.sumOf { it.recibido.toDouble() * it.costoUnitario }
-
-        if (allFullyReceived && updatedItems.isNotEmpty()) {
-            ocDao.update(
-                oc.copy(
-                    estado = "COMPLETADA",
-                    total = total,
-                    updatedAt = Instant.now().toString(),
-                ),
-            )
-            // Stock must increase to reflect physical inventory after receipt
-            updatedItems.forEach { item ->
-                val stockChanged = monturaCoordinator.adjustMonturaStock(
-                    item.monturaId,
-                    oc.opticaId,
-                    item.recibido,
-                )
-                if (stockChanged > 0) {
-                    try {
-                        val movimiento = MonturaMovimiento(
-                            id = java.util.UUID.randomUUID().toString(),
-                            monturaId = item.monturaId,
-                            fecha = java.time.LocalDate.now(),
-                            tipo = "ENTRADA",
-                            cantidad = item.recibido,
-                            stockPrevio = 0,
-                            stockNuevo = 0,
-                            referenciaId = movimientoReferenciaForOrdenCompraItem(item.id),
-                            nota = "Recepcion OC ${oc.numero}",
-                            opticaId = oc.opticaId,
-                            userId = oc.updatedBy ?: "",
-                            costoUnitario = item.costoUnitario,
-                            tipoDocumento = "OC",
-                        )
-                        monturaCoordinator.insertMonturaMovimiento(movimiento)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: IOException) {
-                        Log.e(TAG, "Error de red al registrar movimiento de recepcion: ${e.message}", e)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error al registrar movimiento de recepcion: ${e.message}", e)
-                    }
-                }
-            }
-        } else {
-            ocDao.update(
-                oc.copy(
-                    total = total,
-                    estado = "PARCIAL",
-                    updatedAt = Instant.now().toString(),
-                ),
-            )
-        }
+        val stockMoved = transactionRunner.inTransaction { recordReceipt(oc, receivedQuantities) }
+        if (stockMoved) monturaCoordinator.scheduleInventarioSync(oc.opticaId)
         postSaveSyncScheduler.get().scheduleOrdenCompraSync(oc.opticaId)
+    }
+
+    private suspend fun recordReceipt(oc: OrdenCompra, receivedQuantities: Map<String, Int>): Boolean {
+        val items = itemDao.getByOrden(oc.id).map { it.copy(recibido = receivedQuantities[it.id] ?: it.recibido) }
+        items.forEach { itemDao.update(it) }
+
+        val fullyReceived = items.isNotEmpty() && items.none { it.recibido < it.cantidad }
+        val now = Instant.now().toString()
+        ocDao.update(
+            oc.copy(
+                estado = if (fullyReceived) "COMPLETADA" else "PARCIAL",
+                total = items.sumOf { it.recibido.toDouble() * it.costoUnitario },
+                updatedAt = now,
+            ),
+        )
+        if (!fullyReceived) return false
+
+        var stockMoved = false
+        items.filter { it.recibido > 0 }.forEach { item ->
+            if (enterStock(oc, item, now)) stockMoved = true
+        }
+        return stockMoved
+    }
+
+    private suspend fun enterStock(oc: OrdenCompra, item: OrdenCompraItem, now: String): Boolean {
+        val montura = checkNotNull(monturaDao.getMonturaByIdForOptica(item.monturaId, oc.opticaId)) {
+            "Montura no encontrada: ${item.monturaId}"
+        }
+        val claimed = monturaCoordinator.insertMonturaMovimientoIfAbsent(
+            MonturaMovimiento(
+                id = UUID.randomUUID().toString(),
+                monturaId = item.monturaId,
+                fecha = LocalDate.now(),
+                tipo = "ENTRADA",
+                cantidad = item.recibido,
+                stockPrevio = montura.stockActual,
+                stockNuevo = montura.stockActual + item.recibido,
+                referenciaId = movimientoReferenciaForOrdenCompraItem(item.id),
+                nota = "Recepcion OC ${oc.numero}",
+                opticaId = oc.opticaId,
+                userId = oc.updatedBy ?: "",
+                costoUnitario = item.costoUnitario,
+                tipoDocumento = "OC",
+            ),
+        )
+        if (!claimed) return false
+
+        if (item.costoUnitario > 0.0) {
+            val costo = CostoPromedioPonderado.calcular(montura.stockActual, montura.costo, item.recibido, item.costoUnitario)
+            check(monturaDao.updateCosto(item.monturaId, oc.opticaId, costo, now) > 0) { "No se pudo actualizar el costo" }
+        }
+        check(monturaCoordinator.adjustMonturaStockLocal(item.monturaId, oc.opticaId, item.recibido) > 0) {
+            "No se pudo ajustar el stock"
+        }
+        return true
     }
 
     open suspend fun delete(ocId: String, opticaId: String) {

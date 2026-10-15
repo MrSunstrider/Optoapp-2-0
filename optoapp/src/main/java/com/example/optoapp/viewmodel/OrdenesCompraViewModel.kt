@@ -221,6 +221,21 @@ class OrdenesCompraViewModel @Inject constructor(
         }
     }
 
+    fun receiveItems(ocId: String, receivedQuantities: Map<String, Int>) {
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                repository.receiveItems(ocId, opticaId, receivedQuantities)
+                _uiState.update { it.copy(success = "Recepción registrada", error = null) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "receiveItems failed", e)
+                _uiState.update { it.copy(error = "No se pudo registrar la recepción. Inténtalo de nuevo.", success = null) }
+            }
+        }
+    }
+
     fun delete(ocId: String) {
         viewModelScope.launch {
             try {
