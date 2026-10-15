@@ -56,47 +56,49 @@ fun PagosSection(
             val saldo = total - pagado
 
             uiState.pagos.forEach { pago ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                key(pago.id) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                stringResource(R.string.pagos_abono_linea, pago.metodoPago, MoneyFormatter.format(pago.monto)),
-                                fontWeight = FontWeight.Bold,
-                            )
-                            if (pago.nota.isNotEmpty()) {
-                                Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row {
-                            var showEditDialog by remember { mutableStateOf(false) }
-                            if (showEditDialog) {
-                                val otrosAbonos = uiState.pagos
-                                    .filter { it.id != pago.id }
-                                    .sumOf { it.monto }
-                                val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
-                                AbonoDialog(
-                                    pago = pago,
-                                    montoMaximo = maximo,
-                                    onDismiss = { showEditDialog = false },
-                                    onConfirm = { updatedPago: Pago ->
-                                        onUpdatePago(updatedPago)
-                                        showEditDialog = false
-                                    },
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.pagos_abono_linea, pago.metodoPago, MoneyFormatter.format(pago.monto)),
+                                    fontWeight = FontWeight.Bold,
                                 )
+                                if (pago.nota.isNotEmpty()) {
+                                    Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.pagos_editar_cd), tint = MaterialTheme.colorScheme.primary)
-                            }
-                            IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.pagos_borrar_cd), tint = MaterialTheme.colorScheme.error)
+                            Row {
+                                var showEditDialog by remember { mutableStateOf(false) }
+                                if (showEditDialog) {
+                                    val otrosAbonos = uiState.pagos
+                                        .filter { it.id != pago.id }
+                                        .sumOf { it.monto }
+                                    val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
+                                    AbonoDialog(
+                                        pago = pago,
+                                        montoMaximo = maximo,
+                                        onDismiss = { showEditDialog = false },
+                                        onConfirm = { updatedPago: Pago ->
+                                            onUpdatePago(updatedPago)
+                                            showEditDialog = false
+                                        },
+                                    )
+                                }
+                                IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.pagos_editar_cd), tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.pagos_borrar_cd), tint = MaterialTheme.colorScheme.error)
+                                }
                             }
                         }
                     }

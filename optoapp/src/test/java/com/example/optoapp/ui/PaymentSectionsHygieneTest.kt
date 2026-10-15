@@ -45,6 +45,30 @@ class PaymentSectionsHygieneTest {
     }
 
     @Test
+    fun `state remembered per payment row is keyed by the payment id`() {
+        val loopStart = Regex("""\.pagos\.forEach\s*\{""")
+        val unkeyed = paymentSections.flatMap { file ->
+            val text = file.readText(Charsets.UTF_8)
+            loopStart.findAll(text).mapNotNull { match ->
+                val body = blockFrom(text, match.range.last)
+                file.name.takeIf { body.contains("remember") && !body.contains("key(pago.id)") }
+            }.toList()
+        }
+        assertEquals(emptyList<String>(), unkeyed)
+    }
+
+    private fun blockFrom(text: String, openBrace: Int): String {
+        var depth = 0
+        for (i in openBrace until text.length) {
+            when (text[i]) {
+                '{' -> depth++
+                '}' -> if (--depth == 0) return text.substring(openBrace, i + 1)
+            }
+        }
+        return text.substring(openBrace)
+    }
+
+    @Test
     fun `no ui source paints a saldo with the tertiary color`() {
         val uiFiles = MainSources.kotlinFilesUnder("java/com/example/optoapp/ui")
         val offending = offendingLines(uiFiles) { line ->
