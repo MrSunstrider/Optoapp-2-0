@@ -77,7 +77,7 @@ Answer in &lt;10 seconds: “¿Cómo va el mes y qué hago ahora?” — not “
 | T1 | S5–S6,S11 | inline | done | Gap audit logged L6 |
 | T2 | S1,S6,S7,S11 | inline | done | InterpretacionAnalista + coach card + VM; tests GREEN |
 | T3 | S3,S7,S11 | inline | done | `37b7e7ce` ImpactoRecomendacion + Plan de acción UI |
-| T4 | S2,S8,S11 | inline | done | Room v57 estado+periodo; chips Hecho/Más tarde/No aplica |
+| T4 | S2,S8,S11 | inline | done | `e8a493d7` Room v57 seguimiento chips + periodo |
 | T5 | S1,S4,S11 | inline | pending | Reorder Resumen → coach-first; demote KPI grid |
 | T6 | S9–S10 | inline | pending | Role + regression; GGA; RDD if RPC touched |
 

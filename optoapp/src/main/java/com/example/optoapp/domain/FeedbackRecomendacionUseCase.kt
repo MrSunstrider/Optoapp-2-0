@@ -12,28 +12,6 @@ open class FeedbackRecomendacionUseCase @Inject constructor(
             "$opticaId|$periodo|$recomendacionId"
     }
 
-    suspend fun marcarUtil(recomendacionId: String, opticaId: String) {
-        feedbackRecomendacionDao.upsert(
-            FeedbackRecomendacionEntity(
-                recomendacionId = recomendacionId,
-                opticaId = opticaId,
-                fueUtil = true,
-                estado = SeguimientoEstado.HECHO.name,
-            ),
-        )
-    }
-
-    suspend fun marcarNoUtil(recomendacionId: String, opticaId: String) {
-        feedbackRecomendacionDao.upsert(
-            FeedbackRecomendacionEntity(
-                recomendacionId = recomendacionId,
-                opticaId = opticaId,
-                fueUtil = false,
-                estado = SeguimientoEstado.NO_APLICA.name,
-            ),
-        )
-    }
-
     suspend fun marcarSeguimiento(
         recomendacionId: String,
         opticaId: String,
