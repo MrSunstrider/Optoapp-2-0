@@ -300,6 +300,15 @@
     <string name="analisis_gasto_recurrente">Gasto recurrente mensual</string>
     <string name="analisis_guardar">Guardar</string>
     <string name="analisis_resumen_mes">Resumen del mes</string>
+    <string name="analisis_contexto_breve">Contexto del mes</string>
+    <string name="analisis_contexto_margen_vs_objetivo">Margen neto %1$d%% · objetivo %2$d%%</string>
+    <string name="analisis_contexto_pe_alcanzado">Punto de equilibrio alcanzado</string>
+    <string name="analisis_contexto_pe_falta">Faltan %1$s para el punto de equilibrio</string>
+    <string name="analisis_metricas_detalle">Métricas detalladas</string>
+    <string name="analisis_metricas_ocultar">Ocultar métricas</string>
+    <string name="analisis_atajos">Atajos</string>
+    <string name="analisis_atajo_detalle">Detalle</string>
+    <string name="analisis_atajo_costos">Costos</string>
     <string name="analisis_vendiste">Vendiste</string>
     <string name="analisis_cobraste">Cobraste</string>
     <string name="analisis_saldo_pendiente">Saldo pendiente</string>
@@ -318,8 +327,8 @@
     <string name="analisis_seguimiento_hecho">Hecho</string>
     <string name="analisis_seguimiento_mas_tarde">Más tarde</string>
     <string name="analisis_seguimiento_no_aplica">No aplica</string>
-    <string name="analisis_seguimiento_registrado">Seguimiento: %1$s</string>
     <string name="analisis_valoracion_error">No se pudo enviar tu valoración. Inténtalo de nuevo.</string>
+    <string name="analisis_seguimiento_error">No se pudo guardar el seguimiento. Inténtalo de nuevo.</string>
     <string name="analisis_detalle_title">Análisis completo</string>
     <string name="analisis_sin_datos_disponibles">Sin datos disponibles</string>
     <string name="analisis_seccion_flujo">Dinero que entró y salió</string>

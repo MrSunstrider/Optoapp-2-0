@@ -1,9 +1,9 @@
 # Analista de negocio (Must #4)
 
 Objective: Behave as a **business analyst** — concise facts that guide growth, advice and assistance — **not** a report dump. Distinct from Reportes (evidence/export/calc).  
-Branch: `feat/analista-negocio` (from `main`)  
-Delivery: `auto-chain` + `stacked-to-main` (standing)  
-Cycle: ODD → Strict TDD → GGA (pre-commit) → RDD host-relay when risk high → Judgment Day opt-in on money/recs surfaces  
+Branch: `feat/analista-negocio` (integration); stacked `feat/analista-s1-coach-engine` → `s2-seguimiento` → `s3-coach-ui`  
+Delivery: `auto-chain` + `stacked-to-main` — #174 → #175 → #176 (Closes #173 on #176)  
+Cycle: ODD → Strict TDD → GGA (pre-commit) → RDD host-relay when risk high → Judgment Day APPROVED (recs+migración)  
 Runner: `./gradlew :optoapp:testDebugUnitTest --stacktrace`
 
 ## Product job (user intent)
@@ -78,8 +78,8 @@ Answer in &lt;10 seconds: “¿Cómo va el mes y qué hago ahora?” — not “
 | T2 | S1,S6,S7,S11 | inline | done | InterpretacionAnalista + coach card + VM; tests GREEN |
 | T3 | S3,S7,S11 | inline | done | `37b7e7ce` ImpactoRecomendacion + Plan de acción UI |
 | T4 | S2,S8,S11 | inline | done | `e8a493d7` Room v57 seguimiento chips + periodo |
-| T5 | S1,S4,S11 | inline | pending | Reorder Resumen → coach-first; demote KPI grid |
-| T6 | S9–S10 | inline | pending | Role + regression; GGA; RDD if RPC touched |
+| T5 | S1,S4,S11 | inline | done | `fe6aea1b` Coach IA + ContextoBreve; Resumen demoted |
+| T6 | S9–S10 | inline | done | Role gate + scope guards; suite GREEN; no RPC → no RDD |
 
 ## Log
 
@@ -102,3 +102,9 @@ L8. T2 done (2026-10-15): RED compile miss → GREEN `InterpretacionAnalistaTest
 L9. T3 done (2026-10-15): `ImpactoRecomendacion` fills etiqueta+monto for all six families; `Recomendacion.impactoMonto` ranks after prioridad; UI title **Plan de acción**, shows up to 5 with Impacto label. GREEN focused + full `:optoapp:testDebugUnitTest`. Cap drops lowest MEDIA by monto (LIQUIDAR in all-rules fixture). Fixed T2 `Text("•…")` for StringsCopyTest. Next: T4 seguimiento.
 
 L10. T4 done (2026-10-15): `SeguimientoEstado` HECHO/MAS_TARDE/NO_APLICA; Room MIGRATION_56_57 adds estado+periodo (backfill from fueUtil); stable id `optica|periodo|rec`; Plan de acción chips replace thumbs; VM loads/saves per yyyy-MM. Next: T5 demote KPI grid.
+
+L11. T5 done (2026-10-16): Screen IA coach-first — Plan de acción before ContextoBreve (margen/PE/cobertura); KPI ResumenCard demoted behind `metricasDetalleExpanded`; secondary atajos Detalle/Costos. GREEN `AnalisisCoachIaOrderTest`. Next: T6 regression/GGA.
+
+L12. T6 done (2026-10-16): Confirmed admin|gerente gate (`AppRolesAnalisisGateTest`); Análisis has no commission/payroll copy (`AnalisisScopeGuardTest`); full unit suite GREEN on T5; no money RPC/migration in T5–T6 → RDD not due. Feature Must #4 apply slice complete on branch.
+
+L13. User (2026-10-16): `PR/stack a main, Judgment Day en recs+migración`. JD APPROVED after fixes: ALERTA_CAIDA scoped to `mesAnalisis`, chips unlocked, TOCTOU mutex on listar+publish. Stacked PRs: #174 (coach+impact, size:exception), #175 (seguimiento+Room v57, size:exception), #176 (coach-first UI + JD fixes, Closes #173). Merge order: 174 → retarget 175 to main → 176.

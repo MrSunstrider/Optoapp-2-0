@@ -248,7 +248,14 @@ class GenerarRecomendacionesUseCaseTest {
     fun alertaCaida_whenDropExceedsThreshold_returnsRecomendacion() = runBlocking {
         mockDeps()
 
-        val lista = listaDe(useCase.invoke(cleanAnalisis(variacionVentasPct = -15.0), emptyList(), "optica1"))
+        val lista = listaDe(
+            useCase.invoke(
+                cleanAnalisis(variacionVentasPct = -15.0),
+                emptyList(),
+                "optica1",
+                mesAnalisis = LocalDate.of(2026, 7, 1),
+            ),
+        )
         val alerta = lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA }
         assertNotNull("ALERTA_CAIDA should fire", alerta)
         assertEquals(Prioridad.ALTA, alerta!!.prioridad)
@@ -256,16 +263,77 @@ class GenerarRecomendacionesUseCaseTest {
     }
 
     @Test
+    fun alertaCaida_pastMonth_withPriorSales_usesFullMonthNotWallClockMtd() = runBlocking {
+        mockDeps()
+        val analisis = cleanAnalisis(
+            ventasMes = 7000.0,
+            variacionVentasPct = -20.0,
+        ).let {
+            // cleanAnalisis sets ventasMesAnterior via defaults — override below
+            AnalisisMensual(
+                ventasMes = 7000.0,
+                cobrosMes = 0.0,
+                margenNetoPct = 0.0,
+                margenPorCategoria = emptyList(),
+                deudores = DeudoresResumen(0, 0.0),
+                proyeccionCaja = null,
+                stockEstancado = emptyList(),
+                valorInventario = 0.0,
+                ventasMesAnterior = 10000.0,
+                variacionVentasPct = -30.0,
+                gastosMes = 0.0,
+                esOffline = false,
+            )
+        }
+        val lista = listaDe(
+            useCase.invoke(analisis, emptyList(), "optica1", mesAnalisis = LocalDate.of(2026, 7, 1)),
+        )
+        val alerta = lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA }
+        assertNotNull(alerta)
+        // Full-month path must not claim "proporcional a N dias"
+        assertTrue(!alerta!!.detalle.contains("proporcional"))
+        assertTrue(alerta.detalle.contains("30%") || alerta.impactoMonto == 3000.0)
+    }
+
+    @Test
     fun alertaCaida_whenDropBelowThreshold_returnsNull() = runBlocking {
         mockDeps()
-        val lista = listaDe(useCase.invoke(cleanAnalisis(variacionVentasPct = -3.0), emptyList(), "optica1"))
+        val lista = listaDe(
+            useCase.invoke(
+                cleanAnalisis(variacionVentasPct = -3.0),
+                emptyList(),
+                "optica1",
+                mesAnalisis = LocalDate.of(2026, 7, 1),
+            ),
+        )
         assertNull(lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA })
     }
 
     @Test
     fun alertaCaida_whenNullVariation_returnsNull() = runBlocking {
         mockDeps()
-        val lista = listaDe(useCase.invoke(cleanAnalisis(variacionVentasPct = null), emptyList(), "optica1"))
+        val lista = listaDe(
+            useCase.invoke(
+                cleanAnalisis(variacionVentasPct = null),
+                emptyList(),
+                "optica1",
+                mesAnalisis = LocalDate.of(2026, 7, 1),
+            ),
+        )
+        assertNull(lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA })
+    }
+
+    @Test
+    fun alertaCaida_januaryAnalysisMonth_isMuted() = runBlocking {
+        mockDeps()
+        val lista = listaDe(
+            useCase.invoke(
+                cleanAnalisis(variacionVentasPct = -40.0),
+                emptyList(),
+                "optica1",
+                mesAnalisis = LocalDate.of(2026, 1, 1),
+            ),
+        )
         assertNull(lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA })
     }
 

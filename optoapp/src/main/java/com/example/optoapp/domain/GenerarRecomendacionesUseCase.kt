@@ -5,6 +5,7 @@ import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraD
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.util.MoneyFormatter
 import java.time.LocalDate
+import java.time.YearMonth
 import javax.inject.Inject
 
 open class GenerarRecomendacionesUseCase @Inject constructor(
@@ -21,6 +22,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         analisis: AnalisisMensual?,
         deudores: List<Deudor>,
         opticaId: String,
+        mesAnalisis: LocalDate = LocalDate.now().withDayOfMonth(1),
     ): Resource<List<Recomendacion>> {
         if (analisis == null && deudores.isEmpty()) {
             return Resource.Error("Datos insuficientes para generar recomendaciones")
@@ -39,7 +41,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 evaluarMejorarPrecio(analisis.margenPorCategoria, config),
                 evaluarLiquidarStock(analisis.stockEstancado, config),
                 evaluarVenderMasDe(analisis.margenPorCategoria, config),
-                evaluarAlertaCaida(analisis, config),
+                evaluarAlertaCaida(analisis, config, mesAnalisis),
                 evaluarReducirGasto(analisis),
             )
         }
@@ -184,37 +186,51 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
     private fun evaluarAlertaCaida(
         analisis: AnalisisMensual,
         config: ConfiguracionFinancieraEntity,
+        mesAnalisis: LocalDate,
     ): Recomendacion? {
+        val mes = YearMonth.from(mesAnalisis)
+        // Seasonal mute is about the analyzed month, not wall-clock "today".
+        if (mes.monthValue in 1..2) return null
+
         val hoy = LocalDate.now()
-        val diasTranscurridos = hoy.dayOfMonth
-        val diasMesAnterior = hoy.minusMonths(1).lengthOfMonth()
+        val esMesEnCurso = mes == YearMonth.from(hoy)
 
         val variacion: Double
         val ventasReferencia: Double
         val esProporcional: Boolean
+        val diasProporcionales: Int
 
-        if (diasTranscurridos > 0 && diasMesAnterior > 0 && analisis.ventasMesAnterior > 0.0) {
+        if (esMesEnCurso && analisis.ventasMesAnterior > 0.0) {
+            val diasTranscurridos = hoy.dayOfMonth
+            val diasMesAnterior = mes.minusMonths(1).lengthOfMonth()
+            if (diasTranscurridos <= 0 || diasMesAnterior <= 0) return null
             val proporcion = diasTranscurridos.toDouble() / diasMesAnterior.toDouble()
             ventasReferencia = analisis.ventasMesAnterior * proporcion
             variacion = ((analisis.ventasMes - ventasReferencia) / ventasReferencia) * 100.0
             esProporcional = true
+            diasProporcionales = diasTranscurridos
         } else {
-            val rpcVariacion = analisis.variacionVentasPct ?: return null
-            variacion = rpcVariacion
-            ventasReferencia = analisis.ventasMesAnterior
+            val rpcVariacion = analisis.variacionVentasPct
+            if (rpcVariacion != null) {
+                variacion = rpcVariacion
+                ventasReferencia = analisis.ventasMesAnterior
+            } else if (analisis.ventasMesAnterior > 0.0) {
+                ventasReferencia = analisis.ventasMesAnterior
+                variacion = ((analisis.ventasMes - ventasReferencia) / ventasReferencia) * 100.0
+            } else {
+                return null
+            }
             esProporcional = false
+            diasProporcionales = 0
         }
 
         if (variacion >= -config.caidaVentasAlertaPct) return null
-
-        val currentMonth = hoy.monthValue
-        if (currentMonth in listOf(1, 2)) return null
 
         val pctStr = String.format("%.0f", kotlin.math.abs(variacion))
         val titulo = "Caida en ventas detectada"
         val detalleBase = if (esProporcional) {
             "Las ventas cayeron un $pctStr% respecto al mismo periodo del mes pasado " +
-                "(proporcional a $diasTranscurridos dias). "
+                "(proporcional a $diasProporcionales dias). "
         } else {
             "Las ventas cayeron un $pctStr% respecto al mes pasado. "
         }

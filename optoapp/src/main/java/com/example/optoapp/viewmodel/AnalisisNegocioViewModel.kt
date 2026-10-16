@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
@@ -76,6 +78,7 @@ class AnalisisNegocioViewModel @Inject constructor(
     val mesActual: YearMonth get() = currentMonthProvider.current()
 
     private var loadJob: Job? = null
+    private val seguimientoMutex = Mutex()
 
     init {
         loadData(_uiState.value.mesSeleccionado)
@@ -97,11 +100,15 @@ class AnalisisNegocioViewModel @Inject constructor(
             try {
                 val opticaId = sessionManager.opticaId.first()
                 val periodo = _uiState.value.mesSeleccionado.format(PERIODO_FMT)
-                feedbackRecomendacion.marcarSeguimiento(recomendacionId, opticaId, periodo, estado)
-                _uiState.value = _uiState.value.copy(
-                    seguimientos = _uiState.value.seguimientos + (recomendacionId to estado),
-                    feedbackErrorRecId = null,
-                )
+                seguimientoMutex.withLock {
+                    feedbackRecomendacion.marcarSeguimiento(recomendacionId, opticaId, periodo, estado)
+                    _uiState.value = _uiState.value.copy(
+                        seguimientos = _uiState.value.seguimientos + (recomendacionId to estado),
+                        feedbackErrorRecId = null,
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving recommendation seguimiento", e)
                 _uiState.value = _uiState.value.copy(feedbackErrorRecId = recomendacionId)
@@ -134,7 +141,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                     val debtorsStale = (deudoresResult as? Resource.Success)?.stale ?: false
 
                     val recomendacionesResult = if (analisis != null || deudores.isNotEmpty()) {
-                        generarRecomendaciones(analisis, deudores, opticaId)
+                        generarRecomendaciones(analisis, deudores, opticaId, mes)
                     } else {
                         Resource.Error("Datos insuficientes")
                     }
@@ -150,20 +157,24 @@ class AnalisisNegocioViewModel @Inject constructor(
                         InterpretacionAnalista.fromAnalisis(it, recomendaciones.firstOrNull()?.titulo)
                     }
                     val periodo = mes.format(PERIODO_FMT)
-                    val seguimientos = feedbackRecomendacion.listarPorPeriodo(opticaId, periodo)
+                    if (_uiState.value.mesSeleccionado != mes) return@launch
 
-                    _uiState.value = _uiState.value.copy(
-                        analisis = analisis,
-                        interpretacion = interpretacion,
-                        deudores = deudores,
-                        recomendaciones = recomendaciones,
-                        isLoading = false,
-                        error = errors.joinToString("; ").ifEmpty { null },
-                        isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
-                        debtorsStale = debtorsStale,
-                        seguimientos = seguimientos,
-                        feedbackErrorRecId = null,
-                    )
+                    seguimientoMutex.withLock {
+                        val seguimientos = feedbackRecomendacion.listarPorPeriodo(opticaId, periodo)
+                        if (_uiState.value.mesSeleccionado != mes) return@withLock
+                        _uiState.value = _uiState.value.copy(
+                            analisis = analisis,
+                            interpretacion = interpretacion,
+                            deudores = deudores,
+                            recomendaciones = recomendaciones,
+                            isLoading = false,
+                            error = errors.joinToString("; ").ifEmpty { null },
+                            isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
+                            debtorsStale = debtorsStale,
+                            seguimientos = seguimientos,
+                            feedbackErrorRecId = null,
+                        )
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
