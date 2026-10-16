@@ -106,7 +106,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inWeek + outOfWeek)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -134,7 +135,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -150,7 +152,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -173,7 +176,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -203,7 +207,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inMonth + outOfMonth)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -225,7 +230,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -250,7 +256,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(inYear + outOfYear)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio(now.year.toString())
@@ -271,7 +278,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -293,7 +301,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2030")
@@ -310,7 +319,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -331,7 +341,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -347,7 +358,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -375,7 +387,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -401,7 +414,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -427,7 +441,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio(now.year.toString())
@@ -454,7 +469,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -480,7 +496,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -502,7 +519,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(todasLasDispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()
@@ -521,7 +539,8 @@ class ReportesViewModelOtrosPeriodosTest {
         )
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
 
         // Anual 2026 should include both (both in 2026, since now is 2026)
@@ -541,7 +560,8 @@ class ReportesViewModelOtrosPeriodosTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(emptyList())
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
 
         for (periodo in listOf("Semanal", "Mensual", "Anual", "Total")) {
@@ -572,7 +592,8 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Semanal")
         advanceUntilIdle()
@@ -594,7 +615,8 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Mensual")
         advanceUntilIdle()
@@ -616,7 +638,8 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio(now.year.toString())
@@ -635,7 +658,8 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Anual")
         viewModel.setAnio("2025")
@@ -654,7 +678,8 @@ class ReportesViewModelOtrosPeriodosTest {
             repository.getPagosByDateRangeForOptica(capture(startSlot), capture(endSlot), any())
         } returns flowOf(emptyList())
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         activateFlows()
         viewModel.setPeriodo("Total")
         advanceUntilIdle()

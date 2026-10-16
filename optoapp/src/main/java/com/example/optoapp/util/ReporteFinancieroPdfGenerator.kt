@@ -26,6 +26,7 @@ object ReporteFinancieroPdfGenerator {
         ticketPromedio: Double,
         pagosSumByDispensacion: Map<String, Double> = emptyMap(),
         aCuentaSumByServicio: Map<String, Double> = emptyMap(),
+        extras: ReportePdfExtras = ReportePdfExtras(),
     ): File {
         val dir = File(context.cacheDir, "reportes").apply { mkdirs() }
         val file = File(dir, "reporte-financiero-${System.currentTimeMillis()}.pdf")
@@ -85,13 +86,24 @@ object ReporteFinancieroPdfGenerator {
             y += 12f
         }
 
-        fun newPage() {
+        fun drawContinuationHeader() {
+            canvas.drawText("Reporte Financiero (cont.)", MARGIN, y, titlePaint)
+            y += 16f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
+            y += 12f
+        }
+
+        fun newPage(drawTableHeader: Boolean = true) {
             doc.finishPage(page)
             pageNum += 1
             page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNum).create())
             canvas = page.canvas
             y = MARGIN
-            drawHeader()
+            if (drawTableHeader) {
+                drawHeader()
+            } else {
+                drawContinuationHeader()
+            }
         }
 
         drawHeader()
@@ -132,6 +144,32 @@ object ReporteFinancieroPdfGenerator {
             }
         }
 
+        val sectionLines = ReportePdfSectionLines.build(extras)
+        if (sectionLines.isNotEmpty()) {
+            if (y + ROW_H > PAGE_H - MARGIN) newPage(drawTableHeader = false)
+            y += 8f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
+            y += 12f
+            val maxSectionWidth = PAGE_W - (MARGIN * 2)
+            sectionLines.forEach { line ->
+                if (line.isEmpty()) {
+                    if (y + 6f > PAGE_H - MARGIN) newPage(drawTableHeader = false)
+                    y += 6f
+                } else {
+                    val paint = if (line == line.uppercase(Locale.ROOT) && !line.contains(':')) {
+                        subtitlePaint
+                    } else {
+                        textPaint
+                    }
+                    wrapText(line, paint, maxSectionWidth).forEach { wrapped ->
+                        if (y + ROW_H > PAGE_H - MARGIN) newPage(drawTableHeader = false)
+                        canvas.drawText(wrapped, MARGIN, y, paint)
+                        y += ROW_H
+                    }
+                }
+            }
+        }
+
         doc.finishPage(page)
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
@@ -139,4 +177,33 @@ object ReporteFinancieroPdfGenerator {
     }
 
     private fun Double.toMoney(): String = String.format(Locale.forLanguageTag("es-PE"), "%.2f", this)
+
+    internal fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
+        if (text.isEmpty()) return listOf("")
+        if (paint.measureText(text) <= maxWidth) return listOf(text)
+        val lines = mutableListOf<String>()
+        var remaining = text
+        while (remaining.isNotEmpty()) {
+            if (paint.measureText(remaining) <= maxWidth) {
+                lines += remaining
+                break
+            }
+            var end = 1
+            var low = 1
+            var high = remaining.length
+            while (low <= high) {
+                val mid = (low + high) ushr 1
+                if (paint.measureText(remaining, 0, mid) <= maxWidth) {
+                    end = mid
+                    low = mid + 1
+                } else {
+                    high = mid - 1
+                }
+            }
+            val breakAt = remaining.lastIndexOf(' ', end).takeIf { it > 0 } ?: end.coerceAtLeast(1)
+            lines += remaining.substring(0, breakAt).trimEnd()
+            remaining = remaining.substring(breakAt).trimStart()
+        }
+        return lines.ifEmpty { listOf(text) }
+    }
 }

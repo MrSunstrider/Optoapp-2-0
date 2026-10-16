@@ -5,11 +5,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +46,7 @@ import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
+import com.example.optoapp.util.ReportePdfExtras
 import com.example.optoapp.viewmodel.ReportesViewModel
 import kotlinx.coroutines.launch
 
@@ -76,6 +87,83 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val serviciosCount by viewModel.serviciosCount.collectAsState()
     val isDataLoading by viewModel.isLoading.collectAsState()
     var isPdfLoading by remember { mutableStateOf(false) }
+    var selectedModule by remember { mutableStateOf(ReportModule.RESUMEN) }
+    val periodComparison by viewModel.periodComparison.collectAsState()
+    val pacientesReporte by viewModel.pacientesReporte.collectAsState()
+    val inventarioReporte by viewModel.inventarioReporte.collectAsState()
+    val clinicoReporte by viewModel.clinicoReporte.collectAsState()
+    val equipoReporte by viewModel.equipoReporte.collectAsState()
+    val comisionPct by viewModel.comisionPct.collectAsState()
+    val canEditComision by viewModel.canEditComision.collectAsState()
+    val comisionMessage by viewModel.comisionMessage.collectAsState()
+    val comisionError by viewModel.comisionError.collectAsState()
+    val snackbarHostState = LocalSnackbarHostState.current
+    var showComisionDialog by remember { mutableStateOf(false) }
+    var comisionDraft by remember { mutableStateOf("") }
+    var comisionDialogError by remember { mutableStateOf<String?>(null) }
+    val comisionInvalidMsg = stringResource(R.string.reportes_equipo_comision_invalid)
+
+    LaunchedEffect(comisionMessage, comisionError) {
+        val msg = comisionMessage ?: comisionError
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearComisionFeedback()
+        }
+    }
+
+    if (showComisionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showComisionDialog = false
+                comisionDialogError = null
+            },
+            title = { Text(stringResource(R.string.reportes_equipo_comision_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = comisionDraft,
+                        onValueChange = {
+                            comisionDraft = it
+                            comisionDialogError = null
+                        },
+                        label = { Text(stringResource(R.string.reportes_equipo_comision_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = comisionDialogError != null,
+                        supportingText = {
+                            comisionDialogError?.let { message -> Text(message) }
+                        },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val parsed = comisionDraft.trim().replace(',', '.').toDoubleOrNull()
+                        if (parsed == null || parsed < 0.0 || parsed > 100.0) {
+                            comisionDialogError = comisionInvalidMsg
+                            return@TextButton
+                        }
+                        viewModel.setComisionPct(parsed)
+                        showComisionDialog = false
+                        comisionDialogError = null
+                    },
+                ) {
+                    Text(stringResource(R.string.reportes_equipo_comision_save))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showComisionDialog = false
+                        comisionDialogError = null
+                    },
+                ) {
+                    Text(stringResource(R.string.reportes_equipo_comision_cancel))
+                }
+            },
+        )
+    }
 
     val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - ventasPeriodo
@@ -107,6 +195,13 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     ticketPromedio = ticketPromedio,
                                     pagosSumByDispensacion = pagosSumByDispensacion,
                                     aCuentaSumByServicio = aCuentaSumByServicio,
+                                    extras = ReportePdfExtras(
+                                        comparison = periodComparison,
+                                        pacientes = pacientesReporte,
+                                        inventario = inventarioReporte,
+                                        clinico = clinicoReporte,
+                                        equipo = equipoReporte,
+                                    ),
                                 )
                                 FileShareUtils.openPdf(context, pdf, context.getString(R.string.reportes_abrir_pdf))
                             } catch (e: Exception) {
@@ -186,131 +281,279 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             }
 
             item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard(stringResource(R.string.reportes_vendido), MoneyFormatter.format(totalVendido), MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
-                    OptoKpiCard(stringResource(R.string.reportes_cobrado), MoneyFormatter.format(totalCobrado), MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
-                }
-            }
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard(stringResource(R.string.reportes_por_cobrar), MoneyFormatter.format(porCobrar), if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
-                    OptoKpiCard(stringResource(R.string.reportes_ticket_promedio), MoneyFormatter.format(ticketPromedio), MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
-                }
-            }
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard(stringResource(R.string.reportes_transacciones), totalTransacciones.toString(), MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
-                    OptoKpiCard(stringResource(R.string.reportes_pendiente), MoneyFormatter.format(porCobrar), MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
-                }
-            }
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard(
-                        stringResource(R.string.reportes_costo),
-                        MoneyFormatter.format(costoTotal),
-                        MaterialTheme.colorScheme.secondary,
-                        Icons.Default.Inventory,
-                        Modifier.weight(1f),
-                    )
-                    OptoKpiCard(
-                        stringResource(R.string.reportes_margen),
-                        MoneyFormatter.format(margenTotal),
-                        if (margenTotal >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed,
-                        Icons.AutoMirrored.Filled.TrendingUp,
-                        Modifier.weight(1f),
-                    )
-                }
-            }
-
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(12.dp),
+                ScrollableTabRow(
+                    selectedTabIndex = selectedModule.ordinal,
+                    edgePadding = 0.dp,
+                    containerColor = Color.Transparent,
+                    divider = {},
                 ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(stringResource(R.string.reportes_desglose_cobros), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        CobroRow(stringResource(R.string.reportes_ventas_periodo), ventasPeriodo, MaterialTheme.colorScheme.tertiary)
-                        CobroRow(stringResource(R.string.reportes_cobros_atrasados), cobrosPeriodo, MaterialTheme.colorScheme.secondary)
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
-                        CobroRow(stringResource(R.string.reportes_total_cobrado), totalCobrado, MaterialTheme.colorScheme.primary, bold = true)
+                    ReportModule.entries.forEach { module ->
+                        Tab(
+                            selected = selectedModule == module,
+                            onClick = { selectedModule = module },
+                            text = {
+                                Text(
+                                    stringResource(reportModuleLabelRes(module)),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                        )
                     }
                 }
             }
 
-            if (dispensacionesCount + serviciosCount > 0) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth().height(120.dp),
-                        shape = RoundedCornerShape(12.dp),
-                    ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Text(stringResource(R.string.reportes_composicion), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Spacer(Modifier.height(8.dp))
-                            val maxVal = maxOf(dispensacionesCount, serviciosCount, 1).toFloat()
-                            BarRow(stringResource(R.string.reportes_dispensaciones), dispensacionesCount, maxVal, MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.height(6.dp))
-                            BarRow(stringResource(R.string.reportes_servicios_extra), serviciosCount, maxVal, MaterialTheme.colorScheme.tertiary)
+            when (selectedModule) {
+                ReportModule.RESUMEN -> {
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptoKpiCard(stringResource(R.string.reportes_vendido), MoneyFormatter.format(totalVendido), MaterialTheme.colorScheme.primary, Icons.AutoMirrored.Filled.TrendingUp, Modifier.weight(1f))
+                            OptoKpiCard(stringResource(R.string.reportes_cobrado), MoneyFormatter.format(totalCobrado), MaterialTheme.colorScheme.positiveGreen, Icons.Default.Payments, Modifier.weight(1f))
                         }
                     }
-                }
-            }
-
-            item {
-                Text(stringResource(R.string.reportes_detalle), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
-
-            if (!isDataLoading && dispensaciones.isEmpty() && serviciosExtra.isEmpty()) {
-                item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(R.string.reportes_sin_movimientos), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptoKpiCard(stringResource(R.string.reportes_por_cobrar), MoneyFormatter.format(porCobrar), if (porCobrar > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.AccountBalanceWallet, Modifier.weight(1f))
+                            OptoKpiCard(stringResource(R.string.reportes_ticket_promedio), MoneyFormatter.format(ticketPromedio), MaterialTheme.colorScheme.secondary, Icons.Default.Receipt, Modifier.weight(1f))
                         }
                     }
-                }
-            }
-
-            items(dispensaciones) { disp ->
-                val date = DateUtils.formatLocalized(disp.fecha)
-                val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
-                val saldo = disp.montoTotal - montoPagado
-                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
-                    Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text(stringResource(R.string.reportes_dispensacion_ot, disp.ot.ifBlank { "-" }), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptoKpiCard(stringResource(R.string.reportes_transacciones), totalTransacciones.toString(), MaterialTheme.colorScheme.tertiary, Icons.Default.ShoppingCart, Modifier.weight(1f))
+                            OptoKpiCard(stringResource(R.string.reportes_pendiente), MoneyFormatter.format(porCobrar), MaterialTheme.colorScheme.warningAmber, Icons.Default.Schedule, Modifier.weight(1f))
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(MoneyFormatter.format(disp.montoTotal), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text(
-                                if (saldo > 0) stringResource(R.string.reportes_saldo, MoneyFormatter.format(saldo)) else stringResource(R.string.reportes_pagado),
-                                fontSize = 11.sp,
-                                color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
+                    }
+                    item {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OptoKpiCard(
+                                stringResource(R.string.reportes_costo),
+                                MoneyFormatter.format(costoTotal),
+                                MaterialTheme.colorScheme.secondary,
+                                Icons.Default.Inventory,
+                                Modifier.weight(1f),
                             )
-                            movimientosPorOrigenId[disp.id]?.let { MargenMovimiento(it) }
+                            OptoKpiCard(
+                                stringResource(R.string.reportes_margen),
+                                MoneyFormatter.format(margenTotal),
+                                if (margenTotal >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed,
+                                Icons.AutoMirrored.Filled.TrendingUp,
+                                Modifier.weight(1f),
+                            )
+                        }
+                    }
+
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_desglose_cobros), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                CobroRow(stringResource(R.string.reportes_ventas_periodo), ventasPeriodo, MaterialTheme.colorScheme.tertiary)
+                                CobroRow(stringResource(R.string.reportes_cobros_atrasados), cobrosPeriodo, MaterialTheme.colorScheme.secondary)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 2.dp))
+                                CobroRow(stringResource(R.string.reportes_total_cobrado), totalCobrado, MaterialTheme.colorScheme.primary, bold = true)
+                            }
+                        }
+                    }
+
+                    if (dispensacionesCount + serviciosCount > 0) {
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth().height(120.dp),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Text(stringResource(R.string.reportes_composicion), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Spacer(Modifier.height(8.dp))
+                                    val maxVal = maxOf(dispensacionesCount, serviciosCount, 1).toFloat()
+                                    BarRow(stringResource(R.string.reportes_dispensaciones), dispensacionesCount, maxVal, MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.height(6.dp))
+                                    BarRow(stringResource(R.string.reportes_servicios_extra), serviciosCount, maxVal, MaterialTheme.colorScheme.tertiary)
+                                }
+                            }
                         }
                     }
                 }
-            }
 
-            items(serviciosExtra) { serv ->
-                val date = DateUtils.formatLocalized(serv.fecha)
-                val aCuenta = aCuentaSumByServicio[serv.id] ?: 0.0
-                val saldo = serv.montoTotal - aCuenta
-                Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
-                    Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text(stringResource(R.string.reportes_servicio_descripcion, serv.descripcion.ifBlank { stringResource(R.string.reportes_sin_descripcion) }), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ReportModule.VENTAS -> {
+                    periodComparison?.let { cmp ->
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(stringResource(R.string.reportes_vs_periodo_anterior), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format("%.1f%%", it) } ?: "—"
+                                    val margenPct = cmp.margenDeltaPct()?.let { String.format("%.1f%%", it) } ?: "—"
+                                    Text(stringResource(R.string.reportes_delta_vendido, MoneyFormatter.format(cmp.vendidoDelta), vendidoPct), fontSize = 13.sp)
+                                    Text(stringResource(R.string.reportes_delta_margen, MoneyFormatter.format(cmp.margenDelta), margenPct), fontSize = 13.sp)
+                                    Text(stringResource(R.string.reportes_delta_tx, cmp.transaccionesDelta), fontSize = 13.sp)
+                                }
+                            }
                         }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(MoneyFormatter.format(serv.montoTotal), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text(
-                                if (saldo > 0) stringResource(R.string.reportes_saldo, MoneyFormatter.format(saldo)) else stringResource(R.string.reportes_pagado),
-                                fontSize = 11.sp,
-                                color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
-                            )
-                            movimientosPorOrigenId[serv.id]?.let { MargenMovimiento(it) }
+                    }
+                    item {
+                        Text(stringResource(R.string.reportes_detalle), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+
+                    if (!isDataLoading && dispensaciones.isEmpty() && serviciosExtra.isEmpty()) {
+                        item {
+                            Card(modifier = Modifier.fillMaxWidth()) {
+                                Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                                    Text(stringResource(R.string.reportes_sin_movimientos), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+
+                    items(dispensaciones) { disp ->
+                        val date = DateUtils.formatLocalized(disp.fecha)
+                        val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
+                        val saldo = disp.montoTotal - montoPagado
+                        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
+                            Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(stringResource(R.string.reportes_dispensacion_ot, disp.ot.ifBlank { "-" }), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(MoneyFormatter.format(disp.montoTotal), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(
+                                        if (saldo > 0) stringResource(R.string.reportes_saldo, MoneyFormatter.format(saldo)) else stringResource(R.string.reportes_pagado),
+                                        fontSize = 11.sp,
+                                        color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
+                                    )
+                                    movimientosPorOrigenId[disp.id]?.let { MargenMovimiento(it) }
+                                }
+                            }
+                        }
+                    }
+
+                    items(serviciosExtra) { serv ->
+                        val date = DateUtils.formatLocalized(serv.fecha)
+                        val aCuenta = aCuentaSumByServicio[serv.id] ?: 0.0
+                        val saldo = serv.montoTotal - aCuenta
+                        Card(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.small) {
+                            Row(modifier = Modifier.padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(date, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    Text(stringResource(R.string.reportes_servicio_descripcion, serv.descripcion.ifBlank { stringResource(R.string.reportes_sin_descripcion) }), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(MoneyFormatter.format(serv.montoTotal), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(
+                                        if (saldo > 0) stringResource(R.string.reportes_saldo, MoneyFormatter.format(saldo)) else stringResource(R.string.reportes_pagado),
+                                        fontSize = 11.sp,
+                                        color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
+                                    )
+                                    movimientosPorOrigenId[serv.id]?.let { MargenMovimiento(it) }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.PACIENTES -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_pacientes_altas, pacientesReporte.altas), fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(
+                                        R.string.reportes_pacientes_sexo,
+                                        pacientesReporte.hombres,
+                                        pacientesReporte.mujeres,
+                                        pacientesReporte.sinSexo,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.INVENTARIO -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_inv_modelos, inventarioReporte.modelos))
+                                Text(stringResource(R.string.reportes_inv_stock, inventarioReporte.stockTotal))
+                                Text(stringResource(R.string.reportes_inv_bajo, inventarioReporte.lowStock))
+                                Text(stringResource(R.string.reportes_inv_salidas, inventarioReporte.salidasVentaPeriodo))
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.CLINICO -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_clinico_evals, clinicoReporte.evaluaciones), fontWeight = FontWeight.Bold)
+                                clinicoReporte.porDiagnostico.take(12).forEach { (label, count) ->
+                                    Text(stringResource(R.string.reportes_clinico_diag, label, count), fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.EQUIPO -> {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                if (canEditComision) {
+                                    comisionDraft = if (comisionPct % 1.0 == 0.0) {
+                                        comisionPct.toInt().toString()
+                                    } else {
+                                        comisionPct.toString()
+                                    }
+                                    comisionDialogError = null
+                                    showComisionDialog = true
+                                }
+                            },
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_equipo_comision_pct, comisionPct), fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(
+                                        if (canEditComision) {
+                                            R.string.reportes_equipo_pct_hint
+                                        } else {
+                                            R.string.reportes_equipo_pct_readonly_hint
+                                        },
+                                    ),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                equipoReporte.filas.forEach { row ->
+                                    Text(
+                                        stringResource(
+                                            R.string.reportes_equipo_fila,
+                                            row.displayName,
+                                            MoneyFormatter.format(row.vendido),
+                                            MoneyFormatter.format(row.comision),
+                                        ),
+                                        fontSize = 13.sp,
+                                    )
+                                }
+                                if (equipoReporte.sinAtribuirCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.reportes_equipo_sin_atribuir,
+                                            MoneyFormatter.format(equipoReporte.sinAtribuirVendido),
+                                            equipoReporte.sinAtribuirCount,
+                                        ),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.warningAmber,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -319,6 +562,17 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
             item { Spacer(Modifier.height(16.dp)) }
         }
     }
+}
+
+
+@Composable
+private fun reportModuleLabelRes(module: ReportModule): Int = when (module) {
+    ReportModule.RESUMEN -> R.string.reportes_tab_resumen
+    ReportModule.VENTAS -> R.string.reportes_tab_ventas
+    ReportModule.PACIENTES -> R.string.reportes_tab_pacientes
+    ReportModule.INVENTARIO -> R.string.reportes_tab_inventario
+    ReportModule.CLINICO -> R.string.reportes_tab_clinico
+    ReportModule.EQUIPO -> R.string.reportes_tab_equipo
 }
 
 @Composable

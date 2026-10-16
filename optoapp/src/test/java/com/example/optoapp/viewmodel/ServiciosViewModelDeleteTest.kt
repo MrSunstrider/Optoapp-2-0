@@ -77,7 +77,7 @@ class ServiciosViewModelDeleteTest {
         viewModel = ServiciosViewModel(
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true),
             cancelServicioExtraUseCase, mockk<DispensacionStockHelper>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-        )
+        mockk(relaxed = true))
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.showDeleteConfirmation(testServicio)
     }

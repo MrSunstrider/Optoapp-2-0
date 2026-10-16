@@ -48,7 +48,7 @@ class Migration55To56Test {
         // Room validates every table against the v56 entities after running the migration,
         // so a column or default that drifts from the entity definition fails here.
         val room = Room.databaseBuilder(context, OptoDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_55_56, MIGRATION_56_57)
+            .addMigrations(MIGRATION_55_56, MIGRATION_56_57, MIGRATION_57_58)
             .allowMainThreadQueries()
             .build()
         val db = room.openHelper.writableDatabase
@@ -102,7 +102,7 @@ class Migration55To56Test {
         createV55Database(withoutTables = setOf("costos_lc"))
 
         val room = Room.databaseBuilder(context, OptoDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_55_56, MIGRATION_56_57)
+            .addMigrations(MIGRATION_55_56, MIGRATION_56_57, MIGRATION_57_58)
             .allowMainThreadQueries()
             .build()
         val db = room.openHelper.writableDatabase

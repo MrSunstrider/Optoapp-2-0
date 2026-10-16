@@ -1,9 +1,9 @@
 # Reportes ricos (Must #5)
 
 Objective: Evidence and export — period KPIs, rich report families, and **operational calculations** (e.g. sales by seller → commissions/bonuses). Not a coach; that is Análisis.  
-Branch (planned): `feat/reportes-ricos` from `main`  
+Branch: `feat/reportes-ricos` (from `main`)  
 Delivery: `auto-chain` + `stacked-to-main`  
-Cycle: ODD → Strict TDD → GGA → RDD when high risk (PDF/PII, payroll math) → Judgment Day opt-in  
+Cycle: ODD → Strict TDD → GGA → RDD when high risk (PDF/PII, payroll math, Room migration) → Judgment Day opt-in  
 Runner: `./gradlew :optoapp:testDebugUnitTest --stacktrace`
 
 ## Product job (user intent)
@@ -35,6 +35,8 @@ S10. Out of scope for this feature’s first slices: Analista UX; inventing comm
 
 S11. UX/UI (Must #5): evidence-first IA — see **UX/UI plan** below. Visually distinct from Analista coach (tables, filters, exports OK here).
 
+S12. User (2026-10-16, verbatim): `todo` — authorize full Must #5 apply: UX tabs + real-data modules + seller attribution + Equipo/comisiones path (commission % stays **configurable**, default 0 until dueño sets rules — do not invent fixed % without confirmation).
+
 ## Commissions path (analysis)
 
 **Today (code):** no SRS RF for commissions. OT has `updatedBy` only; `Pago.userId` = who recorded payment, not seller of the sale. Roles already support multi-seller workforce via membership (`canManageUsers` for admin/gerente; `especialista` in `ROLES_ESCRITURA_CLINICA` + evaluaciones).
@@ -61,7 +63,7 @@ S11. UX/UI (Must #5): evidence-first IA — see **UX/UI plan** below. Visually d
 
 1. **Attribution:** `vendedorUserId` on dispensación + servicio_extra; default = session user; admin/gerente can change; legacy → null / “Sin atribuir”.
 2. **Directory:** resolve display name from membership list (same users dueño already manages).
-3. **Rules:** config % / bonos by role and optional per-user overrides.
+3. **Rules:** config % / bonos by role and optional per-user overrides (default 0%; no invented %).
 4. **Reportes slice:** “Equipo” — ventas por usuario, filtros por rol, comisión del periodo + PDF.
 5. **Stats reuse:** same aggregates feed Reportes charts and later Analista tips.
 
@@ -70,10 +72,10 @@ S11. UX/UI (Must #5): evidence-first IA — see **UX/UI plan** below. Visually d
 ### Job of the screen
 Answer: “¿Qué pasó en el periodo y qué puedo exportar / liquidar?” — evidence, not coaching.
 
-### Current UI (gap)
+### Current UI (gap) — verified 2026-10-16
 - Period dropdown + date picker + KPI cards (vendido/cobrado/margen/ticket…) + movimiento list + basic PDF.
 - No tabs for pacientes / comparativos / inventario / clínicas / equipo.
-- Looks operational (good for Reportes); must stay distinct from Analista’s Plan de acción.
+- KPIs are REAL (Room + `CostoVentaCalculator`); UX tabs not implemented.
 
 ### Target IA
 1. **Period chrome** — keep Diario/Semanal/Mensual/Anual/Total + date + PDF action.
@@ -102,13 +104,18 @@ Answer: “¿Qué pasó en el periodo y qué puedo exportar / liquidar?” — e
 | ID | Specs | Route | Status | Evidence |
 |----|-------|-------|--------|----------|
 | T0 | S11 | inline | done | UX/UI plan added (L5) |
-| T1 | S6–S9,S11 | inline | pending | Inventory current `ReportesScreen` / PDF / ViewModel capabilities vs SRS |
-| T2 | S2,S7 | delegated | pending | Ventas detallados + comparativos periodo (TDD + charts reuse) |
-| T3 | S1,S8 | delegated | pending | Pacientes altas/retención/demografía (Room aggregates; PDF optional slice) |
-| T4 | S3 | delegated | pending | Inventario rotación/stock/monturas |
-| T5 | S4,S8 | delegated | pending | Clínicas emetropías/diagnósticos/lentes/monturas |
-| T6 | S6 | inline | pending | PDF upgrade path (basic → sectioned rich export) |
-| T7 | all | inline | pending | GGA; RDD/JD on export+PII slices |
+| T1 | S6–S9,S11 | inline | done | KPIs REAL; UX tabs missing; no vendedorUserId (L7) |
+| T-attr | S9,S12 | inline | done | Room v57 `vendedorUserId` + create defaults + sync + supabase mig |
+| T-tabs | S7,S11,S12 | inline | done | `ReportModule` tabs; Resumen KPIs / Ventas list / placeholders |
+| T2 | S2,S7,S8 | inline | done | `PeriodComparison` + Ventas compare card; GREEN PeriodComparisonTest |
+| T3 | S1 | inline | done | Pacientes altas/demografía via `ReportesModuleStats.pacientes` |
+| T4 | S3 | inline | done | Inventario stock/low/salidas via `ReportesModuleStats.inventario` |
+| T5 | S4 | inline | done | Clínico evaluaciones + diagnóstico counts |
+| T-equipo | S6,S9,S12 | inline | done | Equipo by vendedorUserId + `CommissionConfigJson` (default 0) |
+| T6 | S7,S12 | inline | done | PDF extras sections via `ReportePdfSectionLines` |
+| T7 | all | inline | done | JD APPROVED after 39fda6de fixes; Room rebased to MIGRATION_57_58 |
+
+**Merge note:** Analista stack also plans Room 56→57 (seguimiento). Before merging both to main, rebase so Reportes becomes 57→58 (or combine migrations). Do not ship two conflicting 56→57 definitions.
 
 ## Log
 
@@ -123,3 +130,19 @@ L4. User (2026-10-15): Reportes should also support seller sales + commissions/b
 L5. User (2026-10-15): Seller should be the membership **user** (dueño/gerente create users + roles); especialistas also sell besides evaluating; add to statistics. Locked: `vendedorUserId` = membership uid; seller pool includes especialista + comerciales + gestores who sell.
 
 L6. User (2026-10-15): Include UX/UI in general plan for both features; apply starts with Analista. Reportes UX plan recorded (tabs + Equipo; no coach blocks).
+
+L7. User (2026-10-16): `ahora reportes ricos, mejorar uxui creo qye ya lo as hecho y que los datos sean reales, verificalo.` T1 verify: (1) UX/UI plan written in this doc only — **not implemented**. (2) Current financial KPIs/movimientos are **REAL**. (3) `vendedorUserId` / Equipo / RF-REP-03..06 still absent.
+
+L8. User (2026-10-16): `todo` — full Must #5 apply authorized. Branch `feat/reportes-ricos` from main. Commission % configurable default 0 (S12). Start T-attr then T-tabs → T2…T7.
+
+L9. T-attr done (2026-10-16): `vendedorUserId` on dispensaciones + servicios_extra; MIGRATION_56_57; supabase `20261016150000_vendedor_user_id.sql`; sync DTOs; create defaults via `VendedorAttribution` + auth uid; edits preserve seller. GREEN `VendedorAttributionTest` + `Migration56To57Test`. Next: T-tabs.
+
+L10. T-tabs done (2026-10-16): `ReportModule` + ScrollableTabRow; Resumen = KPIs/cobros/composición; Ventas = detalle list (real costs); Pacientes/Inventario/Clínico/Equipo placeholders. GREEN `ReportModuleOrderTest`. Next: T2 comparativos.
+
+L11. User (2026-10-16): finish Reportes + JD/fixes + merge Analista+Reportes + remote migrate + R8 release + clean branches (end of day).
+
+L12. T2–T6 done (2026-10-16): period compare; pacientes/inventario/clínico/equipo tabs wired; commission % cycle 0/5/10 in Equipo; PDF sectioned extras. Focused Reportes tests GREEN. Next: T7 JD then Room rebase 57→58 after Analista #178 on main.
+
+L13. Judgment Day fix round @ 90135564 (2026-10-16): C-CANCEL filter Anulado/Reclamada in `allMovimientosDelPeriodo`; C-MARGEN exclude `costoIncompleto` from `margenTotal`/`costoTotal`; W-COMISION-UX percent dialog gated to admin/gerente; S-REMOTE surface remote upsert failure; W-PDF-TRUNC wrap section lines; W-PDF-HEADER continuation header without Fecha/Pago/Total/Saldo on section page breaks.
+
+L14. JD scoped re-judgment empty for both judges → APPROVED. Rebased onto main after #178: Analista keeps MIGRATION_56_57 (seguimiento); Reportes vendedorUserId is MIGRATION_57_58 + schema 58.json.

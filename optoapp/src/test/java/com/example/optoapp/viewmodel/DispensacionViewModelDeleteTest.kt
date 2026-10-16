@@ -80,7 +80,7 @@ class DispensacionViewModelDeleteTest {
         mockk(relaxed = true),
         eliminar,
         mockk(relaxed = true),
-    ).also { testDispatcher.scheduler.advanceUntilIdle() }
+        mockk(relaxed = true)).also { testDispatcher.scheduler.advanceUntilIdle() }
 
     @Test
     fun `deleteDispensacion delegates to the eliminar use case without restocking`() = runTest(testDispatcher) {

@@ -20,6 +20,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
 
+// Real-Room migration test (AGENTS.md exception): the migration runs on Android SQLite and Room's
+// schema validation, both of which need the Context Robolectric provides.
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = android.app.Application::class)
 class Migration56To57Test {
@@ -44,7 +46,7 @@ class Migration56To57Test {
         createV56Database()
 
         val room = Room.databaseBuilder(context, OptoDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_56_57)
+            .addMigrations(MIGRATION_56_57, MIGRATION_57_58)
             .allowMainThreadQueries()
             .build()
         val db = room.openHelper.writableDatabase

@@ -70,6 +70,9 @@ data class DispensacionOptica(
     val motivoAnulacion: String? = null,
     @Serializable(with = LocalDateSerializer::class)
     val fechaAnulacion: LocalDate? = null,
+    /** Membership auth uid of the seller; null = legacy / unattributed. */
+    @SerialName("vendedorUserId")
+    val vendedorUserId: String? = null,
 )
 
 @Entity(
@@ -172,6 +175,9 @@ data class ServicioExtra(
     val realizadoPorNombre: String? = null,
     @ColumnInfo(defaultValue = "0")
     val costoReal: Double = 0.0,
+    /** Membership auth uid of the seller; null = legacy / unattributed. */
+    @SerialName("vendedorUserId")
+    val vendedorUserId: String? = null,
 )
 
 @Entity(
