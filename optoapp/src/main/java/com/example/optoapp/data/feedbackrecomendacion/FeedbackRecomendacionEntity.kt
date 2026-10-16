@@ -13,4 +13,8 @@ data class FeedbackRecomendacionEntity(
     val opticaId: String,
     val fueUtil: Boolean,
     val fecha: Long = System.currentTimeMillis(),
+    /** SeguimientoEstado name; blank on legacy rows until backfilled. */
+    val estado: String = "",
+    /** Month key yyyy-MM; blank on legacy rows. */
+    val periodo: String = "",
 )

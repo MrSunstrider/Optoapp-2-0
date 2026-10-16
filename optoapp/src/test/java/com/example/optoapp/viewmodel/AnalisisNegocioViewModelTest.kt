@@ -12,6 +12,7 @@ import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.RecomendacionTipo
+import com.example.optoapp.domain.SeguimientoEstado
 import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.util.CurrentMonthProvider
 import com.example.optoapp.util.MesArg
@@ -332,31 +333,36 @@ class AnalisisNegocioViewModelTest {
     }
 
     @Test
-    fun `onFeedback util calls marcarUtil`() = runTest(testDispatcher) {
+    fun `onSeguimiento hecho calls marcarSeguimiento for selected month`() = runTest(testDispatcher) {
         primeUseCases()
-        coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) } returns Unit
+        coEvery {
+            feedbackRecomendacion.marcarSeguimiento("r1", opticaId, "2026-07", SeguimientoEstado.HECHO)
+        } returns Unit
+        coEvery { feedbackRecomendacion.listarPorPeriodo(opticaId, "2026-07") } returns emptyMap()
 
         viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.onFeedback("r1", fueUtil = true)
+        viewModel.onSeguimiento("r1", SeguimientoEstado.HECHO)
         advanceUntilIdle()
 
-        coEvery { feedbackRecomendacion.marcarUtil("r1", opticaId) }
-        // No exception = success
+        coVerify {
+            feedbackRecomendacion.marcarSeguimiento("r1", opticaId, "2026-07", SeguimientoEstado.HECHO)
+        }
+        assertEquals(SeguimientoEstado.HECHO, viewModel.uiState.first().seguimientos["r1"])
     }
 
     @Test
-    fun `onFeedback no util calls marcarNoUtil`() = runTest(testDispatcher) {
+    fun `loadData hydrates seguimientos for periodo`() = runTest(testDispatcher) {
         primeUseCases()
-        coEvery { feedbackRecomendacion.marcarNoUtil("r2", opticaId) } returns Unit
+        coEvery { feedbackRecomendacion.listarPorPeriodo(opticaId, "2026-07") } returns mapOf(
+            "r1" to SeguimientoEstado.MAS_TARDE,
+        )
 
         viewModel = createViewModel()
         advanceUntilIdle()
 
-        viewModel.onFeedback("r2", fueUtil = false)
-        advanceUntilIdle()
-        // No exception = success
+        assertEquals(SeguimientoEstado.MAS_TARDE, viewModel.uiState.first().seguimientos["r1"])
     }
 
     @Test
