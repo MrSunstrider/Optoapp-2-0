@@ -46,6 +46,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val sorted = recommendations.sortedWith(
             compareBy<Recomendacion> { it.prioridad.ordinal }
+                .thenByDescending { it.impactoMonto ?: Double.NEGATIVE_INFINITY }
                 .thenBy { it.tipo.ordinal },
         )
 
@@ -68,13 +69,15 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         val totalStr = MoneyFormatter.format(deudaTotal)
 
         val titulo = "Cobranza pendiente"
+        val impacto = ImpactoRecomendacion.cobrar(deudaTotal)
         return Recomendacion(
             id = "${RecomendacionTipo.COBRAR.name}::$titulo",
             tipo = RecomendacionTipo.COBRAR,
             titulo = titulo,
             detalle = "Deuda total de $totalStr en ${deudores.size} deudores. " +
                 "Principales: $nombres.",
-            impactoEstimado = "$totalStr si se cobra todo",
+            impactoEstimado = impacto.etiqueta,
+            impactoMonto = impacto.monto,
             prioridad = Prioridad.ALTA,
             accion = "Contactar a los deudores para coordinar pagos pendientes",
             datosAccion = DatosAccion(
@@ -96,6 +99,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val margenPctStr = String.format("%.1f", target.margenPct ?: 0.0)
         val titulo = "Mejorar precio de ${target.categoria}"
+        val impacto = ImpactoRecomendacion.mejorarPrecio(target.ventas, target.margenPct)
         return Recomendacion(
             id = "${RecomendacionTipo.MEJORAR_PRECIO.name}::$titulo",
             tipo = RecomendacionTipo.MEJORAR_PRECIO,
@@ -103,7 +107,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             detalle = "La categoria ${target.categoria} tiene un margen bajo " +
                 "del $margenPctStr%. Considera ajustar precios para alcanzar " +
                 "al menos un 25% de margen.",
-            impactoEstimado = null,
+            impactoEstimado = impacto?.etiqueta ?: ImpactoRecomendacion.SIN_IMPACTO,
+            impactoMonto = impacto?.monto,
             prioridad = Prioridad.ALTA,
             accion = "Revisar precios de ${target.categoria} y ajustar al alza",
             datosAccion = null,
@@ -123,6 +128,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         val costoTotal = estancados.sumOf { it.costo * it.stockActual }
 
         val titulo = "Liquidar stock estancado"
+        val impacto = ImpactoRecomendacion.liquidarStock(costoTotal)
         return Recomendacion(
             id = "${RecomendacionTipo.LIQUIDAR_STOCK.name}::$titulo",
             tipo = RecomendacionTipo.LIQUIDAR_STOCK,
@@ -130,7 +136,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             detalle = "${estancados.size} items llevan mas de ${config.stockEstancadoAlertaDias} " +
                 "dias sin venderse: $modelos. " +
                 "Costo total en inventario: ${MoneyFormatter.format(costoTotal)}.",
-            impactoEstimado = null,
+            impactoEstimado = impacto.etiqueta,
+            impactoMonto = impacto.monto,
             prioridad = Prioridad.MEDIA,
             accion = "Ofrecer descuentos del 20-30% para liberar capital estancado",
             datosAccion = DatosAccion(
@@ -158,6 +165,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val margenPctStr = String.format("%.0f", target.margenPct ?: 0.0)
         val titulo = "Vender mas de ${target.categoria}"
+        val impacto = ImpactoRecomendacion.venderMasDe(target.ventas, target.margenPct)
         return Recomendacion(
             id = "${RecomendacionTipo.VENDER_MAS_DE.name}::$titulo",
             tipo = RecomendacionTipo.VENDER_MAS_DE,
@@ -165,7 +173,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             detalle = "${target.categoria} tiene un margen alto del $margenPctStr% " +
                 "y contribuye significativamente a la ganancia total. " +
                 "Aumenta su promocion y visibilidad.",
-            impactoEstimado = null,
+            impactoEstimado = impacto?.etiqueta ?: ImpactoRecomendacion.SIN_IMPACTO,
+            impactoMonto = impacto?.monto,
             prioridad = Prioridad.MEDIA,
             accion = "Crear promocion destacada para ${target.categoria}",
             datosAccion = null,
@@ -209,6 +218,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         } else {
             "Las ventas cayeron un $pctStr% respecto al mes pasado. "
         }
+        val impacto = ImpactoRecomendacion.alertaCaida(analisis.ventasMes, ventasReferencia)
         return Recomendacion(
             id = "${RecomendacionTipo.ALERTA_CAIDA.name}::$titulo",
             tipo = RecomendacionTipo.ALERTA_CAIDA,
@@ -217,7 +227,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 "¿Estacionalidad o tendencia? " +
                 "Ventas actuales: ${MoneyFormatter.format(analisis.ventasMes)} vs. " +
                 "${MoneyFormatter.format(ventasReferencia)} esperado.",
-            impactoEstimado = null,
+            impactoEstimado = impacto?.etiqueta ?: ImpactoRecomendacion.SIN_IMPACTO,
+            impactoMonto = impacto?.monto,
             prioridad = Prioridad.ALTA,
             accion = "Revisar causas de la caida y evaluar acciones correctivas",
             datosAccion = null,
@@ -233,6 +244,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val ratioPct = String.format("%.1f", ratio * 100)
         val titulo = "Reducir gastos operativos"
+        val impacto = ImpactoRecomendacion.reducirGasto(analisis.gastosMes)
         return Recomendacion(
             id = "${RecomendacionTipo.REDUCIR_GASTO.name}::$titulo",
             tipo = RecomendacionTipo.REDUCIR_GASTO,
@@ -242,7 +254,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 "${MoneyFormatter.format(analisis.ventasMes)} ventas). " +
                 "Reducir un 10% los gastos liberaria aproximadamente " +
                 "${MoneyFormatter.format(analisis.gastosMes * 0.1)}.",
-            impactoEstimado = null,
+            impactoEstimado = impacto.etiqueta,
+            impactoMonto = impacto.monto,
             prioridad = Prioridad.MEDIA,
             accion = "Analizar partidas de gasto y eliminar las no esenciales",
             datosAccion = null,

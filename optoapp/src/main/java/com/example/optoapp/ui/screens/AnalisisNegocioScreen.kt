@@ -26,6 +26,9 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
+import com.example.optoapp.domain.ConfianzaInterpretacion
+import com.example.optoapp.domain.ImpactoRecomendacion
+import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -145,6 +148,10 @@ fun AnalisisNegocioScreen(
                 onMonthSelected = viewModel::selectMonth,
             )
 
+            uiState.interpretacion?.let { interpretacion ->
+                InterpretacionCoachCard(interpretacion = interpretacion)
+            }
+
             uiState.analisis?.let { analisis ->
                 ResumenCard(analisis = analisis)
             }
@@ -176,7 +183,7 @@ fun AnalisisNegocioScreen(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             if (uiState.recomendaciones.isNotEmpty()) {
-                uiState.recomendaciones.take(3).forEach { rec ->
+                uiState.recomendaciones.take(5).forEach { rec ->
                     RecomendacionCard(
                         rec = rec,
                         feedbacksEnviados = uiState.feedbacksEnviados,
@@ -428,6 +435,60 @@ private fun gastoEtiqueta(categoria: String, descripcion: String?): String =
     if (descripcion.isNullOrBlank()) categoria else stringResource(R.string.analisis_gasto_etiqueta, categoria, descripcion)
 
 @Composable
+private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
+    val confianzaLabel = when (interpretacion.confianza) {
+        ConfianzaInterpretacion.ALTA -> stringResource(R.string.analisis_confianza_alta)
+        ConfianzaInterpretacion.MEDIA -> stringResource(R.string.analisis_confianza_media)
+        ConfianzaInterpretacion.BAJA -> stringResource(R.string.analisis_confianza_baja)
+    }
+    val confianzaColor = when (interpretacion.confianza) {
+        ConfianzaInterpretacion.ALTA -> MaterialTheme.colorScheme.positiveGreen
+        ConfianzaInterpretacion.MEDIA -> MaterialTheme.colorScheme.warningAmber
+        ConfianzaInterpretacion.BAJA -> MaterialTheme.colorScheme.alertRed
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.analisis_lectura_mes),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                interpretacion.titular,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                confianzaLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = confianzaColor,
+            )
+            interpretacion.puntos.forEach { punto ->
+                Text(
+                    stringResource(R.string.analisis_interpretacion_punto, punto),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            interpretacion.proximaAccion?.let { accion ->
+                Text(
+                    stringResource(R.string.analisis_proxima_accion, accion),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ResumenCard(analisis: AnalisisMensual) {
     val saldo = analisis.saldoPendiente
     Card(
@@ -560,6 +621,14 @@ internal fun RecomendacionCard(
                         rec.detalle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val impactoLabel = rec.impactoEstimado ?: ImpactoRecomendacion.SIN_IMPACTO
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.analisis_recomendacion_impacto, impactoLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
                     )
                     rec.accion?.let { accion ->
                         Spacer(Modifier.height(4.dp))

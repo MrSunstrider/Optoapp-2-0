@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.domain
+package com.example.optoapp.domain
 
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
@@ -13,11 +13,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
 
-@RunWith(RobolectricTestRunner::class)
 class GenerarRecomendacionesUseCaseTest {
 
     private val configDao: ConfiguracionFinancieraDao = mockk(relaxed = true)
@@ -317,7 +314,9 @@ class GenerarRecomendacionesUseCaseTest {
 
         val lista = listaDe(useCase.invoke(analisis, deudores, "optica1"))
         assertEquals(5, lista.size)
-        assertNull(lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO })
+        // MEDIA by impactoMonto: REDUCIR (600) > VENDER (216) > LIQUIDAR (168) → LIQUIDAR dropped
+        assertNull(lista.find { it.tipo == RecomendacionTipo.LIQUIDAR_STOCK })
+        assertNotNull(lista.find { it.tipo == RecomendacionTipo.REDUCIR_GASTO })
     }
 
     @Test
@@ -402,7 +401,40 @@ class GenerarRecomendacionesUseCaseTest {
         assertEquals(5, lista.size)
         val tiposPresentes = lista.map { it.tipo }.toSet()
         assertEquals(5, tiposPresentes.size)
-        assertTrue(!tiposPresentes.contains(RecomendacionTipo.REDUCIR_GASTO))
+        assertTrue(!tiposPresentes.contains(RecomendacionTipo.LIQUIDAR_STOCK))
+        assertTrue(tiposPresentes.contains(RecomendacionTipo.REDUCIR_GASTO))
+    }
+
+    @Test
+    fun invoke_samePrioridad_ordersByImpactoMontoDescending() = runBlocking {
+        val categorias = listOf(
+            categoria("Mont Econ", ventas = 960.0, costos = 880.0, margenPct = 8.3),
+        )
+        val deudores = listOf(deudor("Juan", saldo = 4000.0, dias = 15))
+        val analisis = cleanAnalisis(
+            ventasMes = 10000.0,
+            variacionVentasPct = -15.0,
+            categorias = categorias,
+        )
+        mockDeps()
+
+        val lista = listaDe(useCase.invoke(analisis, deudores, "optica1"))
+        val altas = lista.filter { it.prioridad == Prioridad.ALTA }
+        assertTrue(altas.size >= 2)
+        val montos = altas.map { it.impactoMonto ?: Double.NEGATIVE_INFINITY }
+        assertEquals(montos.sortedDescending(), montos)
+        assertNotNull(lista.find { it.tipo == RecomendacionTipo.COBRAR }!!.impactoMonto)
+        assertNotNull(lista.find { it.tipo == RecomendacionTipo.MEJORAR_PRECIO }!!.impactoMonto)
+    }
+
+    @Test
+    fun cobrar_setsImpactoMontoFromDebt() = runBlocking {
+        val deudores = listOf(deudor("Juan", saldo = 2000.0), deudor("Maria", saldo = 2200.0))
+        mockDeps()
+        val cobrar = listaDe(useCase.invoke(cleanAnalisis(), deudores, "optica1"))
+            .find { it.tipo == RecomendacionTipo.COBRAR }!!
+        assertEquals(4200.0, cobrar.impactoMonto!!, 0.001)
+        assertTrue(cobrar.impactoEstimado!!.isNotBlank())
     }
 
     @Test
