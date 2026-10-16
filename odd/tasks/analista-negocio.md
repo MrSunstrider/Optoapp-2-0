@@ -78,7 +78,7 @@ Answer in &lt;10 seconds: “¿Cómo va el mes y qué hago ahora?” — not “
 | T2 | S1,S6,S7,S11 | inline | done | InterpretacionAnalista + coach card + VM; tests GREEN |
 | T3 | S3,S7,S11 | inline | done | `37b7e7ce` ImpactoRecomendacion + Plan de acción UI |
 | T4 | S2,S8,S11 | inline | done | `e8a493d7` Room v57 seguimiento chips + periodo |
-| T5 | S1,S4,S11 | inline | pending | Reorder Resumen → coach-first; demote KPI grid |
+| T5 | S1,S4,S11 | inline | done | Coach IA order + ContextoBreve; Resumen behind expand |
 | T6 | S9–S10 | inline | pending | Role + regression; GGA; RDD if RPC touched |
 
 ## Log
@@ -102,3 +102,5 @@ L8. T2 done (2026-10-15): RED compile miss → GREEN `InterpretacionAnalistaTest
 L9. T3 done (2026-10-15): `ImpactoRecomendacion` fills etiqueta+monto for all six families; `Recomendacion.impactoMonto` ranks after prioridad; UI title **Plan de acción**, shows up to 5 with Impacto label. GREEN focused + full `:optoapp:testDebugUnitTest`. Cap drops lowest MEDIA by monto (LIQUIDAR in all-rules fixture). Fixed T2 `Text("•…")` for StringsCopyTest. Next: T4 seguimiento.
 
 L10. T4 done (2026-10-15): `SeguimientoEstado` HECHO/MAS_TARDE/NO_APLICA; Room MIGRATION_56_57 adds estado+periodo (backfill from fueUtil); stable id `optica|periodo|rec`; Plan de acción chips replace thumbs; VM loads/saves per yyyy-MM. Next: T5 demote KPI grid.
+
+L11. T5 done (2026-10-16): Screen IA coach-first — Plan de acción before ContextoBreve (margen/PE/cobertura); KPI ResumenCard demoted behind `metricasDetalleExpanded`; secondary atajos Detalle/Costos. GREEN `AnalisisCoachIaOrderTest`. Next: T6 regression/GGA.
