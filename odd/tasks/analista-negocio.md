@@ -78,8 +78,8 @@ Answer in &lt;10 seconds: “¿Cómo va el mes y qué hago ahora?” — not “
 | T2 | S1,S6,S7,S11 | inline | done | InterpretacionAnalista + coach card + VM; tests GREEN |
 | T3 | S3,S7,S11 | inline | done | `37b7e7ce` ImpactoRecomendacion + Plan de acción UI |
 | T4 | S2,S8,S11 | inline | done | `e8a493d7` Room v57 seguimiento chips + periodo |
-| T5 | S1,S4,S11 | inline | done | Coach IA order + ContextoBreve; Resumen behind expand |
-| T6 | S9–S10 | inline | pending | Role + regression; GGA; RDD if RPC touched |
+| T5 | S1,S4,S11 | inline | done | `fe6aea1b` Coach IA + ContextoBreve; Resumen demoted |
+| T6 | S9–S10 | inline | done | Role gate + scope guards; suite GREEN; no RPC → no RDD |
 
 ## Log
 
@@ -104,3 +104,5 @@ L9. T3 done (2026-10-15): `ImpactoRecomendacion` fills etiqueta+monto for all si
 L10. T4 done (2026-10-15): `SeguimientoEstado` HECHO/MAS_TARDE/NO_APLICA; Room MIGRATION_56_57 adds estado+periodo (backfill from fueUtil); stable id `optica|periodo|rec`; Plan de acción chips replace thumbs; VM loads/saves per yyyy-MM. Next: T5 demote KPI grid.
 
 L11. T5 done (2026-10-16): Screen IA coach-first — Plan de acción before ContextoBreve (margen/PE/cobertura); KPI ResumenCard demoted behind `metricasDetalleExpanded`; secondary atajos Detalle/Costos. GREEN `AnalisisCoachIaOrderTest`. Next: T6 regression/GGA.
+
+L12. T6 done (2026-10-16): Confirmed admin|gerente gate (`AppRolesAnalisisGateTest`); Análisis has no commission/payroll copy (`AnalisisScopeGuardTest`); full unit suite GREEN on T5; no money RPC/migration in T5–T6 → RDD not due. Feature Must #4 apply slice complete on branch.
