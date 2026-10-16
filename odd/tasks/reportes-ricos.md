@@ -142,3 +142,5 @@ L10. T-tabs done (2026-10-16): `ReportModule` + ScrollableTabRow; Resumen = KPIs
 L11. User (2026-10-16): finish Reportes + JD/fixes + merge Analista+Reportes + remote migrate + R8 release + clean branches (end of day).
 
 L12. T2–T6 done (2026-10-16): period compare; pacientes/inventario/clínico/equipo tabs wired; commission % cycle 0/5/10 in Equipo; PDF sectioned extras. Focused Reportes tests GREEN. Next: T7 JD then Room rebase 57→58 after Analista #178 on main.
+
+L13. Judgment Day fix round @ 90135564 (2026-10-16): C-CANCEL filter Anulado/Reclamada in `allMovimientosDelPeriodo`; C-MARGEN exclude `costoIncompleto` from `margenTotal`/`costoTotal`; W-COMISION-UX percent dialog gated to admin/gerente; S-REMOTE surface remote upsert failure; W-PDF-TRUNC wrap section lines; W-PDF-HEADER continuation header without Fecha/Pago/Total/Saldo on section page breaks.

@@ -278,7 +278,13 @@
     <string name="reportes_equipo_comision_pct">Comisión %%: %1$.1f</string>
     <string name="reportes_equipo_fila">%1$s · %2$s · comisión %3$s</string>
     <string name="reportes_equipo_sin_atribuir">Sin atribuir: %1$s (%2$d)</string>
-    <string name="reportes_equipo_pct_hint">Tocá para ciclar 0 / 5 / 10%%</string>
+    <string name="reportes_equipo_pct_hint">Toca para editar el porcentaje (0–100%%). Solo admin o gerente.</string>
+    <string name="reportes_equipo_pct_readonly_hint">Solo admin o gerente pueden editar la comisión.</string>
+    <string name="reportes_equipo_comision_dialog_title">Porcentaje de comisión</string>
+    <string name="reportes_equipo_comision_label">Porcentaje (0–100)</string>
+    <string name="reportes_equipo_comision_save">Guardar</string>
+    <string name="reportes_equipo_comision_cancel">Cancelar</string>
+    <string name="reportes_equipo_comision_invalid">Ingresa un número entre 0 y 100.</string>
     <string name="reportes_dispensacion_ot">Dispensación · OT %1$s</string>
     <string name="reportes_servicio_descripcion">Servicio · %1$s</string>
     <string name="reportes_sin_descripcion">Sin descripción</string>

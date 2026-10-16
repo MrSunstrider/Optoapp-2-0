@@ -130,6 +130,36 @@ class ReportesViewModelTest {
             0.001,
         )
     }
+
+    @Test
+    fun `totalVendido excludes Anulado and Reclamada sales from allMovimientosDelPeriodo`() = runTest(testDispatcher) {
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(
+            listOf(
+                DispensacionOptica(id = "d1", pacienteId = "p1", fecha = today, montoTotal = 100.0, opticaId = opticaId, estadoEntrega = "Pendiente"),
+                DispensacionOptica(id = "d2", pacienteId = "p2", fecha = today, montoTotal = 200.0, opticaId = opticaId, estadoEntrega = "Anulado"),
+                DispensacionOptica(id = "d3", pacienteId = "p3", fecha = today, montoTotal = 300.0, opticaId = opticaId, estadoEntrega = "Reclamada"),
+            ),
+        )
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(
+            listOf(
+                ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 50.0, aCuenta = 50.0, estado = "Entregado", fecha = today, opticaId = opticaId),
+                ServicioExtra(id = "s2", descripcion = "Anulado", montoTotal = 80.0, aCuenta = 0.0, estado = "Anulado", fecha = today, opticaId = opticaId),
+            ),
+        )
+        coEvery { repository.getDispensacionItemsSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { repository.getRegalosSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { repository.getServicioExtraItemsSnapshotForOptica(opticaId) } returns emptyList()
+        coEvery { repository.getRegalosServicioExtraSnapshotForOptica(opticaId) } returns emptyList()
+
+        viewModel = ReportesViewModel(repository, sessionManager, mockk(relaxed = true))
+        viewModel.setPeriodo("Diario")
+        viewModel.setFechaDiario(today)
+        advanceUntilIdle()
+
+        val movs = viewModel.allMovimientosDelPeriodo.first()
+        assertEquals(setOf("d1", "s1"), movs.map { it.origenId }.toSet())
+        assertEquals(150.0, viewModel.totalVendido.first(), 0.001)
+    }
     @Test
     fun `cobrosPeriodo uses PagoEffect excluding Anulacion contributing zero`() = runTest(testDispatcher) {
         val yesterday = today.minusDays(1)
@@ -362,5 +392,20 @@ class ReportesViewModelTest {
         val movimientos = viewModel.movimientosPorOrigenId.first()
         assertTrue(movimientos.getValue("s1").costoIncompleto)
         assertFalse(movimientos.getValue("d1").costoIncompleto)
+    }
+
+    @Test
+    fun `margenTotal and costoTotal exclude incomplete-cost rows`() = runTest(testDispatcher) {
+        stubMensualConCostos()
+        every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(
+            listOf(ServicioExtra(id = "s1", descripcion = "Srv", montoTotal = 100.0, estado = "Entregado", fecha = today, opticaId = opticaId)),
+        )
+
+        viewModel = mensualViewModel()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.movimientosPorOrigenId.first().getValue("s1").costoIncompleto)
+        assertEquals(140.0, viewModel.costoTotal.first(), 0.001)
+        assertEquals(60.0, viewModel.margenTotal.first(), 0.001)
     }
 }

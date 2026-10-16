@@ -2,6 +2,8 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.MembershipRepository
 import com.example.optoapp.data.OptoRepository
@@ -14,6 +16,7 @@ import com.example.optoapp.domain.CostoVentaCalculator
 import com.example.optoapp.domain.EquipoReporte
 import com.example.optoapp.domain.InventarioReporte
 import com.example.optoapp.domain.MovimientoFinanciero
+import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.Origen
 import com.example.optoapp.domain.PacientesReporte
 import com.example.optoapp.domain.PagoEffect
@@ -112,7 +115,7 @@ class ReportesViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
-    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate, now: LocalDate): Boolean = when (p) {
+    private fun dentroDelPeriodo(date: LocalDate, p: String, a: String, fechaDiario: LocalDate): Boolean = when (p) {
         "Diario" -> date.isEqual(fechaDiario)
         "Semanal" -> {
             val dayOfWeek = fechaDiario.dayOfWeek.value
@@ -125,7 +128,7 @@ class ReportesViewModel @Inject constructor(
         else -> true
     }
 
-    private fun periodDateRange(p: String, a: String, fd: LocalDate, now: LocalDate): Pair<LocalDate, LocalDate> = when (p) {
+    private fun periodDateRange(p: String, a: String, fd: LocalDate): Pair<LocalDate, LocalDate> = when (p) {
         "Diario" -> fd to fd
         "Semanal" -> {
             val startOfWeek = fd.minusDays((fd.dayOfWeek.value - 1).toLong())
@@ -136,7 +139,7 @@ class ReportesViewModel @Inject constructor(
         else -> LocalDate.MIN to LocalDate.MAX
     }
 
-    private fun previousPeriodDateRange(p: String, a: String, fd: LocalDate, now: LocalDate): Pair<LocalDate, LocalDate>? = when (p) {
+    private fun previousPeriodDateRange(p: String, a: String, fd: LocalDate): Pair<LocalDate, LocalDate>? = when (p) {
         "Diario" -> fd.minusDays(1) to fd.minusDays(1)
         "Semanal" -> {
             val startOfWeek = fd.minusDays((fd.dayOfWeek.value - 1).toLong()).minusWeeks(1)
@@ -162,11 +165,10 @@ class ReportesViewModel @Inject constructor(
                 _anio,
                 _fechaDiario,
             ) { list, p, a, fd ->
-                val now = LocalDate.now()
                 list.filter { disp ->
-                    disp.estadoEntrega != "Anulado" &&
-                        disp.estadoEntrega != "Reclamada" &&
-                        dentroDelPeriodo(disp.fecha, p, a, fd, now)
+                    disp.estadoEntrega != OrderStatusPolicy.ANULADO &&
+                        disp.estadoEntrega != OrderStatusPolicy.RECLAMADA &&
+                        dentroDelPeriodo(disp.fecha, p, a, fd)
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -180,8 +182,7 @@ class ReportesViewModel @Inject constructor(
                 _anio,
                 _fechaDiario,
             ) { list, p, a, fd ->
-                val now = LocalDate.now()
-                list.filter { servicio -> servicio.estado != "Anulado" && dentroDelPeriodo(servicio.fecha, p, a, fd, now) }
+                list.filter { servicio -> servicio.estado != OrderStatusPolicy.ANULADO && dentroDelPeriodo(servicio.fecha, p, a, fd) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -189,8 +190,7 @@ class ReportesViewModel @Inject constructor(
     val allMovimientosDelPeriodo: StateFlow<List<MovimientoFinanciero>> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 combine(
@@ -211,7 +211,11 @@ class ReportesViewModel @Inject constructor(
                     val itemsByServ = repository.getServicioExtraItemsSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
                     val regalosByServ = repository.getRegalosServicioExtraSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
                     val dispMovs = disps
-                        .filter { it.fecha >= start && it.fecha <= end }
+                        .filter {
+                            it.fecha >= start && it.fecha <= end &&
+                                it.estadoEntrega != OrderStatusPolicy.ANULADO &&
+                                it.estadoEntrega != OrderStatusPolicy.RECLAMADA
+                        }
                         .map { d ->
                             val costo = CostoVentaCalculator.dispensacion(
                                 items = itemsByDisp[d.id].orEmpty(),
@@ -235,7 +239,10 @@ class ReportesViewModel @Inject constructor(
                             )
                         }
                     val servMovs = servs
-                        .filter { it.fecha >= start && it.fecha <= end }
+                        .filter {
+                            it.fecha >= start && it.fecha <= end &&
+                                it.estado != OrderStatusPolicy.ANULADO
+                        }
                         .map { s ->
                             val costo = CostoVentaCalculator.servicio(s, itemsByServ[s.id].orEmpty(), regalosByServ[s.id].orEmpty())
                             MovimientoFinanciero(
@@ -268,18 +275,17 @@ class ReportesViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val costoTotal: StateFlow<Double> = allMovimientosDelPeriodo
-        .map { movs -> movs.sumOf { it.costo } }
+        .map { movs -> movs.filterNot { it.costoIncompleto }.sumOf { it.costo } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val margenTotal: StateFlow<Double> = allMovimientosDelPeriodo
-        .map { movs -> movs.sumOf { it.montoTotal - it.costo } }
+        .map { movs -> movs.filterNot { it.costoIncompleto }.sumOf { it.montoTotal - it.costo } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val totalPagado: StateFlow<Double> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 repository.getPagosByDateRangeForOptica(start, end, opticaId)
@@ -330,15 +336,13 @@ class ReportesViewModel @Inject constructor(
                 _anio,
                 _fechaDiario,
             ) { p, a, fd ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(p, a, fd) to (start to end)
             }.flatMapLatest { (params, range) ->
                 val (p, a, fd) = params
-                val now = LocalDate.now()
                 repository.getPagosByDateRangeForOptica(range.first, range.second, opticaId)
                     .map { pagos ->
-                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                        pagos.filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd) }
                             .sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
                     }
             }
@@ -350,8 +354,7 @@ class ReportesViewModel @Inject constructor(
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
                 Triple(p, a, fd)
             }.flatMapLatest { (p, a, fd) ->
-                val now = LocalDate.now()
-                val (start, end) = periodDateRange(p, a, fd, now)
+                val (start, end) = periodDateRange(p, a, fd)
                 combine(
                     repository.getPagosByDateRangeForOptica(start, end, opticaId),
                     repository.getAllDispensacionesForOptica(opticaId),
@@ -360,12 +363,12 @@ class ReportesViewModel @Inject constructor(
                     val dispMap = todasDisp.associateBy { it.id }
                     val servMap = todasServ.associateBy { it.id }
                     pagos
-                        .filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd, now) }
+                        .filter { pago -> dentroDelPeriodo(pago.fecha, p, a, fd) }
                         .sumOf { pago ->
                             val dispFecha = pago.dispensacionId?.let { dispMap[it]?.fecha }
                             val servFecha = pago.servicioExtraId?.let { servMap[it]?.fecha }
-                            val dispInPeriod = dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd, now)
-                            val servInPeriod = servFecha != null && dentroDelPeriodo(servFecha, p, a, fd, now)
+                            val dispInPeriod = dispFecha != null && dentroDelPeriodo(dispFecha, p, a, fd)
+                            val servInPeriod = servFecha != null && dentroDelPeriodo(servFecha, p, a, fd)
                             if (dispInPeriod || servInPeriod) 0.0 else PagoEffect.signedAmount(pago.tipo, pago.monto)
                         }
                 }
@@ -375,8 +378,7 @@ class ReportesViewModel @Inject constructor(
     val periodComparison: StateFlow<PeriodComparison?> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario, allMovimientosDelPeriodo) { p, a, fd, current ->
-                val now = LocalDate.now()
-                val prevRange = previousPeriodDateRange(p, a, fd, now)
+                val prevRange = previousPeriodDateRange(p, a, fd)
                 Triple(opticaId, current, prevRange)
             }.flatMapLatest { (opticaId, current, prevRange) ->
                 flow {
@@ -386,9 +388,9 @@ class ReportesViewModel @Inject constructor(
                     }
                     val (start, end) = prevRange
                     val disps = repository.getDispensacionesByDateRangeForOptica(start, end, opticaId).first()
-                        .filter { it.estadoEntrega != "Anulado" && it.estadoEntrega != "Reclamada" }
+                        .filter { it.estadoEntrega != OrderStatusPolicy.ANULADO && it.estadoEntrega != OrderStatusPolicy.RECLAMADA }
                     val servs = repository.getServiciosByDateRangeForOptica(start, end, opticaId).first()
-                        .filter { it.estado != "Anulado" }
+                        .filter { it.estado != OrderStatusPolicy.ANULADO }
                     val itemsByDisp = repository.getDispensacionItemsSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
                     val regalosByDisp = repository.getRegalosSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
                     val itemsByServ = repository.getServicioExtraItemsSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
@@ -429,7 +431,7 @@ class ReportesViewModel @Inject constructor(
     val pacientesReporte: StateFlow<PacientesReporte> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val (start, end) = periodDateRange(p, a, fd, LocalDate.now())
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 flow {
@@ -442,7 +444,7 @@ class ReportesViewModel @Inject constructor(
     val inventarioReporte: StateFlow<InventarioReporte> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val (start, end) = periodDateRange(p, a, fd, LocalDate.now())
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 flow {
@@ -456,7 +458,7 @@ class ReportesViewModel @Inject constructor(
     val clinicoReporte: StateFlow<ClinicoReporte> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
-                val (start, end) = periodDateRange(p, a, fd, LocalDate.now())
+                val (start, end) = periodDateRange(p, a, fd)
                 Triple(opticaId, start, end)
             }.flatMapLatest { (opticaId, start, end) ->
                 flow {
@@ -471,6 +473,21 @@ class ReportesViewModel @Inject constructor(
             membershipRepository.getOpticaSettingsFlow(opticaId)
                 .map { CommissionConfigJson.extractPct(it?.configJson.orEmpty()) }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val canEditComision: StateFlow<Boolean> = sessionManager.opticaRol
+        .map { AppRoles.canManageUsers(it) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    private val _comisionMessage = MutableStateFlow<String?>(null)
+    val comisionMessage: StateFlow<String?> = _comisionMessage.asStateFlow()
+
+    private val _comisionError = MutableStateFlow<String?>(null)
+    val comisionError: StateFlow<String?> = _comisionError.asStateFlow()
+
+    fun clearComisionFeedback() {
+        _comisionMessage.value = null
+        _comisionError.value = null
+    }
 
     val equipoReporte: StateFlow<EquipoReporte> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
@@ -488,13 +505,39 @@ class ReportesViewModel @Inject constructor(
 
     fun setComisionPct(pct: Double) {
         viewModelScope.launch {
+            val rol = sessionManager.opticaRol.first()
+            if (!AppRoles.canManageUsers(rol)) {
+                _comisionMessage.value = null
+                _comisionError.value = "Solo admin o gerente pueden modificar la comisión."
+                return@launch
+            }
+            val clamped = pct.coerceIn(0.0, 100.0)
             val opticaId = sessionManager.opticaId.first()
-            if (opticaId.isBlank()) return@launch
+            if (opticaId.isBlank()) {
+                _comisionMessage.value = null
+                _comisionError.value = "Sin óptica activa."
+                return@launch
+            }
             val current = membershipRepository.getOpticaSettingsFlow(opticaId).first()
-            val merged = CommissionConfigJson.mergePct(current?.configJson.orEmpty(), pct)
+            val merged = CommissionConfigJson.mergePct(current?.configJson.orEmpty(), clamped)
             val entity = OpticaSettingsEntity(opticaId = opticaId, configJson = merged)
             membershipRepository.upsertOpticaSettings(entity)
-            membershipRepository.upsertOpticaSettingsRemote(opticaId, merged)
+            val remote = membershipRepository.upsertOpticaSettingsRemote(opticaId, merged)
+            if (remote.isSuccess) {
+                _comisionError.value = null
+                _comisionMessage.value = "Comisión guardada."
+            } else {
+                val raw = remote.exceptionOrNull()?.localizedMessage.orEmpty()
+                Log.e(TAG, "setComisionPct remote failed: opticaId=$opticaId", remote.exceptionOrNull())
+                _comisionMessage.value = null
+                _comisionError.value = raw.ifBlank {
+                    "Comisión guardada en el dispositivo. No se pudo sincronizar con la nube."
+                }
+            }
         }
+    }
+
+    companion object {
+        private const val TAG = "ReportesViewModel"
     }
 }

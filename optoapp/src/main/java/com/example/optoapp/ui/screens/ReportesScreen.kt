@@ -5,11 +5,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,6 +94,76 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val clinicoReporte by viewModel.clinicoReporte.collectAsState()
     val equipoReporte by viewModel.equipoReporte.collectAsState()
     val comisionPct by viewModel.comisionPct.collectAsState()
+    val canEditComision by viewModel.canEditComision.collectAsState()
+    val comisionMessage by viewModel.comisionMessage.collectAsState()
+    val comisionError by viewModel.comisionError.collectAsState()
+    val snackbarHostState = LocalSnackbarHostState.current
+    var showComisionDialog by remember { mutableStateOf(false) }
+    var comisionDraft by remember { mutableStateOf("") }
+    var comisionDialogError by remember { mutableStateOf<String?>(null) }
+    val comisionInvalidMsg = stringResource(R.string.reportes_equipo_comision_invalid)
+
+    LaunchedEffect(comisionMessage, comisionError) {
+        val msg = comisionMessage ?: comisionError
+        if (msg != null) {
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearComisionFeedback()
+        }
+    }
+
+    if (showComisionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showComisionDialog = false
+                comisionDialogError = null
+            },
+            title = { Text(stringResource(R.string.reportes_equipo_comision_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = comisionDraft,
+                        onValueChange = {
+                            comisionDraft = it
+                            comisionDialogError = null
+                        },
+                        label = { Text(stringResource(R.string.reportes_equipo_comision_label)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = comisionDialogError != null,
+                        supportingText = {
+                            comisionDialogError?.let { message -> Text(message) }
+                        },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val parsed = comisionDraft.trim().replace(',', '.').toDoubleOrNull()
+                        if (parsed == null || parsed < 0.0 || parsed > 100.0) {
+                            comisionDialogError = comisionInvalidMsg
+                            return@TextButton
+                        }
+                        viewModel.setComisionPct(parsed)
+                        showComisionDialog = false
+                        comisionDialogError = null
+                    },
+                ) {
+                    Text(stringResource(R.string.reportes_equipo_comision_save))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showComisionDialog = false
+                        comisionDialogError = null
+                    },
+                ) {
+                    Text(stringResource(R.string.reportes_equipo_comision_cancel))
+                }
+            },
+        )
+    }
 
     val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - ventasPeriodo
@@ -427,17 +507,30 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             onClick = {
-                                val next = when {
-                                    comisionPct < 2.5 -> 5.0
-                                    comisionPct < 7.5 -> 10.0
-                                    else -> 0.0
+                                if (canEditComision) {
+                                    comisionDraft = if (comisionPct % 1.0 == 0.0) {
+                                        comisionPct.toInt().toString()
+                                    } else {
+                                        comisionPct.toString()
+                                    }
+                                    comisionDialogError = null
+                                    showComisionDialog = true
                                 }
-                                viewModel.setComisionPct(next)
                             },
                         ) {
                             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(stringResource(R.string.reportes_equipo_comision_pct, comisionPct), fontWeight = FontWeight.Bold)
-                                Text(stringResource(R.string.reportes_equipo_pct_hint), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    stringResource(
+                                        if (canEditComision) {
+                                            R.string.reportes_equipo_pct_hint
+                                        } else {
+                                            R.string.reportes_equipo_pct_readonly_hint
+                                        },
+                                    ),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                                 equipoReporte.filas.forEach { row ->
                                     Text(
                                         stringResource(
