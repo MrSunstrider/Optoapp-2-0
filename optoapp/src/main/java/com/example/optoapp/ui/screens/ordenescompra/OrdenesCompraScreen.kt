@@ -10,14 +10,18 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.data.OrdenCompra
+import com.example.optoapp.data.OrdenCompraItem
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -57,6 +61,8 @@ fun OrdenesCompraScreen(
         if (oc != null) {
             OrdenCompraDetailDialog(
                 oc = oc,
+                canEdit = canEdit,
+                receiving = uiState.receiving,
                 viewModel = viewModel,
                 onDismiss = { viewModel.closeDetail() },
             )
@@ -215,12 +221,24 @@ private fun OrdenCompraCard(
 @Composable
 private fun OrdenCompraDetailDialog(
     oc: OrdenCompra,
+    canEdit: Boolean,
+    receiving: Boolean,
     viewModel: OrdenesCompraViewModel,
     onDismiss: () -> Unit,
 ) {
-    var items by remember { mutableStateOf<List<com.example.optoapp.data.OrdenCompraItem>>(emptyList()) }
+    var items by remember { mutableStateOf<List<OrdenCompraItem>>(emptyList()) }
+    var itemsLoaded by remember { mutableStateOf(false) }
+    var receivedTextById by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    val canReceive = oc.estado == "APROBADA" || oc.estado == "PARCIAL"
+    val canEditReceive = canEdit && canReceive
+    val receiveInputsEnabled = canEditReceive && !receiving
+
     LaunchedEffect(oc.id) {
-        items = viewModel.loadItems(oc.id)
+        itemsLoaded = false
+        val loaded = viewModel.loadItems(oc.id)
+        items = loaded
+        receivedTextById = loaded.associate { it.id to it.recibido.toString() }
+        itemsLoaded = true
     }
 
     AlertDialog(
@@ -238,17 +256,84 @@ private fun OrdenCompraDetailDialog(
             }
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 Text("Estado: ${oc.estado}")
                 Text("Total: S/. ${String.format("%.2f", oc.total)}")
                 val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
                 Text("Fecha: ${oc.fecha.format(dateFormatter)}")
+
+                if (!itemsLoaded) {
+                    Text(
+                        "Cargando ítems…",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else if (items.isEmpty()) {
+                    Text(
+                        "Esta orden no tiene ítems.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Text(
+                        "Ítems",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    items.forEach { item ->
+                        OrdenCompraReceiveItemRow(
+                            item = item,
+                            receivedText = receivedTextById[item.id].orEmpty(),
+                            canEditReceive = canEditReceive,
+                            editorsEnabled = receiveInputsEnabled,
+                            onReceivedTextChange = { value ->
+                                receivedTextById = receivedTextById + (item.id to value)
+                            },
+                        )
+                    }
+                }
+
+                if (canEditReceive) {
+                    Text(
+                        "El stock y el costo se actualizan solo cuando la orden queda completamente recibida.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    TextButton(
+                        onClick = {
+                            val filled = ReceiveQuantities.fillPending(
+                                items.map { ReceiveQuantities.Line(it.id, it.cantidad) },
+                            )
+                            receivedTextById = filled.mapValues { it.value.toString() }
+                        },
+                        enabled = items.isNotEmpty() && receiveInputsEnabled,
+                    ) {
+                        Text("Recibir todo lo pendiente")
+                    }
+                }
             }
         },
         confirmButton = {
-            if (oc.estado == "APROBADA" || oc.estado == "PARCIAL") {
-                TextButton(onClick = { onDismiss() }) {
-                    Text("Recibir ítems")
+            if (canEditReceive) {
+                TextButton(
+                    onClick = {
+                        val cantidadById = items.associate { it.id to it.cantidad }
+                        val minRecibidoById = items.associate { it.id to it.recibido }
+                        val absolute = ReceiveQuantities.toAbsoluteMap(
+                            receivedTextById,
+                            cantidadById,
+                            minRecibidoById,
+                        )
+                        viewModel.receiveItems(oc.id, absolute)
+                    },
+                    enabled = items.isNotEmpty() && receiveInputsEnabled,
+                ) {
+                    Text("Confirmar recepción")
                 }
             }
         },
@@ -256,4 +341,36 @@ private fun OrdenCompraDetailDialog(
             TextButton(onClick = onDismiss) { Text("Cerrar") }
         },
     )
+}
+
+@Composable
+private fun OrdenCompraReceiveItemRow(
+    item: OrdenCompraItem,
+    receivedText: String,
+    canEditReceive: Boolean,
+    editorsEnabled: Boolean,
+    onReceivedTextChange: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(
+            text = item.monturaId,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
+        Text(
+            text = "Pedido: ${item.cantidad} · Ya recibido: ${item.recibido}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (canEditReceive) {
+            OptoTextField(
+                value = receivedText,
+                onValueChange = onReceivedTextChange,
+                label = "Recibido total",
+                keyboardType = KeyboardType.Number,
+                enabled = editorsEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
 }

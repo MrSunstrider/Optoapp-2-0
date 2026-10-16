@@ -44,6 +44,7 @@ data class OrdenesCompraUiState(
     val form: OCEditFormState = OCEditFormState(),
     val editing: Boolean = false,
     val viewingId: String? = null,
+    val receiving: Boolean = false,
     val error: String? = null,
     val success: String? = null,
 )
@@ -222,16 +223,31 @@ class OrdenesCompraViewModel @Inject constructor(
     }
 
     fun receiveItems(ocId: String, receivedQuantities: Map<String, Int>) {
+        if (_uiState.value.receiving) return
+        _uiState.update { it.copy(receiving = true) }
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
                 repository.receiveItems(ocId, opticaId, receivedQuantities)
-                _uiState.update { it.copy(success = "Recepción registrada", error = null) }
+                _uiState.update {
+                    it.copy(
+                        success = "Recepción registrada",
+                        error = null,
+                        viewingId = null,
+                        receiving = false,
+                    )
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 Log.e(TAG, "receiveItems failed", e)
-                _uiState.update { it.copy(error = "No se pudo registrar la recepción. Inténtalo de nuevo.", success = null) }
+                _uiState.update {
+                    it.copy(
+                        error = "No se pudo registrar la recepción. Inténtalo de nuevo.",
+                        success = null,
+                        receiving = false,
+                    )
+                }
             }
         }
     }
