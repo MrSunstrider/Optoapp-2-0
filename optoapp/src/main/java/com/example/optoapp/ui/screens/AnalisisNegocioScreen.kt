@@ -33,6 +33,7 @@ import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.SeguimientoEstado
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.common.CostCoverageBadge
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
 import com.example.optoapp.ui.navigation.CostosTab
@@ -144,6 +145,8 @@ fun AnalisisNegocioScreen(
                 }
             }
 
+            var metricasDetalleExpanded by remember { mutableStateOf(false) }
+
             MonthSelector(
                 state = MonthSelectorState(YearMonth.from(uiState.mesSeleccionado), viewModel.mesActual),
                 onMonthSelected = viewModel::selectMonth,
@@ -151,10 +154,6 @@ fun AnalisisNegocioScreen(
 
             uiState.interpretacion?.let { interpretacion ->
                 InterpretacionCoachCard(interpretacion = interpretacion)
-            }
-
-            uiState.analisis?.let { analisis ->
-                ResumenCard(analisis = analisis)
             }
 
             if (uiState.isSeasonalityWarning) {
@@ -209,11 +208,67 @@ fun AnalisisNegocioScreen(
                 }
             }
 
+            uiState.analisis?.let { analisis ->
+                ContextoBreveCard(analisis = analisis)
+            }
+
             if (!uiState.isLoading && uiState.analisis == null && uiState.error == null) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
                         Text(stringResource(R.string.analisis_sin_datos_mes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                }
+            }
+
+            if (uiState.analisis != null) {
+                Text(
+                    stringResource(R.string.analisis_atajos),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            navController.navigate(Route.AnalisisDetalle.createRoute(YearMonth.from(uiState.mesSeleccionado)))
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.analisis_atajo_detalle))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            navController.navigate(
+                                Route.CostosYGastos.createRoute(
+                                    CostosTab.GASTOS,
+                                    YearMonth.from(uiState.mesSeleccionado),
+                                ),
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.analisis_atajo_costos))
+                    }
+                }
+                OutlinedButton(
+                    onClick = { metricasDetalleExpanded = !metricasDetalleExpanded },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        stringResource(
+                            if (metricasDetalleExpanded) {
+                                R.string.analisis_metricas_ocultar
+                            } else {
+                                R.string.analisis_metricas_detalle
+                            },
+                        ),
+                    )
+                }
+                if (metricasDetalleExpanded) {
+                    ResumenCard(analisis = uiState.analisis!!)
                 }
             }
 
@@ -345,18 +400,6 @@ fun AnalisisNegocioScreen(
                 }
             }
 
-            if (uiState.analisis != null) {
-                Button(
-                    onClick = { navController.navigate(Route.AnalisisDetalle.createRoute(YearMonth.from(uiState.mesSeleccionado))) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                ) {
-                    @Suppress("DEPRECATION")
-                    Icon(Icons.Default.TrendingUp, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.analisis_ver_analisis_completo))
-                }
-            }
         }
 
         if (gastosUiState.isDialogVisible) {
@@ -485,6 +528,55 @@ private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun ContextoBreveCard(analisis: AnalisisMensual) {
+    val facts = analisis.marginFacts
+    val margenPct = Math.round(if (facts.margenNetoPct != 0.0) facts.margenNetoPct else analisis.margenNetoPct)
+    val objetivoPct = Math.round(facts.margenNetoObjetivo)
+    val pe = facts.puntoEquilibrio
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                stringResource(R.string.analisis_contexto_breve),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                stringResource(R.string.analisis_contexto_margen_vs_objetivo, margenPct, objetivoPct),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            MetricItem(
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.analisis_vendiste),
+                value = MoneyFormatter.format(analisis.ventasMes),
+                color = MaterialTheme.colorScheme.positiveGreen,
+            )
+            if (pe != null && pe > 0.0) {
+                val peLabel = if (analisis.ventasMes >= pe) {
+                    stringResource(R.string.analisis_contexto_pe_alcanzado)
+                } else {
+                    stringResource(
+                        R.string.analisis_contexto_pe_falta,
+                        MoneyFormatter.format(pe - analisis.ventasMes),
+                    )
+                }
+                Text(
+                    peLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            CostCoverageBadge(cobertura = facts.cobertura, fuente = facts.fuente)
         }
     }
 }
