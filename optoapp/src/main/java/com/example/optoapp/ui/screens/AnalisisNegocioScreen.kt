@@ -31,6 +31,7 @@ import com.example.optoapp.domain.ImpactoRecomendacion
 import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.domain.SeguimientoEstado
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
@@ -186,9 +187,9 @@ fun AnalisisNegocioScreen(
                 uiState.recomendaciones.take(5).forEach { rec ->
                     RecomendacionCard(
                         rec = rec,
-                        feedbacksEnviados = uiState.feedbacksEnviados,
+                        seguimiento = uiState.seguimientos[rec.id],
                         feedbackErrorRecId = uiState.feedbackErrorRecId,
-                        onFeedback = { fueUtil -> viewModel.onFeedback(rec.id, fueUtil) },
+                        onSeguimiento = { estado -> viewModel.onSeguimiento(rec.id, estado) },
                     )
                 }
             } else if (!uiState.isLoading && uiState.analisis != null) {
@@ -578,12 +579,12 @@ private fun MetricItem(
 @Composable
 internal fun RecomendacionCard(
     rec: Recomendacion,
-    feedbacksEnviados: Map<String, Boolean>,
+    seguimiento: SeguimientoEstado?,
     feedbackErrorRecId: String?,
-    onFeedback: (Boolean) -> Unit,
+    onSeguimiento: (SeguimientoEstado) -> Unit,
 ) {
-    val feedbackSent = feedbacksEnviados.containsKey(rec.id)
     val hasError = feedbackErrorRecId == rec.id
+    val tracked = seguimiento != null
 
     val bgColor = when (rec.prioridad) {
         Prioridad.ALTA -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.08f)
@@ -603,9 +604,9 @@ internal fun RecomendacionCard(
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
-                    if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
+                    if (tracked) Icons.Default.CheckCircle else Icons.Default.Info,
                     contentDescription = null,
-                    tint = if (feedbackSent) MaterialTheme.colorScheme.positiveGreen else accentColor,
+                    tint = if (tracked) MaterialTheme.colorScheme.positiveGreen else accentColor,
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(8.dp))
@@ -656,48 +657,41 @@ internal fun RecomendacionCard(
                     )
                 }
             }
-            if (feedbackSent) {
-                Spacer(Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.positiveGreen,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        stringResource(R.string.analisis_gracias_valoracion),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.positiveGreen,
-                        fontWeight = FontWeight.Medium,
-                    )
+            Spacer(Modifier.height(8.dp))
+            if (seguimiento != null) {
+                val labelRes = when (seguimiento) {
+                    SeguimientoEstado.HECHO -> R.string.analisis_seguimiento_hecho
+                    SeguimientoEstado.MAS_TARDE -> R.string.analisis_seguimiento_mas_tarde
+                    SeguimientoEstado.NO_APLICA -> R.string.analisis_seguimiento_no_aplica
                 }
+                Text(
+                    stringResource(R.string.analisis_seguimiento_registrado, stringResource(labelRes)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.positiveGreen,
+                    fontWeight = FontWeight.Medium,
+                )
             } else {
-                Spacer(Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FilledTonalButton(
-                        onClick = { onFeedback(true) },
+                        onClick = { onSeguimiento(SeguimientoEstado.HECHO) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.analisis_util))
+                        Text(stringResource(R.string.analisis_seguimiento_hecho))
                     }
                     FilledTonalButton(
-                        onClick = { onFeedback(false) },
+                        onClick = { onSeguimiento(SeguimientoEstado.MAS_TARDE) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.analisis_no_me_sirve))
+                        Text(stringResource(R.string.analisis_seguimiento_mas_tarde))
+                    }
+                    FilledTonalButton(
+                        onClick = { onSeguimiento(SeguimientoEstado.NO_APLICA) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(stringResource(R.string.analisis_seguimiento_no_aplica))
                     }
                 }
             }

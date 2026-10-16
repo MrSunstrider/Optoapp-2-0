@@ -15,6 +15,7 @@ import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
 import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.domain.SeguimientoEstado
 import com.example.optoapp.util.CurrentMonthProvider
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.MesArg
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class AnalisisNegocioUiState(
@@ -41,7 +43,7 @@ data class AnalisisNegocioUiState(
     val error: String? = null,
     val isSeasonalityWarning: Boolean = false,
     val debtorsStale: Boolean = false,
-    val feedbacksEnviados: Map<String, Boolean> = emptyMap(),
+    val seguimientos: Map<String, SeguimientoEstado> = emptyMap(),
     val feedbackErrorRecId: String? = null,
 )
 
@@ -58,6 +60,7 @@ class AnalisisNegocioViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "AnalisisNegocioVM"
+        private val PERIODO_FMT = DateTimeFormatter.ofPattern("yyyy-MM")
     }
 
     private val _uiState = MutableStateFlow(
@@ -89,21 +92,18 @@ class AnalisisNegocioViewModel @Inject constructor(
         loadData(_uiState.value.mesSeleccionado)
     }
 
-    fun onFeedback(recomendacionId: String, fueUtil: Boolean) {
+    fun onSeguimiento(recomendacionId: String, estado: SeguimientoEstado) {
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                if (fueUtil) {
-                    feedbackRecomendacion.marcarUtil(recomendacionId, opticaId)
-                } else {
-                    feedbackRecomendacion.marcarNoUtil(recomendacionId, opticaId)
-                }
+                val periodo = _uiState.value.mesSeleccionado.format(PERIODO_FMT)
+                feedbackRecomendacion.marcarSeguimiento(recomendacionId, opticaId, periodo, estado)
                 _uiState.value = _uiState.value.copy(
-                    feedbacksEnviados = _uiState.value.feedbacksEnviados + (recomendacionId to fueUtil),
+                    seguimientos = _uiState.value.seguimientos + (recomendacionId to estado),
                     feedbackErrorRecId = null,
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Error sending recommendation feedback", e)
+                Log.e(TAG, "Error saving recommendation seguimiento", e)
                 _uiState.value = _uiState.value.copy(feedbackErrorRecId = recomendacionId)
             }
         }
@@ -149,6 +149,8 @@ class AnalisisNegocioViewModel @Inject constructor(
                     val interpretacion = analisis?.let {
                         InterpretacionAnalista.fromAnalisis(it, recomendaciones.firstOrNull()?.titulo)
                     }
+                    val periodo = mes.format(PERIODO_FMT)
+                    val seguimientos = feedbackRecomendacion.listarPorPeriodo(opticaId, periodo)
 
                     _uiState.value = _uiState.value.copy(
                         analisis = analisis,
@@ -159,6 +161,8 @@ class AnalisisNegocioViewModel @Inject constructor(
                         error = errors.joinToString("; ").ifEmpty { null },
                         isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
                         debtorsStale = debtorsStale,
+                        seguimientos = seguimientos,
+                        feedbackErrorRecId = null,
                     )
                 } catch (e: CancellationException) {
                     throw e
