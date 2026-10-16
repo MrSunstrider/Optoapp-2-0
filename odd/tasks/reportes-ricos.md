@@ -113,7 +113,7 @@ Answer: “¿Qué pasó en el periodo y qué puedo exportar / liquidar?” — e
 | T5 | S4 | inline | done | Clínico evaluaciones + diagnóstico counts |
 | T-equipo | S6,S9,S12 | inline | done | Equipo by vendedorUserId + `CommissionConfigJson` (default 0) |
 | T6 | S7,S12 | inline | done | PDF extras sections via `ReportePdfSectionLines` |
-| T7 | all | inline | pending | GGA; RDD/JD on migration + export+PII |
+| T7 | all | inline | done | JD APPROVED after 39fda6de fixes; Room rebased to MIGRATION_57_58 |
 
 **Merge note:** Analista stack also plans Room 56→57 (seguimiento). Before merging both to main, rebase so Reportes becomes 57→58 (or combine migrations). Do not ship two conflicting 56→57 definitions.
 
@@ -144,3 +144,5 @@ L11. User (2026-10-16): finish Reportes + JD/fixes + merge Analista+Reportes + r
 L12. T2–T6 done (2026-10-16): period compare; pacientes/inventario/clínico/equipo tabs wired; commission % cycle 0/5/10 in Equipo; PDF sectioned extras. Focused Reportes tests GREEN. Next: T7 JD then Room rebase 57→58 after Analista #178 on main.
 
 L13. Judgment Day fix round @ 90135564 (2026-10-16): C-CANCEL filter Anulado/Reclamada in `allMovimientosDelPeriodo`; C-MARGEN exclude `costoIncompleto` from `margenTotal`/`costoTotal`; W-COMISION-UX percent dialog gated to admin/gerente; S-REMOTE surface remote upsert failure; W-PDF-TRUNC wrap section lines; W-PDF-HEADER continuation header without Fecha/Pago/Total/Saldo on section page breaks.
+
+L14. JD scoped re-judgment empty for both judges → APPROVED. Rebased onto main after #178: Analista keeps MIGRATION_56_57 (seguimiento); Reportes vendedorUserId is MIGRATION_57_58 + schema 58.json.
