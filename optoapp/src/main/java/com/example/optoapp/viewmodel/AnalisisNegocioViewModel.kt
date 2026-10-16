@@ -157,24 +157,24 @@ class AnalisisNegocioViewModel @Inject constructor(
                         InterpretacionAnalista.fromAnalisis(it, recomendaciones.firstOrNull()?.titulo)
                     }
                     val periodo = mes.format(PERIODO_FMT)
-                    val seguimientos = seguimientoMutex.withLock {
-                        feedbackRecomendacion.listarPorPeriodo(opticaId, periodo)
-                    }
-
                     if (_uiState.value.mesSeleccionado != mes) return@launch
 
-                    _uiState.value = _uiState.value.copy(
-                        analisis = analisis,
-                        interpretacion = interpretacion,
-                        deudores = deudores,
-                        recomendaciones = recomendaciones,
-                        isLoading = false,
-                        error = errors.joinToString("; ").ifEmpty { null },
-                        isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
-                        debtorsStale = debtorsStale,
-                        seguimientos = seguimientos,
-                        feedbackErrorRecId = null,
-                    )
+                    seguimientoMutex.withLock {
+                        val seguimientos = feedbackRecomendacion.listarPorPeriodo(opticaId, periodo)
+                        if (_uiState.value.mesSeleccionado != mes) return@withLock
+                        _uiState.value = _uiState.value.copy(
+                            analisis = analisis,
+                            interpretacion = interpretacion,
+                            deudores = deudores,
+                            recomendaciones = recomendaciones,
+                            isLoading = false,
+                            error = errors.joinToString("; ").ifEmpty { null },
+                            isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
+                            debtorsStale = debtorsStale,
+                            seguimientos = seguimientos,
+                            feedbackErrorRecId = null,
+                        )
+                    }
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
