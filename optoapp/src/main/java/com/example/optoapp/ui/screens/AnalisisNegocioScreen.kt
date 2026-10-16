@@ -27,6 +27,7 @@ import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.ConfianzaInterpretacion
+import com.example.optoapp.domain.ImpactoRecomendacion
 import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
@@ -182,7 +183,7 @@ fun AnalisisNegocioScreen(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             if (uiState.recomendaciones.isNotEmpty()) {
-                uiState.recomendaciones.take(3).forEach { rec ->
+                uiState.recomendaciones.take(5).forEach { rec ->
                     RecomendacionCard(
                         rec = rec,
                         feedbacksEnviados = uiState.feedbacksEnviados,
@@ -470,7 +471,7 @@ private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
             )
             interpretacion.puntos.forEach { punto ->
                 Text(
-                    "• $punto",
+                    stringResource(R.string.analisis_interpretacion_punto, punto),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -620,6 +621,14 @@ internal fun RecomendacionCard(
                         rec.detalle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    val impactoLabel = rec.impactoEstimado ?: ImpactoRecomendacion.SIN_IMPACTO
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.analisis_recomendacion_impacto, impactoLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
                     )
                     rec.accion?.let { accion ->
                         Spacer(Modifier.height(4.dp))

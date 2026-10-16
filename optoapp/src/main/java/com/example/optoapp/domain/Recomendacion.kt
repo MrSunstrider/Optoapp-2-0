@@ -23,6 +23,8 @@ data class Recomendacion(
     val titulo: String,
     val detalle: String,
     val impactoEstimado: String? = null,
+    /** Numeric impact for ranking; null sorts after monetized recommendations. */
+    val impactoMonto: Double? = null,
     val prioridad: Prioridad,
     val accion: String? = null,
     val datosAccion: DatosAccion? = null,
