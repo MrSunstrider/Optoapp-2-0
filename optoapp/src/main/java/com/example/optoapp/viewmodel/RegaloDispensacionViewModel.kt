@@ -2,10 +2,13 @@ package com.example.optoapp.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
+import com.example.optoapp.domain.CostoFechado
 import com.example.optoapp.domain.OrderStatusPolicy
+import com.example.optoapp.domain.ResumenRecalcMarker
 import com.example.optoapp.domain.movimientoReferenciaForRegalo
 import com.example.optoapp.util.DispensacionStockHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +23,7 @@ import javax.inject.Inject
 class RegaloDispensacionViewModel @Inject constructor(
     private val repository: OptoRepository,
     private val stockHelper: DispensacionStockHelper,
+    private val resumenRecalcMarker: ResumenRecalcMarker,
 ) : ViewModel() {
 
     private val _error = MutableStateFlow<String?>(null)
@@ -31,8 +35,9 @@ class RegaloDispensacionViewModel @Inject constructor(
     ) {
         launchGuarded {
             repository.withTransaction {
-                requireEditableParent(regalo.dispensacionId, opticaId)
+                val parent = requireEditableParent(regalo.dispensacionId, opticaId)
                 repository.insertRegalo(regalo)
+                marcarRecalculo(parent, regalo, opticaId)
                 if (regalo.productoId.isNotBlank()) {
                     val result = stockHelper.adjustStockAndRegistrarMovimiento(
                         regalo.productoId,
@@ -56,8 +61,9 @@ class RegaloDispensacionViewModel @Inject constructor(
     ) {
         launchGuarded {
             repository.withTransaction {
-                requireEditableParent(regalo.dispensacionId, opticaId)
+                val parent = requireEditableParent(regalo.dispensacionId, opticaId)
                 repository.deleteRegaloById(regalo.id, opticaId)
+                marcarRecalculo(parent, regalo, opticaId)
                 if (regalo.productoId.isNotBlank()) {
                     stockHelper.adjustStockAndRegistrarMovimiento(
                         regalo.productoId,
@@ -85,9 +91,21 @@ class RegaloDispensacionViewModel @Inject constructor(
         }
     }
 
-    private suspend fun requireEditableParent(dispensacionId: String, opticaId: String) {
+    private suspend fun requireEditableParent(dispensacionId: String, opticaId: String): DispensacionOptica {
         val parent = (repository.getDispensacionById(dispensacionId, opticaId) as? Resource.Success)?.data
             ?: throw IllegalStateException("Dispensación no encontrada.")
         OrderStatusPolicy.requireEditable(parent.estadoEntrega, "modificar regalos")
+        return parent
+    }
+
+    // Adding and removing a gift shift the parent's day by the same amount, so the delta alone decides.
+    private suspend fun marcarRecalculo(parent: DispensacionOptica, regalo: RegaloDispensacionEntity, opticaId: String) {
+        resumenRecalcMarker.registrar(
+            opticaId,
+            ResumenRecalcMarker.CAUSA_DISPENSACION,
+            parent.id,
+            anterior = CostoFechado(parent.fecha, 0.0),
+            nuevo = CostoFechado(parent.fecha, regalo.cantidad * regalo.costoUnitario),
+        )
     }
 }

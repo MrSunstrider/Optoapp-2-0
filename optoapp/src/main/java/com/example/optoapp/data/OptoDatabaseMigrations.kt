@@ -38,8 +38,8 @@ val MIGRATION_7_8 = object : Migration(7, 8) {
 
 val MIGRATION_8_9 = object : Migration(8, 9) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Gap intencional: bump de versión sin cambios de schema.
-        // Ver commit 08685cd para contexto.
+        // v9 shipped as a version-only bump (commit 08685cd); installed v8 databases still need a
+        // registered step to reach v9.
     }
 }
 
@@ -49,8 +49,8 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
         val utcMidnightThresholdMillis = TimeUnit.HOURS.toMillis(1) // tolerancia
 
         fun millisToIsoExpr(column: String): String {
-            // SQLite date() modifiers: unixepoch, localtime, +N day
-            // Si el epoch parece UTC midnight (mod cercano a 0), sumamos 1 día.
+            // Dates saved as UTC midnight land on the previous day once shifted to a negative local
+            // offset, so those epochs get +1 day to keep the calendar date the user picked.
             return """
                         date(
                           ($column / 1000),
@@ -566,14 +566,13 @@ val MIGRATION_19_20 = object : Migration(19, 20) {
 
 val MIGRATION_20_21 = object : Migration(20, 21) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Clean up failed attempts from pre-MIGRATION_20_21 (wrong index names, missing DEFAULTs)
-        // Column names use snake_case to match @ColumnInfo(name = "...") in DispensacionItemEntity
+        // Earlier failed attempts left wrong index names and missing DEFAULTs that Room validation
+        // rejects, so the table is rebuilt from scratch.
         db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_dispensacion_id")
         db.execSQL("DROP INDEX IF EXISTS idx_dispensacion_items_optica_id")
         db.execSQL("DROP TABLE IF EXISTS dispensacion_items")
 
-        // snake_case columns son intencionales: DispensacionItem usa @ColumnInfo(name = "snake_case")
-        // para que Room y Supabase compartan el mismo schema sin mapeo adicional.
+        // snake_case columns are intentional: Room and Supabase share one schema without extra mapping.
         db.execSQL(
             """
             CREATE TABLE dispensacion_items (
@@ -614,7 +613,7 @@ val MIGRATION_21_22 = object : Migration(21, 22) {
 
 val MIGRATION_22_23 = object : Migration(22, 23) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Añadir updatedAt/updatedBy para detección de conflictos de sync
+        // Sync conflict detection compares these timestamps.
         db.execSQL("ALTER TABLE pacientes ADD COLUMN updatedAt TEXT")
         db.execSQL("ALTER TABLE pacientes ADD COLUMN updatedBy TEXT")
         db.execSQL("ALTER TABLE evaluaciones ADD COLUMN updatedAt TEXT")
@@ -835,8 +834,8 @@ val MIGRATION_26_27 = object : Migration(26, 27) {
 
 val MIGRATION_27_28 = object : Migration(27, 28) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // FR-07: add three snapshot columns to conflict_records for three-way merge.
-        // Existing rows receive the column DEFAULT '{}' — no data migration needed.
+        // Three-way merge (FR-07) needs these snapshots; the '{}' default lets existing conflict rows
+        // stay valid without a data migration.
         db.execSQL("ALTER TABLE conflict_records ADD COLUMN baseSnapshot TEXT NOT NULL DEFAULT '{}'")
         db.execSQL("ALTER TABLE conflict_records ADD COLUMN localData TEXT NOT NULL DEFAULT '{}'")
         db.execSQL("ALTER TABLE conflict_records ADD COLUMN remoteData TEXT NOT NULL DEFAULT '{}'")
@@ -845,16 +844,14 @@ val MIGRATION_27_28 = object : Migration(27, 28) {
 
 val MIGRATION_28_29 = object : Migration(28, 29) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Add optional delivery date to servicios_extra, mirroring DispensacionOptica.fechaEntrega.
-        // Nullable TEXT with no default — existing rows back-fill to NULL.
+        // Nullable with no default: existing services have no known delivery date.
         db.execSQL("ALTER TABLE servicios_extra ADD COLUMN fecha_entrega TEXT")
     }
 }
 
 val MIGRATION_29_30 = object : Migration(29, 30) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Create canonical ventas ledger table for unified income calculations.
-        // Columns use camelCase per Room convention. Stored as TEXT for LocalDate fields.
+        // One canonical ledger keeps income totals consistent instead of summing each source table.
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS ventas (
@@ -1039,7 +1036,6 @@ val MIGRATION_36_37 = object : Migration(36, 37) {
 
 val MIGRATION_37_38 = object : Migration(37, 38) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Create regalos_dispensacion table for gift tracking on dispensaciones
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS regalos_dispensacion (
@@ -1057,7 +1053,6 @@ val MIGRATION_37_38 = object : Migration(37, 38) {
         )
         db.execSQL("CREATE INDEX IF NOT EXISTS index_regalos_dispensacion_dispensacion_id ON regalos_dispensacion(dispensacion_id)")
 
-        // Add reclamoOrigenId to dispensaciones — nullable, no default
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN reclamo_origen_id TEXT")
     }
 }
@@ -1205,7 +1200,8 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
 
 val MIGRATION_40_41 = object : Migration(40, 41) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // costos_lc is a new table — Room creates it automatically after migration
+        // Left empty although v41 registered costos_lc: rewriting a shipped step would not reach devices
+        // already past it, so MIGRATION_55_56 creates the missing table instead.
     }
 }
 
@@ -1484,6 +1480,57 @@ val MIGRATION_54_55 = object : Migration(54, 55) {
         db.execSQL("ALTER TABLE dispensaciones ADD COLUMN fechaAnulacion TEXT")
         db.execSQL("ALTER TABLE servicios_extra ADD COLUMN motivoAnulacion TEXT")
         db.execSQL("ALTER TABLE servicios_extra ADD COLUMN fechaAnulacion TEXT")
+    }
+}
+
+// Additive only (plus costos_lc for devices that came through MIGRATION_40_41). tipoGasto stays NULL (resolved by category, no backfill); matrix updated_at stays NULL
+// until the first download or local edit stamps it.
+val MIGRATION_55_56 = object : Migration(55, 56) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS servicio_tipos (
+                id TEXT NOT NULL PRIMARY KEY,
+                opticaId TEXT NOT NULL,
+                nombre TEXT NOT NULL,
+                costoPropio REAL NOT NULL DEFAULT 0,
+                costoTercero REAL NOT NULL DEFAULT 0,
+                activo INTEGER NOT NULL DEFAULT 1,
+                updatedAt TEXT,
+                updatedBy TEXT
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_servicio_tipos_opticaId ON servicio_tipos (opticaId)")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN servicioTipoId TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN realizadoPor TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN realizadoPorNombre TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN costoReal REAL NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE servicio_extra_items ADD COLUMN costo_real REAL NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE dispensacion_items ADD COLUMN costo_origen TEXT")
+        db.execSQL("ALTER TABLE gastos_operativos ADD COLUMN tipoGasto TEXT")
+        // Created with the v55 shape so the ALTER below converges both upgrade paths on the v56 schema.
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS costos_lc (
+                id TEXT NOT NULL,
+                optica_id TEXT NOT NULL,
+                tipo_lc TEXT NOT NULL,
+                material_lc TEXT NOT NULL,
+                modalidad TEXT NOT NULL,
+                radio_base TEXT,
+                diametro TEXT,
+                laboratorio_id TEXT,
+                costo_unitario REAL NOT NULL,
+                vigente_desde TEXT NOT NULL,
+                vigente_hasta TEXT,
+                PRIMARY KEY(id)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL("ALTER TABLE costos_lc ADD COLUMN updated_at TEXT")
+        db.execSQL("ALTER TABLE costos_productos ADD COLUMN updated_at TEXT")
+        db.execSQL("ALTER TABLE costos_biselado ADD COLUMN updated_at TEXT")
     }
 }
 

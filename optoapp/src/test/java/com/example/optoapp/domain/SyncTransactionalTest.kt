@@ -11,17 +11,14 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
-import kotlinx.coroutines.runBlocking
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
-/**
- * Tests for REQ-SYNC-003: Transactional markSynced on Upload.
- */
 class SyncTransactionalTest {
 
     private val repository = mockk<OptoRepository>(relaxed = true)
@@ -36,7 +33,6 @@ class SyncTransactionalTest {
     @Before
     fun setUp() {
         mockkStatic("android.util.Log")
-        // Create a test coordinator that runs transactions inline without a real DB
         val database = mockk<OptoDatabase>(relaxed = true)
         coordinator = object : UploadSyncCoordinator(
             repository = repository,
@@ -47,6 +43,8 @@ class SyncTransactionalTest {
             networkRetryHelper = networkRetryHelper,
             costoProductoDao = costoProductoDao,
             costoBiseladoDao = costoBiseladoDao,
+            costoLcDao = mockk(relaxed = true),
+            servicioTipoDao = mockk(relaxed = true),
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         }
@@ -54,11 +52,11 @@ class SyncTransactionalTest {
 
     @After
     fun tearDown() {
-        unmockkAll()
+        unmockkStatic("android.util.Log")
     }
 
     @Test
-    fun `success path invokes per-entity markSynced and batch-level markSynced`() = runBlocking {
+    fun `success path invokes per-entity markSynced and batch-level markSynced`() = runTest {
         val item = DispensacionItem(
             id = "item1", dispensacionId = "d1", opticaId = "optica-test",
         )
@@ -76,7 +74,7 @@ class SyncTransactionalTest {
     }
 
     @Test
-    fun `per-entity markSynced failure prevents batch-level markSynced`() = runBlocking {
+    fun `per-entity markSynced failure prevents batch-level markSynced`() = runTest {
         val item = DispensacionItem(
             id = "item1", dispensacionId = "d1", opticaId = "optica-test",
         )
@@ -100,7 +98,7 @@ class SyncTransactionalTest {
     }
 
     @Test
-    fun `empty rows marks batch synced immediately without calling database`() = runBlocking {
+    fun `empty rows marks batch synced immediately without calling database`() = runTest {
         coEvery { repository.getDispensacionItemsSnapshotForOptica("optica-test") } returns emptyList()
 
         val result = coordinator.uploadDispensacionItems("optica-test")

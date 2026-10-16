@@ -6,6 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -74,6 +76,9 @@ private val LightColorScheme = lightColorScheme(
     surfaceTint = OptoTokens.colors.surfaceTint,
 )
 
+internal fun optoThemeLocal(darkTheme: Boolean): ProvidedValue<Boolean> =
+    LocalOptoDarkTheme provides darkTheme
+
 @Composable
 fun OptoAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -86,15 +91,16 @@ fun OptoAppTheme(
         SideEffect {
             val window = (view.context as Activity).window
             WindowCompat.setDecorFitsSystemWindows(window, false)
-            // statusBarColor removido — setDecorFitsSystemWindows(false) ya maneja edge-to-edge
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = AppTypography,
-        shapes = OptoTokens.getShapes(),
-        content = content,
-    )
+    CompositionLocalProvider(optoThemeLocal(darkTheme)) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = AppTypography,
+            shapes = OptoTokens.getShapes(),
+            content = content,
+        )
+    }
 }

@@ -17,4 +17,5 @@ data class CostoProductoEntity(
     @ColumnInfo(name = "laboratorio_id") val laboratorioId: String? = null,
     @ColumnInfo(name = "vigente_desde") val vigenteDesde: String,
     @ColumnInfo(name = "vigente_hasta") val vigenteHasta: String? = null,
+    @ColumnInfo(name = "updated_at") val updatedAt: String? = null,
 )

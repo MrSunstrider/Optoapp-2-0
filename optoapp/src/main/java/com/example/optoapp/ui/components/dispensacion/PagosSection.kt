@@ -10,19 +10,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.optoapp.R
 import com.example.optoapp.data.Pago
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.testing.TestTags
 import com.example.optoapp.ui.components.AbonoDialog
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.ui.theme.saldoColor
 import com.example.optoapp.util.DateUtils
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.DispensacionUiState
-import java.util.*
 
 @Composable
 fun PagosSection(
@@ -34,63 +37,68 @@ fun PagosSection(
 ) {
     Card {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Información Financiera", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.disp_informacion_financiera), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             OptoTextField(
                 value = uiState.montoTotal,
                 onValueChange = { onUpdate(uiState.copy(montoTotal = it)) },
-                label = "Monto Total",
+                label = stringResource(R.string.pagos_monto_total),
                 keyboardType = KeyboardType.Decimal,
                 modifier = Modifier.testTag(TestTags.DISPENSACION_MONTO_TOTAL),
             )
 
             HorizontalDivider()
 
-            Text("Historial de Abonos", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.pagos_historial_abonos), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
             val total = uiState.montoTotal.toDoubleOrNull() ?: 0.0
             val pagado = uiState.pagos.sumOf { it.monto }
             val saldo = total - pagado
 
             uiState.pagos.forEach { pago ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                key(pago.id) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text("${pago.metodoPago}: s/. ${String.format(Locale.getDefault(), "%.2f", pago.monto)}", fontWeight = FontWeight.Bold)
-                            if (pago.nota.isNotEmpty()) {
-                                Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row {
-                            var showEditDialog by remember { mutableStateOf(false) }
-                            if (showEditDialog) {
-                                val otrosAbonos = uiState.pagos
-                                    .filter { it.id != pago.id }
-                                    .sumOf { it.monto }
-                                val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
-                                AbonoDialog(
-                                    pago = pago,
-                                    montoMaximo = maximo,
-                                    onDismiss = { showEditDialog = false },
-                                    onConfirm = { updatedPago: Pago ->
-                                        onUpdatePago(updatedPago)
-                                        showEditDialog = false
-                                    },
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(R.string.pagos_abono_linea, pago.metodoPago, MoneyFormatter.format(pago.monto)),
+                                    fontWeight = FontWeight.Bold,
                                 )
+                                if (pago.nota.isNotEmpty()) {
+                                    Text(pago.nota, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(DateUtils.formatLocalized(pago.fecha), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
-                            }
-                            IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
-                                Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = MaterialTheme.colorScheme.error)
+                            Row {
+                                var showEditDialog by remember { mutableStateOf(false) }
+                                if (showEditDialog) {
+                                    val otrosAbonos = uiState.pagos
+                                        .filter { it.id != pago.id }
+                                        .sumOf { it.monto }
+                                    val maximo = (total - otrosAbonos).coerceAtLeast(0.0)
+                                    AbonoDialog(
+                                        pago = pago,
+                                        montoMaximo = maximo,
+                                        onDismiss = { showEditDialog = false },
+                                        onConfirm = { updatedPago: Pago ->
+                                            onUpdatePago(updatedPago)
+                                            showEditDialog = false
+                                        },
+                                    )
+                                }
+                                IconButton(onClick = { showEditDialog = true }, modifier = Modifier.size(48.dp)) {
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.pagos_editar_cd), tint = MaterialTheme.colorScheme.primary)
+                                }
+                                IconButton(onClick = { onRemovePago(pago) }, modifier = Modifier.size(48.dp)) {
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.pagos_borrar_cd), tint = MaterialTheme.colorScheme.error)
+                                }
                             }
                         }
                     }
@@ -117,9 +125,9 @@ fun PagosSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar")
+                Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Agregar Abono")
+                Text(stringResource(R.string.pagos_agregar_abono))
             }
 
             HorizontalDivider()
@@ -128,19 +136,23 @@ fun PagosSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("SALDO RESTANTE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                val formattedSaldo = String.format(Locale.getDefault(), "%.2f", saldo)
                 Text(
-                    text = "s/. " + formattedSaldo,
-                    color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                    stringResource(R.string.pagos_saldo_restante_titulo),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                Text(
+                    text = MoneyFormatter.format(saldo),
+                    color = saldoColor(saldo),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
                 )
             }
 
             OptoDropdownMenuField(
-                label = "Estado de Entrega",
+                label = stringResource(R.string.pagos_estado_entrega),
                 selected = uiState.estadoEntrega,
                 options = OrderStatusPolicy.selectableEstados(uiState.estadoEntrega),
                 enabled = OrderStatusPolicy.isEditable(uiState.estadoEntrega),

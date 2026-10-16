@@ -1,21 +1,6 @@
 package com.example.optoapp.domain
 
-import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-
-private fun JsonObject.optDouble(key: String): Double = this[key]?.jsonPrimitive?.doubleOrNull ?: 0.0
-
-private fun JsonObject.optInt(key: String): Int = this[key]?.jsonPrimitive?.intOrNull ?: 0
-
-private fun JsonObject.optDoubleNullable(key: String): Double? = this[key]?.jsonPrimitive?.doubleOrNull
-
-private fun JsonObject.optString(key: String): String = this[key]?.jsonPrimitive?.contentOrNull ?: ""
 
 data class AnalisisMensual(
     val ventasMes: Double,
@@ -33,16 +18,18 @@ data class AnalisisMensual(
     val ticketPromedio: Double = 0.0,
     val cantidadVentas: Int = 0,
     val esOffline: Boolean = false,
+    val costoMes: Double = 0.0,
+    val marginFacts: MarginFacts = MarginFacts(),
 ) {
     companion object {
-        fun fromJson(json: JsonElement): AnalisisMensual {
-            val obj = json.jsonObject
+        fun fromJson(obj: JsonObject): AnalisisMensual {
+            val facts = MarginFactsParser.parse(obj)
 
             return AnalisisMensual(
                 ventasMes = obj.optDouble("ventas_mes"),
                 cobrosMes = obj.optDouble("cobros_mes"),
                 margenNetoPct = obj.optDouble("margen_neto_pct"),
-                margenPorCategoria = obj.parseMargenPorCategoria(),
+                margenPorCategoria = facts.margenPorCategoria,
                 deudores = obj.parseDeudoresResumen(),
                 proyeccionCaja = obj.parseProyeccionCaja(),
                 stockEstancado = obj.parseStockEstancado(),
@@ -53,24 +40,13 @@ data class AnalisisMensual(
                 saldoPendiente = obj.optDouble("saldo_pendiente"),
                 ticketPromedio = obj.optDouble("ticket_promedio"),
                 cantidadVentas = obj.optInt("cantidad_ventas"),
+                costoMes = facts.costoMes,
+                marginFacts = facts,
             )
         }
 
-        private fun JsonObject.parseMargenPorCategoria(): List<MargenCategoria> {
-            val arr = this["margen_por_categoria"]?.jsonArray ?: return emptyList()
-            return arr.map { item ->
-                val obj = item.jsonObject
-                MargenCategoria(
-                    categoria = obj.optString("categoria"),
-                    ventas = obj.optDouble("ventas"),
-                    costos = obj.optDouble("costos"),
-                    margenPct = obj.optDoubleNullable("margen_pct"),
-                )
-            }
-        }
-
         private fun JsonObject.parseDeudoresResumen(): DeudoresResumen {
-            val obj = this["deudores"]?.jsonObject ?: return DeudoresResumen(0, 0.0)
+            val obj = optObject("deudores") ?: return DeudoresResumen(0, 0.0)
             return DeudoresResumen(
                 cantidad = obj.optInt("cantidad"),
                 saldoTotal = obj.optDouble("saldo_total"),
@@ -78,11 +54,11 @@ data class AnalisisMensual(
         }
 
         private fun JsonObject.parseProyeccionCaja(): ProyeccionCaja? {
-            val obj = this["proyeccion_caja"]?.jsonObject
+            val obj = optObject("proyeccion_caja")
             val meses = optInt("meses_historicos")
 
-            // meses_historicos is top-level in RPC response, not nested inside proyeccion_caja
-            // Create minimal ProyeccionCaja even without the nested object if meses present
+            // The RPC returns meses_historicos at the top level, so the history count alone is
+            // enough to show a projection even when the nested object is absent.
             if (obj == null && meses == 0) return null
 
             return ProyeccionCaja(
@@ -93,32 +69,25 @@ data class AnalisisMensual(
             )
         }
 
-        private fun JsonObject.parseStockEstancado(): List<StockEstancadoItem> {
-            val arr = this["stock_estancado"]?.jsonArray ?: return emptyList()
-            return arr.map { item ->
-                val obj = item.jsonObject
+        private fun JsonObject.parseStockEstancado(): List<StockEstancadoItem> =
+            optArray("stock_estancado").orEmpty().mapNotNull { item ->
+                val obj = item as? JsonObject ?: return@mapNotNull null
                 StockEstancadoItem(
                     monturaId = obj.optString("montura_id"),
                     sku = obj.optString("sku"),
                     modelo = obj.optString("modelo"),
                     costo = obj.optDouble("costo"),
                     stockActual = obj.optInt("stock_actual"),
-                    ultimaVenta = obj["ultima_venta"]?.jsonPrimitive?.contentOrNull,
+                    ultimaVenta = obj.optStringNullable("ultima_venta"),
                     diasSinVenta = obj.optInt("dias_sin_venta"),
                 )
             }
-        }
     }
 
-    fun costoDeVentas(): Double = margenPorCategoria.sumOf { it.costos }
+    // Summing category costs undercounts whenever a category has no mapped cost; costo_mes comes
+    // from resumen_diario and is the figure every other screen already reports.
+    fun costoDeVentas(): Double = costoMes
 }
-
-data class MargenCategoria(
-    val categoria: String,
-    val ventas: Double,
-    val costos: Double,
-    val margenPct: Double?,
-)
 
 data class DeudoresResumen(
     val cantidad: Int,

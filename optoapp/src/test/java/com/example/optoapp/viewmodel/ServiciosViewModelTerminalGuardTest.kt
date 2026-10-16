@@ -78,7 +78,7 @@ class ServiciosViewModelTerminalGuardTest {
         every { sessionManager.opticaRol } returns flowOf("asesor")
         val viewModel = ServiciosViewModel(
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true),
-            mockk<CancelServicioExtraUseCase>(relaxed = true), stockHelper,
+            mockk<CancelServicioExtraUseCase>(relaxed = true), stockHelper, mockk(relaxed = true), mockk(relaxed = true),
         )
         viewModel.updateUiState {
             it.copy(

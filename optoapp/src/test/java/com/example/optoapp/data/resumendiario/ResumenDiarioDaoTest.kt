@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 
+// WHY Robolectric: DAO queries are verified against a real in-memory Room database (AGENTS.md real-Room exception).
 @RunWith(RobolectricTestRunner::class)
 class ResumenDiarioDaoTest {
 
@@ -78,7 +79,7 @@ class ResumenDiarioDaoTest {
     }
 
     @Test
-    fun getByOpticaAndMonth_returnsRowsForYearMonth() = runBlocking {
+    fun getByOpticaBetween_returnsInclusiveRangeInDateOrderForTheOpticaOnly() = runBlocking {
         // Insert July 2026 rows
         for (day in 1..5) {
             val date = "2026-07-0$day"
@@ -103,11 +104,12 @@ class ResumenDiarioDaoTest {
             ),
         )
 
-        val julyRows = dao.getByOpticaAndMonth("optica1", "2026-07")
-        assertEquals(5, julyRows.size)
-        // Ordered by fecha ASC
-        assertEquals("2026-07-01", julyRows[0].fecha)
-        assertEquals("2026-07-05", julyRows[4].fecha)
+        dao.upsert(ResumenDiarioEntity(id = "r_aug_1", opticaId = "optica1", fecha = "2026-08-01"))
+        dao.upsert(ResumenDiarioEntity(id = "r_other", opticaId = "optica2", fecha = "2026-07-03"))
+
+        val rows = dao.getByOpticaBetween("optica1", "2026-06-15", "2026-07-31")
+
+        assertEquals(listOf("2026-06-15", "2026-07-01", "2026-07-02", "2026-07-03", "2026-07-04", "2026-07-05"), rows.map { it.fecha })
     }
 
     @Test
@@ -152,8 +154,8 @@ class ResumenDiarioDaoTest {
     }
 
     @Test
-    fun getByOpticaAndMonth_returnsEmptyForNoData() = runBlocking {
-        val rows = dao.getByOpticaAndMonth("optica1", "2026-06")
+    fun getByOpticaBetween_returnsEmptyForNoData() = runBlocking {
+        val rows = dao.getByOpticaBetween("optica1", "2026-06-01", "2026-06-30")
         assertTrue(rows.isEmpty())
     }
 }

@@ -5,9 +5,8 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.AnularDispensacionUseCase
+import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -19,8 +18,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -77,7 +76,7 @@ class DispensacionViewModelTerminalGuardTest {
         return DispensacionViewModel(
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true), stockHelper, calcularMontoPagado,
             mockk<AnularDispensacionUseCase>(relaxed = true), mockk<ReclamarDispensacionUseCase>(relaxed = true),
-            mockk<CostoProductoDao>(relaxed = true), mockk<CostoBiseladoDao>(relaxed = true), mockk(relaxed = true),
+            mockk<CalcularCostoItemUseCase>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         )
     }
 
@@ -91,7 +90,7 @@ class DispensacionViewModelTerminalGuardTest {
         var completed = false
         viewModel.saveDispensacion("pac-1", dispId) { completed = true }
         withContext(Dispatchers.Default) {
-            withTimeout(5_000) { while (viewModel.uiState.value.isLoading) delay(10) }
+            withTimeout(5_000) { viewModel.uiState.first { !it.isLoading } }
         }
         return completed
     }

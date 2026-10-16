@@ -147,11 +147,11 @@ data class ServicioExtra(
     val montoTotal: Double,
     @SerialName("aCuenta")
     val aCuenta: Double = 0.0,
-    val estado: String, // Delivery status lifecycle: Pendiente → Entregado
+    val estado: String,
     @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate,
     @SerialName("pacienteId")
-    val pacienteId: String? = null, // Opcional
+    val pacienteId: String? = null,
     @SerialName("metodoPago")
     val metodoPago: String = "",
     @SerialName("opticaId")
@@ -167,6 +167,11 @@ data class ServicioExtra(
     val motivoAnulacion: String? = null,
     @Serializable(with = LocalDateSerializer::class)
     val fechaAnulacion: LocalDate? = null,
+    val servicioTipoId: String? = null,
+    val realizadoPor: String? = null,
+    val realizadoPorNombre: String? = null,
+    @ColumnInfo(defaultValue = "0")
+    val costoReal: Double = 0.0,
 )
 
 @Entity(
@@ -238,7 +243,7 @@ data class MonturaMovimiento(
     val monturaId: String,
     @Serializable(with = LocalDateSerializer::class)
     val fecha: LocalDate = LocalDate.now(),
-    val tipo: String, // ENTRADA, SALIDA_VENTA, AJUSTE
+    val tipo: String,
     val cantidad: Int,
     val stockPrevio: Int,
     val stockNuevo: Int,

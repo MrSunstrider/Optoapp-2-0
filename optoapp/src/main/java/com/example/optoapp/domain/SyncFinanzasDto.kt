@@ -8,14 +8,17 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.baseOtForReclamo
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
+import com.example.optoapp.data.costolc.CostoLcEntity
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.util.Locale
 
 @Serializable
 data class DispensacionRemota(
@@ -98,6 +101,10 @@ data class ServicioRemoto(
     @SerialName("updated_by") val updatedBy: String? = null,
     @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
     @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
+    @SerialName("servicio_tipo_id") val servicioTipoId: String? = null,
+    @SerialName("realizado_por") val realizadoPor: String? = null,
+    @SerialName("realizado_por_nombre") val realizadoPorNombre: String? = null,
+    @SerialName("costo_real") val costoReal: Double = 0.0,
 ) {
     fun toEntity() = ServicioExtra(
         id = id,
@@ -116,8 +123,36 @@ data class ServicioRemoto(
         fechaEntrega = fechaEntrega?.let(LocalDate::parse),
         motivoAnulacion = motivoAnulacion,
         fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
+        servicioTipoId = servicioTipoId.normalizeOptionalFk(),
+        realizadoPor = realizadoPor,
+        realizadoPorNombre = realizadoPorNombre,
+        costoReal = costoReal,
     )
 }
+
+@Serializable
+data class ServicioTipoRemota(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    val nombre: String,
+    @SerialName("costo_propio") val costoPropio: Double = 0.0,
+    @SerialName("costo_tercero") val costoTercero: Double = 0.0,
+    val activo: Boolean = true,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("updated_by") val updatedBy: String? = null,
+) {
+    fun toEntity() = ServicioTipoEntity(
+        id = id, opticaId = opticaId, nombre = nombre,
+        costoPropio = costoPropio, costoTercero = costoTercero, activo = activo,
+        updatedAt = updatedAt, updatedBy = updatedBy,
+    )
+}
+
+fun ServicioTipoEntity.toRemoto(): ServicioTipoRemota = ServicioTipoRemota(
+    id = id, opticaId = opticaId, nombre = nombre,
+    costoPropio = costoPropio, costoTercero = costoTercero, activo = activo,
+    updatedAt = updatedAt, updatedBy = updatedBy,
+)
 
 @Serializable
 data class PagoRemoto(
@@ -181,6 +216,7 @@ data class DispensacionItemRemota(
     @SerialName("costo_real_montura") val costoRealMontura: Double? = null,
     @SerialName("costo_real_biselado") val costoRealBiselado: Double? = null,
     @SerialName("costo_real_lc") val costoRealLc: Double? = null,
+    @SerialName("costo_origen") val costoOrigen: String? = null,
 ) {
     fun toEntity() = DispensacionItem(
         id = id, dispensacionId = dispensacionId,
@@ -198,7 +234,7 @@ data class DispensacionItemRemota(
         lenticular = lenticular, curvaBase = curvaBase,
         costoRealOd = costoRealOd, costoRealOi = costoRealOi,
         costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
-        costoRealLc = costoRealLc,
+        costoRealLc = costoRealLc, costoOrigen = costoOrigen,
     )
 }
 
@@ -214,8 +250,9 @@ data class GastoOperativoRemoto(
     val nota: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("es_recurrente") val isRecurring: Boolean = false,
-
     val frecuencia: String = "mensual",
+    // Null means "decided by category" on both sides; defaulting to fijo would misclassify legacy rows.
+    @SerialName("tipo_gasto") val tipoGasto: String? = null,
 )
 
 fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto(
@@ -230,6 +267,7 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     createdAt = createdAt,
     isRecurring = isRecurring,
     frecuencia = frecuencia,
+    tipoGasto = tipoGasto,
 )
 
 fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity(
@@ -244,6 +282,7 @@ fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity
     createdAt = createdAt,
     isRecurring = isRecurring,
     frecuencia = frecuencia,
+    tipoGasto = tipoGasto,
 )
 
 @Serializable
@@ -290,6 +329,7 @@ data class ServicioExtraItemRemota(
     @SerialName("optica_id") val opticaId: String,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("updated_by") val updatedBy: String? = null,
+    @SerialName("costo_real") val costoReal: Double = 0.0,
 ) {
     fun toEntity() = com.example.optoapp.data.servicio.ServicioExtraItem(
         id = id,
@@ -300,6 +340,7 @@ data class ServicioExtraItemRemota(
         opticaId = opticaId,
         updatedAt = updatedAt,
         updatedBy = updatedBy,
+        costoReal = costoReal,
     )
 }
 
@@ -312,6 +353,7 @@ fun com.example.optoapp.data.servicio.ServicioExtraItem.toRemoto(): ServicioExtr
     opticaId = opticaId,
     updatedAt = updatedAt,
     updatedBy = updatedBy,
+    costoReal = costoReal,
 )
 
 @Serializable
@@ -422,13 +464,14 @@ data class CostoProductoRemoto(
     @SerialName("laboratorio_id") val laboratorioId: String? = null,
     @SerialName("vigente_desde") val vigenteDesde: String,
     @SerialName("vigente_hasta") val vigenteHasta: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     fun toEntity() = CostoProductoEntity(
         id = id, opticaId = opticaId, material = material,
         tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
         tratamiento = tratamiento, serie = serie,
         costoUnitario = costoUnitario, laboratorioId = laboratorioId,
-        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
     )
 }
 
@@ -445,22 +488,53 @@ data class CostoBiseladoRemoto(
     val proveedor: String? = null,
     @SerialName("vigente_desde") val vigenteDesde: String,
     @SerialName("vigente_hasta") val vigenteHasta: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
 ) {
     fun toEntity() = CostoBiseladoEntity(
         id = id, opticaId = opticaId, material = material,
         tipoAro = tipoAro, stockOFabricacion = stockOFabricacion,
         serie = serie, altoIndice = altoIndice,
         costoPorPar = costoPorPar, proveedor = proveedor,
-        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
     )
 }
+
+@Serializable
+data class CostoLcRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("tipo_lc") val tipoLc: String,
+    @SerialName("material_lc") val materialLc: String,
+    val modalidad: String,
+    @SerialName("radio_base") val radioBase: String? = null,
+    val diametro: String? = null,
+    @SerialName("laboratorio_id") val laboratorioId: String? = null,
+    @SerialName("costo_unitario") val costoUnitario: Double,
+    @SerialName("vigente_desde") val vigenteDesde: String,
+    @SerialName("vigente_hasta") val vigenteHasta: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+) {
+    fun toEntity() = CostoLcEntity(
+        id = id, opticaId = opticaId, tipoLc = tipoLc, materialLc = materialLc,
+        modalidad = modalidad, radioBase = radioBase, diametro = diametro,
+        laboratorioId = laboratorioId, costoUnitario = costoUnitario,
+        vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
+    )
+}
+
+fun CostoLcEntity.toRemoto(): CostoLcRemoto = CostoLcRemoto(
+    id = id, opticaId = opticaId, tipoLc = tipoLc, materialLc = materialLc,
+    modalidad = modalidad, radioBase = radioBase, diametro = diametro,
+    laboratorioId = laboratorioId, costoUnitario = costoUnitario,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
+)
 
 fun CostoProductoEntity.toRemoto(): CostoProductoRemoto = CostoProductoRemoto(
     id = id, opticaId = opticaId, material = material,
     tipoLente = tipoLente, stockOFabricacion = stockOFabricacion,
     tratamiento = tratamiento, serie = serie,
     costoUnitario = costoUnitario, laboratorioId = laboratorioId,
-    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
 )
 
 fun CostoBiseladoEntity.toRemoto(): CostoBiseladoRemoto = CostoBiseladoRemoto(
@@ -468,21 +542,24 @@ fun CostoBiseladoEntity.toRemoto(): CostoBiseladoRemoto = CostoBiseladoRemoto(
     tipoAro = tipoAro, stockOFabricacion = stockOFabricacion,
     serie = serie, altoIndice = altoIndice,
     costoPorPar = costoPorPar, proveedor = proveedor,
-    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta,
+    vigenteDesde = vigenteDesde, vigenteHasta = vigenteHasta, updatedAt = updatedAt,
 )
 
 data class FinanzasSyncResult(
     val uploadedDispensaciones: Int,
     val uploadedDispensacionItems: Int = 0,
     val uploadedServicios: Int,
+    val uploadedServicioTipos: Int = 0,
     val uploadedPagos: Int,
     val uploadedGastosOperativos: Int = 0,
     val uploadedRegalos: Int = 0,
     val uploadedCostosProductos: Int = 0,
     val uploadedCostosBiselado: Int = 0,
+    val uploadedCostosLc: Int = 0,
     val downloadedDispensaciones: Int,
     val downloadedDispensacionItems: Int = 0,
     val downloadedServicios: Int,
+    val downloadedServicioTipos: Int = 0,
     val downloadedPagos: Int,
     val downloadedRegalos: Int = 0,
     val downloadedResumenesDiarios: Int = 0,
@@ -490,6 +567,8 @@ data class FinanzasSyncResult(
     val downloadedGastosOperativos: Int = 0,
     val downloadedCostosProductos: Int = 0,
     val downloadedCostosBiselado: Int = 0,
+    val downloadedCostosLc: Int = 0,
+    val resumenRecalcDias: Int = 0,
 )
 
 @Serializable
@@ -568,7 +647,7 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
     lenticular = lenticular, curvaBase = curvaBase,
     costoRealOd = costoRealOd, costoRealOi = costoRealOi,
     costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
-    costoRealLc = costoRealLc,
+    costoRealLc = costoRealLc, costoOrigen = costoOrigen,
 )
 
 fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = ServicioRemoto(
@@ -588,6 +667,10 @@ fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = Servi
     fechaEntrega = fechaEntrega?.toString(),
     motivoAnulacion = motivoAnulacion,
     fechaAnulacion = fechaAnulacion?.toString(),
+    servicioTipoId = servicioTipoId.normalizeOptionalFk(),
+    realizadoPor = realizadoPor,
+    realizadoPorNombre = realizadoPorNombre,
+    costoReal = costoReal,
 )
 
 internal fun String?.normalizeOptionalFk(): String? = this?.trim()?.takeIf { it.isNotBlank() }
@@ -596,9 +679,9 @@ internal fun String.remotoServicioExtraMetodoToLocal(): String = if (this == Fin
 
 internal fun String.remotoOtServicioExtraToLocal(): String = if (this == FinanzasRemoteDefaults.ServicioExtra.OT_VACIA) "" else this
 
-internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
+internal fun normalizedOtForUnique(ot: String?): String? = ot?.trim()?.takeIf { it.isNotBlank() }?.uppercase(Locale.ROOT)
 
-/** Lowest `<base>-R<n>` whose normalized OT is not taken; null when the OT has no base to number from. */
+/** A reclamo must stay traceable to its original OT while respecting the per-optica unique OT constraint. */
 internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): String? {
     val base = baseOtForReclamo(ot).ifBlank { return null }
     return generateSequence(1) { it + 1 }
@@ -606,7 +689,7 @@ internal fun nextFreeReclamoOt(ot: String, takenNormalizedOts: Set<String>): Str
         .first { normalizedOtForUnique(it) !in takenNormalizedOts }
 }
 
-/** Replaces [oldOt] only where it stands alone, so `-R1` never matches inside `-R12` or another order's OT. */
+/** Whole-token match so renaming `-R1` never corrupts `-R12` or another order's OT mentioned in the note. */
 internal fun replaceOtToken(nota: String, oldOt: String, newOt: String): String {
     if (oldOt.isBlank()) return nota
     return nota.replace(Regex("(?<![\\w-])${Regex.escape(oldOt)}(?![\\w-])"), Regex.escapeReplacement(newOt))

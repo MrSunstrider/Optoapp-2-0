@@ -2,6 +2,9 @@ package com.example.optoapp.domain
 
 import android.util.Log
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
 import io.github.jan.supabase.postgrest.Postgrest
@@ -9,21 +12,25 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.math.BigDecimal
 import java.time.LocalDate
 
 class ObtenerAnalisisMensualUseCaseTest {
+
+    private val julio = LocalDate.of(2026, 7, 1)
 
     @Before
     fun setUpLog() {
@@ -64,13 +71,45 @@ class ObtenerAnalisisMensualUseCaseTest {
         put("variacion_ventas_pct", 25.0)
     }
 
+    private fun resumen(id: String, fecha: String, ventas: Double, costo: Double, cobros: Double = 0.0, inventario: Double = 0.0) =
+        ResumenDiarioEntity(
+            id = id, opticaId = "optica1", fecha = fecha,
+            ventasCantidad = 1, ventasMontoTotal = ventas, ventasCostoTotal = costo,
+            cobrosCantidad = 1, cobrosMontoTotal = cobros,
+            saldoPendienteTotal = 0.0, saldoPendienteCantidad = 0,
+            inventarioValor = inventario,
+        )
+
+    private fun gasto(id: String, monto: String) = GastoOperativoEntity(
+        id = id,
+        opticaId = "optica1",
+        categoria = "alquiler",
+        monto = BigDecimal(monto),
+        fecha = julio.plusDays(4),
+    )
+
+    private fun offlineUseCase(
+        resumenes: List<ResumenDiarioEntity>,
+        gastos: List<GastoOperativoEntity> = emptyList(),
+    ): ObtenerAnalisisMensualUseCase {
+        val resumenDao = mockk<ResumenDiarioDao>()
+        coEvery { resumenDao.getByOpticaBetween("optica1", "2026-02-01", "2026-07-31") } returns resumenes
+        val gastoDao = mockk<GastoOperativoDao>()
+        coEvery { gastoDao.getByOpticaBetween("optica1", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 7, 31)) } returns gastos
+        val configDao = mockk<ConfiguracionFinancieraDao>()
+        coEvery { configDao.getByOpticaIdOnce("optica1") } returns null
+        return object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), resumenDao, gastoDao, configDao) {
+            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw IOException("No network")
+        }
+    }
+
     @Test
-    fun online_rpcSuccess_returnsAnalisisMensual() = runBlocking {
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk()) {
+    fun online_rpcSuccess_returnsAnalisisMensual() = runTest {
+        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpc(function: String, params: JsonObject): JsonObject = rpcSuccessJson()
         }
 
-        val result = useCase("optica1", LocalDate.of(2026, 7, 1))
+        val result = useCase("optica1", julio)
 
         assertTrue(result is Resource.Success)
         val analisis = (result as Resource.Success).data!!
@@ -83,37 +122,21 @@ class ObtenerAnalisisMensualUseCaseTest {
     }
 
     @Test
-    fun offline_ioException_fallsBackToRoom() = runBlocking {
-        val dao = mockk<ResumenDiarioDao>()
-        coEvery { dao.getByOpticaAndMonth("optica1", "2026-07") } returns listOf(
-            ResumenDiarioEntity(
-                id = "r1", opticaId = "optica1", fecha = "2026-07-01",
-                ventasCantidad = 2, ventasMontoTotal = 5000.0, ventasCostoTotal = 2000.0,
-                cobrosCantidad = 1, cobrosMontoTotal = 4000.0,
-                saldoPendienteTotal = 1000.0, saldoPendienteCantidad = 1,
-                inventarioValor = 30000.0,
-            ),
-            ResumenDiarioEntity(
-                id = "r2", opticaId = "optica1", fecha = "2026-07-02",
-                ventasCantidad = 3, ventasMontoTotal = 7000.0, ventasCostoTotal = 3000.0,
-                cobrosCantidad = 2, cobrosMontoTotal = 5000.0,
-                saldoPendienteTotal = 2000.0, saldoPendienteCantidad = 1,
-                inventarioValor = 35000.0,
+    fun offline_ioException_fallsBackToRoom() = runTest {
+        val useCase = offlineUseCase(
+            listOf(
+                resumen("r1", "2026-07-01", ventas = 5000.0, costo = 2000.0, cobros = 4000.0, inventario = 30000.0),
+                resumen("r2", "2026-07-02", ventas = 7000.0, costo = 3000.0, cobros = 5000.0, inventario = 35000.0),
             ),
         )
 
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), dao) {
-            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw IOException("No network")
-        }
-
-        val result = useCase("optica1", LocalDate.of(2026, 7, 1))
+        val result = useCase("optica1", julio)
 
         assertTrue(result is Resource.Success)
         val analisis = (result as Resource.Success).data!!
         assertEquals(true, analisis.esOffline)
         assertEquals(12000.0, analisis.ventasMes, 0.001)
         assertEquals(9000.0, analisis.cobrosMes, 0.001)
-        assertEquals(0.0, analisis.margenNetoPct, 0.001)
         assertEquals(0, analisis.deudores.cantidad)
         assertNull(analisis.proyeccionCaja)
         assertEquals(0, analisis.margenPorCategoria.size)
@@ -124,12 +147,64 @@ class ObtenerAnalisisMensualUseCaseTest {
     }
 
     @Test
-    fun unexpectedError_returnsResourceError() = runBlocking {
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk()) {
+    fun offline_computesMarginFactsFromResumenAndGastos() = runTest {
+        val useCase = offlineUseCase(
+            resumenes = listOf(
+                resumen("r1", "2026-07-01", ventas = 6000.0, costo = 2500.0),
+                resumen("r2", "2026-07-02", ventas = 4000.0, costo = 1500.0),
+            ),
+            gastos = listOf(gasto("g1", "3000.00"), gasto("g2", "1000.00")),
+        )
+
+        val analisis = (useCase("optica1", julio) as Resource.Success).data!!
+
+        assertEquals(20.0, analisis.margenNetoPct, 0.001)
+        assertEquals(4000.0, analisis.costoMes, 0.001)
+        assertEquals(4000.0, analisis.costoDeVentas(), 0.001)
+        assertEquals(4000.0, analisis.gastosMes, 0.001)
+        val facts = analisis.marginFacts
+        assertEquals(FuenteDatos.OFFLINE, facts.fuente)
+        assertFalse(facts.detalleServidorDisponible)
+        assertEquals(10000.0, facts.ventasMes, 0.001)
+        assertEquals(4000.0, facts.costoMes, 0.001)
+        assertEquals(6000.0, facts.margenBruto, 0.001)
+        assertEquals(60.0, facts.margenBrutoPct, 0.001)
+        assertEquals(20.0, facts.margenNetoPct, 0.001)
+    }
+
+    @Test
+    fun offline_withoutSales_returnsZeroPercentagesWithoutDividing() = runTest {
+        val useCase = offlineUseCase(resumenes = emptyList(), gastos = listOf(gasto("g1", "500.00")))
+
+        val analisis = (useCase("optica1", julio) as Resource.Success).data!!
+
+        assertEquals(0.0, analisis.margenNetoPct, 0.001)
+        assertEquals(0.0, analisis.marginFacts.margenNetoPct, 0.001)
+        assertEquals(0.0, analisis.marginFacts.margenBrutoPct, 0.001)
+        assertEquals(500.0, analisis.gastosMes, 0.001)
+    }
+
+    @Test
+    fun offline_keepsServerOnlyFactsAtDefaults() = runTest {
+        val useCase = offlineUseCase(listOf(resumen("r1", "2026-07-01", ventas = 1000.0, costo = 400.0)))
+
+        val facts = (useCase("optica1", julio) as Resource.Success).data!!.marginFacts
+        val defaults = MarginFacts()
+
+        assertEquals(defaults.margenPorCategoria, facts.margenPorCategoria)
+        assertEquals(defaults.costosPorLinea, facts.costosPorLinea)
+        assertEquals(defaults.margenServicios, facts.margenServicios)
+        assertEquals(defaults.cobertura, facts.cobertura)
+        assertFalse(facts.detalleServidorDisponible)
+    }
+
+    @Test
+    fun unexpectedError_returnsResourceError() = runTest {
+        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
             override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw RuntimeException("Unexpected")
         }
 
-        val result = useCase("optica1", LocalDate.of(2026, 7, 1))
+        val result = useCase("optica1", julio)
         assertTrue(result is Resource.Error)
         assertEquals("No se pudieron cargar los datos del mes", (result as Resource.Error).message)
     }

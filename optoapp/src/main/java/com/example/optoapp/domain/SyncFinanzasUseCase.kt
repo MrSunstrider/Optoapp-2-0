@@ -9,25 +9,24 @@ import java.io.IOException
 import javax.inject.Inject
 
 /**
- * P0-T2 — Upload order: Dispensaciones → servicios_extra → pagos
- * (parents before payments; payments reference dispensación and/or service).
- * Download order: same, so parents exist before inserting local payments.
- */
-
-/**
- * Thrown by upload methods to carry the partial uploaded count when an IOException
- * interrupts a chunked batch. [safeUpload] catches this and returns the partial count
- * instead of 0, so FinanzasSyncResult reflects actual progress.
+ * Lets [SyncFinanzasUseCase] report the rows already sent when a network error interrupts a chunked
+ * batch, so the sync result reflects real progress instead of 0.
  */
 class UploadPartialException(
     val uploadedCount: Int,
     cause: IOException,
 ) : IOException("Partial upload: $uploadedCount succeeded before error", cause)
+
+/**
+ * Parents sync before their children in both phases (dispensaciones before items and pagos,
+ * servicios_extra before its items) because the server and Room reject orphaned references.
+ */
 open class SyncFinanzasUseCase @Inject constructor(
     private val deletionSyncHelper: DeletionSyncHelper,
     private val uploadSyncCoordinator: UploadSyncCoordinator,
     private val downloadSyncCoordinator: DownloadSyncCoordinator,
     private val discardLosingClaim: DiscardLosingClaimUseCase,
+    private val resumenRecalcCoordinator: ResumenRecalcCoordinator,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -45,8 +44,10 @@ open class SyncFinanzasUseCase @Inject constructor(
         var dispUp = 0
         var itemsUp = 0
         var servUp = 0
+        var tiposUp = 0
         var costosUp = 0
         var biseladoUp = 0
+        var lcUp = 0
         var pagosUp = 0
         var gastosUp = 0
         var regalosUp = 0
@@ -60,6 +61,9 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r2 = safeUpload("dispensacion_items") { uploadSyncCoordinator.uploadDispensacionItems(opticaId) }
             itemsUp = r2.count; hadPartialUpload = hadPartialUpload || r2.partial
             AppLogger.d(TAG, "Finanzas: upload dispensacion_items=$itemsUp")
+            val r2b = safeUpload("servicio_tipos") { uploadSyncCoordinator.uploadServicioTipos(opticaId) }
+            tiposUp = r2b.count; hadPartialUpload = hadPartialUpload || r2b.partial
+            AppLogger.d(TAG, "Finanzas: upload servicio_tipos=$tiposUp")
             val r3 = safeUpload("servicios_extra") { uploadSyncCoordinator.uploadServicios(opticaId) }
             servUp = r3.count; hadPartialUpload = hadPartialUpload || r3.partial
             AppLogger.d(TAG, "Finanzas: upload servicios_extra=$servUp")
@@ -75,6 +79,9 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r5 = safeUpload("costos_biselado") { uploadSyncCoordinator.uploadCostosBiselado(opticaId) }
             biseladoUp = r5.count; hadPartialUpload = hadPartialUpload || r5.partial
             AppLogger.d(TAG, "Finanzas: upload costos_biselado=$biseladoUp")
+            val r5b = safeUpload("costos_lc") { uploadSyncCoordinator.uploadCostosLc(opticaId) }
+            lcUp = r5b.count; hadPartialUpload = hadPartialUpload || r5b.partial
+            AppLogger.d(TAG, "Finanzas: upload costos_lc=$lcUp")
             val r6 = safeUpload("pagos") { uploadSyncCoordinator.uploadPagos(opticaId) }
             pagosUp = r6.count; hadPartialUpload = hadPartialUpload || r6.partial
             AppLogger.d(TAG, "Finanzas: upload pagos=$pagosUp")
@@ -86,13 +93,19 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
         }
 
+        // Runs on every sync, even one that uploaded nothing, so days whose RPC failed earlier are retried.
+        val recalcDias = flushPendingRecalcs(opticaId)
+        AppLogger.d(TAG, "Finanzas: resumen recalc dias=$recalcDias")
+
         val dispDown: Int
         val itemsDown: Int
         val servDown: Int
+        val tiposDown: Int
         val pagosDown: Int
         val regalosDown: Int
         val costosDown: Int
         val biseladoDown: Int
+        val lcDown: Int
         val resumenDown: Int
         val configDown: Int
         val gastosDown: Int
@@ -101,6 +114,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download dispensaciones=$dispDown")
             itemsDown = safeDownload("dispensacion_items") { downloadSyncCoordinator.downloadDispensacionItems(opticaId) }
             AppLogger.d(TAG, "Finanzas: download dispensacion_items=$itemsDown")
+            tiposDown = safeDownload("servicio_tipos") { downloadSyncCoordinator.downloadServicioTipos(opticaId) }
+            AppLogger.d(TAG, "Finanzas: download servicio_tipos=$tiposDown")
             servDown = safeDownload("servicios_extra") { downloadSyncCoordinator.downloadServicios(opticaId) }
             AppLogger.d(TAG, "Finanzas: download servicios_extra=$servDown")
             safeDownload("servicio_extra_items") { downloadSyncCoordinator.downloadServicioExtraItems(opticaId) }
@@ -113,6 +128,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download costos_productos=$costosDown")
             biseladoDown = safeDownload("costos_biselado") { downloadSyncCoordinator.downloadCostosBiselado(opticaId) }
             AppLogger.d(TAG, "Finanzas: download costos_biselado=$biseladoDown")
+            lcDown = safeDownload("costos_lc") { downloadSyncCoordinator.downloadCostosLc(opticaId) }
+            AppLogger.d(TAG, "Finanzas: download costos_lc=$lcDown")
             pagosDown = safeDownload("pagos") { downloadSyncCoordinator.downloadPagos(opticaId) }
             AppLogger.d(TAG, "Finanzas: download pagos=$pagosDown")
             regalosDown = safeDownload("regalos") { downloadSyncCoordinator.downloadRegalos(opticaId) }
@@ -124,8 +141,10 @@ open class SyncFinanzasUseCase @Inject constructor(
             dispDown = 0
             itemsDown = 0
             servDown = 0
+            tiposDown = 0
             costosDown = 0
             biseladoDown = 0
+            lcDown = 0
             pagosDown = 0
             regalosDown = 0
             resumenDown = 0
@@ -138,21 +157,26 @@ open class SyncFinanzasUseCase @Inject constructor(
             uploadedDispensaciones = dispUp,
             uploadedDispensacionItems = itemsUp,
             uploadedServicios = servUp,
+            uploadedServicioTipos = tiposUp,
             uploadedCostosProductos = costosUp,
             uploadedCostosBiselado = biseladoUp,
+            uploadedCostosLc = lcUp,
             uploadedPagos = pagosUp,
             uploadedGastosOperativos = gastosUp,
             uploadedRegalos = regalosUp,
             downloadedDispensaciones = dispDown,
             downloadedDispensacionItems = itemsDown,
             downloadedServicios = servDown,
+            downloadedServicioTipos = tiposDown,
             downloadedPagos = pagosDown,
             downloadedRegalos = regalosDown,
             downloadedCostosProductos = costosDown,
             downloadedCostosBiselado = biseladoDown,
+            downloadedCostosLc = lcDown,
             downloadedResumenesDiarios = resumenDown,
             downloadedConfiguracionesFinancieras = configDown,
             downloadedGastosOperativos = gastosDown,
+            resumenRecalcDias = recalcDias,
         )
         if (hadPartialUpload) {
             Resource.Error("Error sincronizando finanzas: upload parcial / quarantine", result)
@@ -199,7 +223,16 @@ open class SyncFinanzasUseCase @Inject constructor(
         false
     }
 
-    // Isolated try-catch so one entity's failure doesn't block other downloads
+    private suspend fun flushPendingRecalcs(opticaId: String): Int = try {
+        resumenRecalcCoordinator.flush(opticaId)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        AppLogger.e(TAG, "Pending resumen recalc flush failed (non-fatal)", e)
+        0
+    }
+
+    // Tables are independent on download; one failing table must not leave the others stale.
     private suspend fun safeDownload(name: String, block: suspend () -> Int): Int = try {
         block()
     } catch (e: CancellationException) {

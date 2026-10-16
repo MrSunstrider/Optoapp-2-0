@@ -9,23 +9,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.stringResource
 import com.example.optoapp.R
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OfflineBanner
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
+import com.example.optoapp.ui.screens.costos.OtsSinCostoScreen
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
+import com.example.optoapp.util.MesArg
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
 import kotlinx.coroutines.launch
 
-/** CompositionLocal para que cualquier pantalla pueda mostrar Snackbar sin acoplamiento. */
+// Screens show snackbars without receiving the host through every composable signature.
 val LocalSnackbarHostState = staticCompositionLocalOf { SnackbarHostState() }
 
 @Composable
@@ -50,7 +56,7 @@ fun MainDrawerScreen(
     val showOperacionHoy = AppRoles.canViewOperacionHoy(opticaRol)
     val showConfiguracion = AppRoles.canManageUsers(opticaRol)
 
-    // Refresh cloud data so the user always sees the latest shared state on entry
+    // Refreshes on entry because other devices may have changed the shared data while this one was away.
     LaunchedEffect(Unit) {
         syncViewModel.performSilentSync()
     }
@@ -108,7 +114,7 @@ fun MainDrawerScreen(
                                         is com.example.optoapp.viewmodel.OpticaSelectionPrep.Error -> {
                                             android.widget.Toast.makeText(
                                                 context,
-                                                prep.message.ifBlank { "Error al cargar ópticas" },
+                                                prep.message.ifBlank { context.getString(R.string.drawer_error_cargar_opticas) },
                                                 android.widget.Toast.LENGTH_SHORT,
                                             ).show()
                                         }
@@ -118,7 +124,7 @@ fun MainDrawerScreen(
                                             } else {
                                                 android.widget.Toast.makeText(
                                                     context,
-                                                    "Solo tienes una óptica asociada.",
+                                                    context.getString(R.string.drawer_una_optica),
                                                     android.widget.Toast.LENGTH_SHORT,
                                                 ).show()
                                             }
@@ -130,7 +136,7 @@ fun MainDrawerScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         ) {
                             Text(
-                                text = "Óptica activa: ${opticaHeader.nombreOptica} · ${opticaHeader.fiscalEtiqueta}",
+                                text = stringResource(R.string.drawer_optica_activa, opticaHeader.nombreOptica, opticaHeader.fiscalEtiqueta),
                                 style = MaterialTheme.typography.labelSmall,
                                 modifier = Modifier.padding(vertical = 2.dp),
                                 maxLines = 1,
@@ -188,7 +194,16 @@ fun MainDrawerScreen(
                                     NuevaDispensacionScreen(navController, pacienteId = pacienteId)
                                 }
                             }
-                            composable(Route.EditarDispensacion("{pacienteId}", "{dispId}").route) { backStackEntry ->
+                            composable(
+                                Route.EditarDispensacion.PATTERN,
+                                arguments = listOf(
+                                    navArgument(Route.EditarDispensacion.SECCION_ARG) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { backStackEntry ->
                                 val pacienteId = backStackEntry.arguments?.getString("pacienteId")
                                 if (pacienteId.isNullOrBlank()) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -198,6 +213,7 @@ fun MainDrawerScreen(
                                         navController,
                                         pacienteId = pacienteId,
                                         dispensacionId = backStackEntry.arguments?.getString("dispId"),
+                                        seccion = backStackEntry.arguments?.getString(Route.EditarDispensacion.SECCION_ARG),
                                     )
                                 }
                             }
@@ -208,7 +224,6 @@ fun MainDrawerScreen(
                             composable(Route.Proveedores.route) { ProveedoresScreen(navController) }
                             composable(Route.OrdenesCompra.route) { OrdenesCompraScreen(navController) }
                             composable(Route.InventarioFisico.route) { com.example.optoapp.ui.screens.inventariofisico.InventarioFisicoScreen(navController) }
-                            composable(Route.Gastos.route) { CostosYGastosScreen(navController, drawerState) }
                             composable(Route.OperacionHoy.route) { OperacionHoyScreen(navController, drawerState) }
                             composable(Route.NuevoServicio.route) {
                                 NuevoServicioScreen(navController, pacienteId = null)
@@ -220,14 +235,43 @@ fun MainDrawerScreen(
                                 NuevoServicioScreen(navController, servicioId = backStackEntry.arguments?.getString("id"))
                             }
                             composable(Route.Reportes.route) { ReportesScreen(drawerState) }
-                            composable(Route.CostosYGastos.route) { CostosYGastosScreen(navController, drawerState) }
-                            composable(Route.CostosYGastosDisp("{dispensacionId}").route) { backStackEntry ->
-                                val dispId = backStackEntry.arguments?.getString("dispensacionId")
-                                CostosYGastosScreen(navController, drawerState, dispensacionId = dispId)
-                            }
+                            composable(
+                                Route.CostosYGastos.route,
+                                arguments = listOf(
+                                    navArgument(CostosTab.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                    navArgument(MesArg.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { CostosYGastosScreen(navController, drawerState) }
                             composable(Route.CierreCaja.route) { CierreCajaScreen(navController) }
                             composable(Route.EstadisticasBI.route) { AnalisisNegocioScreen(navController) }
-                            composable(Route.AnalisisDetalle.route) { AnalisisDetalleScreen(navController) }
+                            composable(
+                                Route.AnalisisDetalle.route,
+                                arguments = listOf(
+                                    navArgument(MesArg.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { AnalisisDetalleScreen(navController) }
+                            composable(
+                                Route.OtsSinCosto.route,
+                                arguments = listOf(
+                                    navArgument(MesArg.KEY) {
+                                        type = NavType.StringType
+                                        nullable = true
+                                        defaultValue = null
+                                    },
+                                ),
+                            ) { OtsSinCostoScreen(navController) }
                             composable(Route.Configuracion.route) {
                                 if (!showConfiguracion) {
                                     LaunchedEffect(Unit) { navController.popBackStack() }
@@ -252,8 +296,6 @@ fun MainDrawerScreen(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp),
                         )
                     }
-
-                    // Bottom navigation removed — drawer provides all navigation
                 }
             }
         }

@@ -3,15 +3,10 @@ package com.example.optoapp.ui.theme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Tests for OptoTokens.kt design tokens.
- *
- * Verifies that all design tokens match the specification values
- * and that WCAG AA contrast ratios are met.
- */
 class OptoTokensTest {
 
     @Test
@@ -265,26 +260,25 @@ class OptoTokensTest {
         assertTrue("Dark surface/onSurfaceVariant contrast $ratio is below 3:1 (AA large)", ratio >= 3.0)
     }
 
-    // --- Semantic light colors ---
 
     @Test
     fun semantic_positiveGreen_light() {
-        assertEquals(Color(0xFF27AE60), OptoTokens.semantic.positiveGreenLight)
+        assertEquals(Color(0xFF1E7E45), OptoTokens.semantic.positiveGreenLight)
     }
 
     @Test
     fun semantic_alertRed_light() {
-        assertEquals(Color(0xFFE74C3C), OptoTokens.semantic.alertRedLight)
+        assertEquals(Color(0xFFC0392B), OptoTokens.semantic.alertRedLight)
     }
 
     @Test
     fun semantic_warningGold_light() {
-        assertEquals(Color(0xFFD97706), OptoTokens.semantic.warningGoldLight)
+        assertEquals(Color(0xFFB45309), OptoTokens.semantic.warningGoldLight)
     }
 
     @Test
     fun semantic_warningAmber_light() {
-        assertEquals(Color(0xFFF39C12), OptoTokens.semantic.warningAmberLight)
+        assertEquals(Color(0xFFA35C00), OptoTokens.semantic.warningAmberLight)
     }
 
     @Test
@@ -292,7 +286,6 @@ class OptoTokensTest {
         assertEquals(Color(0xFF2C3E50), OptoTokens.semantic.textDarkLight)
     }
 
-    // --- Semantic dark colors ---
 
     @Test
     fun semantic_positiveGreen_dark() {

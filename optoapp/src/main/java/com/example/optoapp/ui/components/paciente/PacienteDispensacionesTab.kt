@@ -11,10 +11,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.optoapp.R
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.Paciente
@@ -22,10 +24,11 @@ import com.example.optoapp.ui.components.common.EmptyState
 import com.example.optoapp.ui.components.common.InfoSection
 import com.example.optoapp.ui.components.LaboratorioTicketAlertDialog
 import com.example.optoapp.ui.components.OrderEstadoChip
+import com.example.optoapp.ui.theme.saldoColor
 import com.example.optoapp.util.DispensacionLaboratorioTicket
 import com.example.optoapp.util.LaboratorioTicketContext
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
-import java.util.Locale
 
 @Composable
 fun DispensacionesList(
@@ -42,8 +45,8 @@ fun DispensacionesList(
 
     if (dispensaciones.isEmpty()) {
         EmptyState(
-            title = "Sin dispensaciones",
-            subtitle = "No hay dispensaciones registradas.",
+            title = stringResource(R.string.paciente_disp_vacio_titulo),
+            subtitle = stringResource(R.string.paciente_disp_vacio_mensaje),
         )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -65,32 +68,43 @@ fun DispensacionesList(
                                 IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForTicket.value = disp }) {
                                     Icon(
                                         Icons.Filled.Science,
-                                        contentDescription = "Ticket de laboratorio",
+                                        contentDescription = stringResource(R.string.paciente_disp_ticket_cd),
                                         tint = MaterialTheme.colorScheme.tertiary,
                                         modifier = Modifier.size(20.dp),
                                     )
                                 }
                                 IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForResumen.value = disp }) {
-                                    Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                                    Icon(
+                                        Icons.Default.Visibility,
+                                        contentDescription = stringResource(R.string.paciente_disp_ver_resumen_cd),
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
                                 }
                                 OrderEstadoChip(disp.estadoEntrega)
                             }
                         }
                         if (disp.fechaEntrega != null) {
                             Text(
-                                text = "Entregado el ${com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega)}",
+                                text = stringResource(
+                                    R.string.paciente_disp_entregado_el,
+                                    com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega),
+                                ),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.tertiary,
                                 fontWeight = FontWeight.Medium,
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "${disp.tipoLente} - ${disp.materialLente}", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            text = stringResource(R.string.paciente_disp_lente_resumen, disp.tipoLente, disp.materialLente),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                            Text(text = "Saldo:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            val formattedSaldo = String.format(Locale.US, "%.2f", saldo)
-                            Text(text = "s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                            Text(text = stringResource(R.string.disp_saldo), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(text = MoneyFormatter.format(saldo), color = saldoColor(saldo), fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                         }
                     }
                 }
@@ -136,69 +150,75 @@ fun ResumenDispensacionDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Visibility, contentDescription = "Ver", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Visibility, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Resumen de Dispensación")
+                Text(stringResource(R.string.paciente_disp_resumen_titulo))
             }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                InfoSection("Datos del Paciente") {
-                    if (disp.ot.isNotBlank()) Text("OT: ${disp.ot}", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Text("Nombre: ${paciente.nombreCompleto}", fontSize = 14.sp)
-                    Text("Edad: ${paciente.edad} años", fontSize = 14.sp)
-                    if (!paciente.historiaOptometrica.isNullOrBlank()) Text("Historia Optométrica: ${paciente.historiaOptometrica}", fontSize = 14.sp)
-                    Text("Fecha: $date", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                InfoSection(stringResource(R.string.paciente_disp_datos_paciente)) {
+                    if (disp.ot.isNotBlank()) Text(stringResource(R.string.paciente_disp_ot, disp.ot), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.paciente_disp_nombre, paciente.nombreCompleto), fontSize = 14.sp)
+                    Text(stringResource(R.string.paciente_disp_edad, paciente.edad), fontSize = 14.sp)
+                    if (!paciente.historiaOptometrica.isNullOrBlank()) {
+                        Text(stringResource(R.string.paciente_disp_historia, paciente.historiaOptometrica), fontSize = 14.sp)
+                    }
+                    Text(stringResource(R.string.paciente_disp_fecha, date), fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 }
 
                 if (disp.origenMontura.isNotBlank() || disp.tipoAro.isNotBlank() || disp.materialMontura.isNotBlank() || disp.descripcionMontura.isNotBlank()) {
-                    InfoSection("Información de Montura") {
-                        if (disp.origenMontura.isNotBlank()) Text("Origen: ${disp.origenMontura}", fontSize = 14.sp)
-                        if (disp.tipoAro.isNotBlank()) Text("Tipo de Aro: ${disp.tipoAro}", fontSize = 14.sp)
-                        if (disp.materialMontura.isNotBlank()) Text("Material: ${disp.materialMontura}", fontSize = 14.sp)
-                        if (disp.descripcionMontura.isNotBlank()) Text("Descripción: ${disp.descripcionMontura}", fontSize = 14.sp)
+                    InfoSection(stringResource(R.string.paciente_disp_info_montura)) {
+                        if (disp.origenMontura.isNotBlank()) Text(stringResource(R.string.paciente_disp_origen, disp.origenMontura), fontSize = 14.sp)
+                        if (disp.tipoAro.isNotBlank()) Text(stringResource(R.string.paciente_disp_tipo_aro, disp.tipoAro), fontSize = 14.sp)
+                        if (disp.materialMontura.isNotBlank()) Text(stringResource(R.string.paciente_disp_material, disp.materialMontura), fontSize = 14.sp)
+                        if (disp.descripcionMontura.isNotBlank()) Text(stringResource(R.string.paciente_disp_descripcion, disp.descripcionMontura), fontSize = 14.sp)
                     }
                 }
 
                 if (disp.tipoLente.isNotBlank() || disp.materialLente.isNotBlank() || disp.colorLente.isNotBlank() || disp.tratamientos.isNotEmpty() || disp.notasDiseno.isNotBlank()) {
-                    InfoSection("Información del Lente") {
+                    InfoSection(stringResource(R.string.paciente_disp_info_lente)) {
                         if (disp.tipoLente.isNotBlank()) {
-                            val subtipo = if (disp.tipoLente == "Bifocal" && disp.subTipoBifocal.isNotBlank()) " (${disp.subTipoBifocal})" else ""
-                            val distancia = if (disp.tipoLente == "Monofocal" && disp.distanciaLente.isNotBlank()) " - ${disp.distanciaLente}" else ""
-                            Text("Tipo: ${disp.tipoLente}$subtipo$distancia", fontSize = 14.sp)
+                            val conSubtipo = if (disp.tipoLente == "Bifocal" && disp.subTipoBifocal.isNotBlank()) {
+                                stringResource(R.string.paciente_disp_tipo_subtipo, disp.tipoLente, disp.subTipoBifocal)
+                            } else {
+                                disp.tipoLente
+                            }
+                            val tipo = if (disp.tipoLente == "Monofocal" && disp.distanciaLente.isNotBlank()) {
+                                stringResource(R.string.paciente_disp_tipo_distancia, conSubtipo, disp.distanciaLente)
+                            } else {
+                                conSubtipo
+                            }
+                            Text(stringResource(R.string.paciente_disp_tipo, tipo), fontSize = 14.sp)
                         }
                         if ((disp.tipoLente == "Bifocal" || disp.tipoLente == "Multifocal" || disp.tipoLente == "Ocupacional") && disp.altura.isNotBlank()) {
-                            Text("Altura: ${disp.altura} mm", fontSize = 14.sp)
+                            Text(stringResource(R.string.paciente_disp_altura, disp.altura), fontSize = 14.sp)
                         }
-                        if (disp.materialLente.isNotBlank()) Text("Material: ${disp.materialLente}", fontSize = 14.sp)
-                        if (disp.colorLente.isNotBlank()) Text("Color: ${disp.colorLente}", fontSize = 14.sp)
+                        if (disp.materialLente.isNotBlank()) Text(stringResource(R.string.paciente_disp_material, disp.materialLente), fontSize = 14.sp)
+                        if (disp.colorLente.isNotBlank()) Text(stringResource(R.string.paciente_disp_color, disp.colorLente), fontSize = 14.sp)
                         if (disp.tratamientos.isNotEmpty()) {
-                            Text("Tratamientos: ${disp.tratamientos.joinToString(", ")}", fontSize = 14.sp)
+                            Text(stringResource(R.string.paciente_disp_tratamientos, disp.tratamientos.joinToString(", ")), fontSize = 14.sp)
                         }
-                        if (disp.notasDiseno.isNotBlank()) Text("Notas: ${disp.notasDiseno}", fontSize = 14.sp)
+                        if (disp.notasDiseno.isNotBlank()) Text(stringResource(R.string.paciente_disp_notas, disp.notasDiseno), fontSize = 14.sp)
                     }
                 }
 
-                InfoSection("Resumen Financiero") {
-                    val computedMontoPagado = pagosSum
-                    val saldo = disp.montoTotal - computedMontoPagado
-                    val formattedTotal = String.format(Locale.US, "%.2f", disp.montoTotal)
-                    val formattedPagado = String.format(Locale.US, "%.2f", computedMontoPagado)
-                    val formattedSaldo = String.format(Locale.US, "%.2f", saldo)
+                InfoSection(stringResource(R.string.paciente_disp_resumen_financiero)) {
+                    val saldo = disp.montoTotal - pagosSum
 
-                    Text("Monto Total: s/. $formattedTotal", fontSize = 14.sp)
-                    if (disp.metodoPago.isNotBlank()) Text("Método de Pago: ${disp.metodoPago}", fontSize = 14.sp)
-                    Text("A Cuenta: s/. $formattedPagado", fontSize = 14.sp)
+                    Text(stringResource(R.string.paciente_disp_monto_total, MoneyFormatter.format(disp.montoTotal)), fontSize = 14.sp)
+                    if (disp.metodoPago.isNotBlank()) Text(stringResource(R.string.paciente_disp_metodo_pago, disp.metodoPago), fontSize = 14.sp)
+                    Text(stringResource(R.string.paciente_disp_a_cuenta, MoneyFormatter.format(pagosSum)), fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        "Saldo Restante: s/. $formattedSaldo",
+                        stringResource(R.string.paciente_disp_saldo_restante, MoneyFormatter.format(saldo)),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary,
+                        color = saldoColor(saldo),
                     )
                 }
 
-                InfoSection("Estado") {
+                InfoSection(stringResource(R.string.paciente_disp_estado)) {
                     Text(
                         text = disp.estadoEntrega,
                         fontSize = 15.sp,
@@ -207,7 +227,10 @@ fun ResumenDispensacionDialog(
                     )
                     if (disp.fechaEntrega != null) {
                         Text(
-                            text = "Entregado el día ${com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega)}",
+                            text = stringResource(
+                                R.string.paciente_disp_entregado_el_dia,
+                                com.example.optoapp.util.DateUtils.formatLocalized(disp.fechaEntrega),
+                            ),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.tertiary,
                         )
@@ -223,7 +246,7 @@ fun ResumenDispensacionDialog(
                 }) {
                     Icon(Icons.Default.Edit, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Editar Completo")
+                    Text(stringResource(R.string.paciente_disp_editar_completo))
                 }
             }
         },
@@ -231,10 +254,10 @@ fun ResumenDispensacionDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (onGoToFinanciero != null) {
                     TextButton(onClick = { onGoToFinanciero(disp) }) {
-                        Text("Ir a Financiero")
+                        Text(stringResource(R.string.paciente_disp_ir_financiero))
                     }
                 }
-                TextButton(onClick = onDismiss) { Text("Cerrar") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
             }
         },
     )

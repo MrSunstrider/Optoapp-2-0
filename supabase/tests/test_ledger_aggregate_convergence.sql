@@ -1,12 +1,5 @@
 -- =============================================================================
 -- Test: financial SQL aggregates converge on public.pago_effect
--- Change: fix-sync-financial-ledger / WU-1B + WU-1C
--- Covers:
---   WU-1B: recalcular_resumen_diario, rpc_cierre_caja_resumen
---   WU-1C: rpc_deudores, rpc_analisis_mensual (proyeccion_caja + debt inputs)
--- RED before the converge migrations; GREEN after them.
--- Run via: supabase db reset && psql -h localhost -p 54322 -U postgres -d postgres \
---            -f supabase/tests/test_ledger_aggregate_convergence.sql
 -- =============================================================================
 
 -- A. Effect matrix nets fixture F1: Abono +100, Reverso 40, Reembolso 10,
@@ -62,9 +55,11 @@ BEGIN
        AND 'SUM( monto )' ~ c_raw_cash_sum,
         'B2b FAIL: raw-cash ban must match raw, qualified and spaced monto sums';
 
-    SELECT p.prosrc INTO v_src
+    -- The guard lives in the RPC and the aggregation in the shared core, so both bodies are inspected.
+    SELECT string_agg(p.prosrc, E'\n') INTO v_src
     FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'recalcular_resumen_diario';
+    WHERE (n.nspname, p.proname) IN (('public', 'recalcular_resumen_diario'),
+                                     ('app_private', 'recalcular_resumen_diario_core'));
 
     ASSERT v_src IS NOT NULL, 'B0 FAIL: recalcular_resumen_diario must exist';
     ASSERT v_src LIKE '%public.pago_effect(%',
@@ -174,13 +169,13 @@ $$;
 -- F. rpc_analisis_mensual proyeccion_caja: pago_effect + exclusions + JSON keys.
 --    Unlike B/C/E this body legitimately sums a bare `monto`: gastos_operativos
 --    tracks operating EXPENSES, which are not pagos and carry no ledger sign.
---    So the ban is scoped by count instead of being absolute — exactly the
+--    So the ban is scoped by aggregation context instead of being absolute — exactly the
 --    non-cash aggregate a blanket raw-SUM ban would false-positive on.
 DO $$
 DECLARE
     v_src TEXT;
     c_raw_cash_sum CONSTANT TEXT := 'SUM\s*\(\s*(\w+\.)?monto\s*\)';
-    v_raw_sums INTEGER;
+    v_foreign_sums INTEGER;
     v_gastos_sums INTEGER;
 BEGIN
     SELECT p.prosrc INTO v_src FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -192,13 +187,18 @@ BEGIN
     ASSERT v_src NOT LIKE '%SUM(monto) AS total_pagado%',
        'F2 FAIL: raw SUM(monto) AS total_pagado must not remain';
 
-    SELECT count(*) INTO v_raw_sums
-    FROM regexp_matches(v_src, c_raw_cash_sum, 'g');
+    -- Bare monto sums are allowed only in gastos contexts: unqualified (the gastos_operativos
+    -- queries) or through the g / gx aliases bound to gastos_operativos. Any other qualifier
+    -- would be a pago aggregate that bypassed pago_effect.
+    SELECT count(*) INTO v_foreign_sums
+    FROM regexp_matches(v_src, c_raw_cash_sum, 'g') AS m(parts)
+    WHERE parts[1] IS NOT NULL AND parts[1] NOT IN ('g.', 'gx.');
     SELECT count(*) INTO v_gastos_sums
     FROM regexp_matches(v_src, 'gastos_operativos', 'g');
-    ASSERT v_raw_sums = 2 AND v_gastos_sums = 2,
-       'F2b FAIL: the only bare SUM(monto) uses must be the two gastos_operativos '
-       || 'expense sums (raw=' || v_raw_sums || ', gastos=' || v_gastos_sums || ')';
+    ASSERT v_foreign_sums = 0 AND v_gastos_sums = 4
+       AND v_src LIKE '%FROM public.gastos_operativos gx%',
+       'F2b FAIL: bare SUM(monto) must only aggregate gastos_operativos expenses (foreign='
+       || v_foreign_sums || ', gastos=' || v_gastos_sums || ')';
     ASSERT v_src LIKE '%estado_entrega IS DISTINCT FROM ''Anulado''%'
        AND v_src LIKE '%estado_entrega IS DISTINCT FROM ''Reclamada''%'
        AND v_src LIKE '%estado IS DISTINCT FROM ''Anulado''%',

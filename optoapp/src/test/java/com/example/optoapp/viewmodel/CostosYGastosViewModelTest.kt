@@ -1,10 +1,14 @@
-﻿package com.example.optoapp.viewmodel
+package com.example.optoapp.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
+import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
+import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.util.DateUtils
@@ -45,6 +49,7 @@ class CostosYGastosViewModelTest {
     private lateinit var sessionManager: SessionManager
     private lateinit var scheduler: PostSaveSyncScheduler
     private lateinit var syncFinanzas: SyncFinanzasUseCase
+    private lateinit var syncStateTracker: SyncStateTracker
     private lateinit var viewModel: CostosYGastosViewModel
 
     private val opticaId = "optica-test"
@@ -54,7 +59,7 @@ class CostosYGastosViewModelTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
 
-        // Mock android.util.Log to avoid RuntimeException in caught exceptions
+        // android.util.Log throws in plain JVM tests, and caught exceptions are logged.
         mockkStatic("android.util.Log")
         every { android.util.Log.d(any(), any()) } returns 0
         every { android.util.Log.e(any(), any()) } returns 0
@@ -70,12 +75,27 @@ class CostosYGastosViewModelTest {
         sessionManager = mockk(relaxed = true)
         scheduler = mockk(relaxed = true)
         syncFinanzas = mockk(relaxed = true)
+        syncStateTracker = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns flowOf(opticaId)
+        every { sessionManager.opticaRol } returns flowOf("admin")
         every { repository.getGastosOperativos(opticaId) } returns emptyFlow()
-        // Default: getByBloque returns empty so loadBlock doesn't crash
+        coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers { firstArg<suspend () -> Any?>().invoke() }
         coEvery { costoProductoDao.getByBloque(any(), any()) } returns flowOf(emptyList())
     }
+
+    private fun buildViewModel() = CostosYGastosViewModel(
+        repository,
+        costoProductoDao,
+        costoBiseladoDao,
+        mockk<CostoLcDao>(relaxed = true),
+        sessionManager,
+        scheduler,
+        syncFinanzas,
+        syncStateTracker,
+        mockk<MatrizVigenciaUseCase>(),
+        SavedStateHandle(),
+    )
 
     @After
     fun tearDown() {
@@ -85,17 +105,9 @@ class CostosYGastosViewModelTest {
 
     @Test
     fun saveCosto_createsEntityWithUuidOpticaIdAndVigenteDesde_callsUpsertAll() = runTest(testDispatcher) {
-        // Mock DAO refresh to return empty after upsert
         coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(emptyList())
 
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
@@ -108,7 +120,6 @@ class CostosYGastosViewModelTest {
         viewModel.saveCosto()
         advanceUntilIdle()
 
-        // Verify upsertAll was called with one entity containing expected fields
         coVerify {
             costoProductoDao.upsertAll(
                 withArg { entities ->
@@ -121,37 +132,28 @@ class CostosYGastosViewModelTest {
                     assertEquals("2026-07-16", entity.vigenteDesde)
                     assertNotNull("Entity must have a generated UUID", entity.id)
                     assertTrue("Entity ID must not be blank", entity.id.isNotBlank())
+                    assertNotNull("A new price must carry its edit time for last-write-wins", entity.updatedAt)
                 },
             )
         }
 
-        // Verify block was refreshed after save
         coVerify(atLeast = 1) { costoProductoDao.getByBloque(opticaId, "stock") }
+        coVerify { syncStateTracker.markLocallyModified(opticaId, "costo_producto", any()) }
 
-        // Verify sync was scheduled
         coVerify { scheduler.scheduleFinanzasSync(opticaId) }
 
-        // Verify dialog dismissed and no error
         assertFalse("Dialog must be dismissed after successful save", viewModel.uiState.value.isCostoDialogVisible)
         assertNull("No error expected after successful save", viewModel.uiState.value.costoSaveError)
     }
 
     @Test
     fun saveCosto_rejectsEmptyMaterial_setsCostoSaveError() = runTest(testDispatcher) {
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        // Fill other fields but leave material empty
         viewModel.updateCostoTipoLente("Monofocal")
         viewModel.updateCostoCostoUnitario("150.00")
 
@@ -163,21 +165,13 @@ class CostosYGastosViewModelTest {
 
     @Test
     fun saveCosto_rejectsEmptyTipoLente_setsCostoSaveError() = runTest(testDispatcher) {
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
 
         viewModel.showNewCosto()
         viewModel.updateCostoMaterial("CR39")
-        // Leave tipoLente empty
         viewModel.updateCostoCostoUnitario("150.00")
 
         viewModel.saveCosto()
@@ -188,14 +182,7 @@ class CostosYGastosViewModelTest {
 
     @Test
     fun saveCosto_rejectsInvalidCostoUnitario_setsCostoSaveError() = runTest(testDispatcher) {
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
@@ -203,7 +190,7 @@ class CostosYGastosViewModelTest {
         viewModel.showNewCosto()
         viewModel.updateCostoMaterial("CR39")
         viewModel.updateCostoTipoLente("Monofocal")
-        viewModel.updateCostoCostoUnitario("0") // <= 0
+        viewModel.updateCostoCostoUnitario("0")
 
         viewModel.saveCosto()
 
@@ -213,14 +200,7 @@ class CostosYGastosViewModelTest {
 
     @Test
     fun saveCosto_rejectsNegativeCostoUnitario_setsCostoSaveError() = runTest(testDispatcher) {
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
@@ -237,14 +217,7 @@ class CostosYGastosViewModelTest {
 
     @Test
     fun saveCosto_rejectsNonNumericCostoUnitario_setsCostoSaveError() = runTest(testDispatcher) {
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
@@ -274,29 +247,19 @@ class CostosYGastosViewModelTest {
 
         coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(listOf(existing))
 
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
 
-        // Verify entity is in the list
         assertEquals(1, viewModel.uiState.value.costosDelBloque.size)
 
-        // Trigger delete confirmation and delete
         viewModel.confirmDeleteCosto(existing)
         assertNotNull("deletingCosto must be set after confirmDeleteCosto", viewModel.uiState.value.deletingCosto)
 
         viewModel.deleteCosto()
         advanceUntilIdle()
 
-        // Verify upsertAll was called with entity that has vigenteHasta set
         coVerify {
             costoProductoDao.upsertAll(
                 withArg { entities ->
@@ -304,17 +267,16 @@ class CostosYGastosViewModelTest {
                     val deleted = entities[0]
                     assertEquals("costo-1", deleted.id)
                     assertEquals("2026-07-16", deleted.vigenteHasta)
+                    assertNotNull(deleted.updatedAt)
                 },
             )
         }
 
-        // Verify block was refreshed
         coVerify(atLeast = 1) { costoProductoDao.getByBloque(opticaId, "stock") }
 
-        // Verify sync was scheduled
+        coVerify { syncStateTracker.markLocallyModified(opticaId, "costo_producto", "costo-1") }
         coVerify { scheduler.scheduleFinanzasSync(opticaId) }
 
-        // Verify deletingCosto is cleared
         assertNull("deletingCosto must be cleared after delete", viewModel.uiState.value.deletingCosto)
     }
 
@@ -334,14 +296,7 @@ class CostosYGastosViewModelTest {
         coEvery { costoProductoDao.getByBloque(opticaId, "fabricacion") } returns flowOf(listOf(existing))
         coEvery { costoProductoDao.upsertAll(any()) } throws IOException("DB error")
 
-        viewModel = CostosYGastosViewModel(
-            repository,
-            costoProductoDao,
-            costoBiseladoDao,
-            sessionManager,
-            scheduler,
-            syncFinanzas,
-        )
+        viewModel = buildViewModel()
 
         viewModel.loadBlock("Fabricación Resina")
         advanceUntilIdle()
@@ -353,5 +308,6 @@ class CostosYGastosViewModelTest {
         val error = viewModel.uiState.value.costoSaveError
         assertNotNull("Error must be set after delete failure", error)
         assertTrue("Error must mention the problem", error!!.contains("eliminar", ignoreCase = true))
+        coVerify(exactly = 0) { syncStateTracker.markLocallyModified(any(), any(), any()) }
     }
 }

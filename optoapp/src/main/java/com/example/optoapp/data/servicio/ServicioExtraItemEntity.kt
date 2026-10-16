@@ -44,4 +44,7 @@ data class ServicioExtraItem(
     @SerialName("updated_by")
     @ColumnInfo(name = "updated_by")
     val updatedBy: String? = null,
+    @SerialName("costo_real")
+    @ColumnInfo(name = "costo_real", defaultValue = "0")
+    val costoReal: Double = 0.0,
 )

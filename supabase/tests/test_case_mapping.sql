@@ -1,66 +1,76 @@
--- T1: CASE mapping correctness (unit test)
--- Validates that rpc_analisis_mensual maps (tipo_lente, material_lente) to
--- the correct categoria_producto_id via inline CASE expression.
---
--- Expected (after fix): Monofocal/Resina → lente_monofocal with ventas > 0
---                       Progresivo/*    → lente_progresivo with ventas > 0
---                       Bifocal/*       → lente_bifocal with ventas > 0
--- Before fix: all ventas = 0 (empty margen_por_categoria table)
+-- Runs in one transaction that ends in ROLLBACK, so it is safe on any database.
+-- rpc_analisis_mensual authorizes through auth.uid(), so a fixture admin is impersonated
+-- under the authenticated role; fixtures are inserted first because the opticas insert
+-- trigger enforces plan limits for auth.uid().
+-- Each fixture order targets one branch of the inline (tipo_lente, material_lente) mapping.
+
+\set ON_ERROR_STOP on
+
+BEGIN;
+
+-- Local seed.sql adds two alias categories that production never had; the
+-- contract is one row per production category (9).
+DELETE FROM public.categorias_producto WHERE id IN ('garantia_extendida', 'otro_lente');
+
+INSERT INTO public.opticas (id, nombre) VALUES ('zzt_tcm_o1', 'ZZT TCM');
+
+INSERT INTO auth.users (id, email)
+VALUES ('a5000000-0000-4000-8000-000000000003', 'zzt_tcm_admin@example.invalid');
+
+-- usuario_optica guards (admin bootstrap, optica-per-user cap) are bypassed
+-- only while the fixture membership is inserted.
+ALTER TABLE public.usuario_optica DISABLE TRIGGER USER;
+INSERT INTO public.usuario_optica (user_id, optica_id, rol)
+VALUES ('a5000000-0000-4000-8000-000000000003', 'zzt_tcm_o1', 'admin');
+ALTER TABLE public.usuario_optica ENABLE TRIGGER USER;
+
+INSERT INTO public.pacientes (id, nombre_completo, fecha_creacion, optica_id)
+VALUES ('zzt_tcm_pac', 'ZZT TCM', DATE '2026-01-01', 'zzt_tcm_o1');
+
+INSERT INTO public.dispensaciones
+    (id, paciente_id, fecha, optica_id, tipo_lente, material_lente, monto_total, estado_entrega) VALUES
+    ('zzt_tcm_d1', 'zzt_tcm_pac', DATE '2026-07-05', 'zzt_tcm_o1', 'Monofocal',  'Resina',  310, 'Entregado'),
+    ('zzt_tcm_d2', 'zzt_tcm_pac', DATE '2026-07-06', 'zzt_tcm_o1', 'Progresivo', 'Resina',  600, 'Entregado'),
+    ('zzt_tcm_d3', 'zzt_tcm_pac', DATE '2026-07-07', 'zzt_tcm_o1', 'Bifocal',    'Resina',  180, 'Entregado'),
+    ('zzt_tcm_d4', 'zzt_tcm_pac', DATE '2026-07-08', 'zzt_tcm_o1', 'Monofocal',  'Cristal',  70, 'Entregado');
+
+INSERT INTO public.servicios_extra (id, optica_id, descripcion, fecha, metodo_pago, monto_total, estado)
+VALUES ('zzt_tcm_se1', 'zzt_tcm_o1', 'ZZT servicio', DATE '2026-07-09', 'Efectivo', 45, 'Entregado');
+
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claims',
+    json_build_object('sub', 'a5000000-0000-4000-8000-000000000003', 'role', 'authenticated')::text, true);
 
 DO $$
 DECLARE
     v_result jsonb;
     v_cat jsonb;
-    v_optica_id TEXT := '25af5a92-4a2d-4e7a-957f-61bec87a07d8';
-    v_mes DATE := '2026-07-01';
-    v_ventas NUMERIC;
+    v_case RECORD;
 BEGIN
-    -- Call the function
-    SELECT public.rpc_analisis_mensual(v_optica_id, v_mes) INTO v_result;
+    v_result := public.rpc_analisis_mensual('zzt_tcm_o1', DATE '2026-07-01') -> 'margen_por_categoria';
 
-    -- Extract margen_por_categoria array
-    v_result := v_result -> 'margen_por_categoria';
-
-    -- Assert: exactly 9 categories exist
     ASSERT jsonb_array_length(v_result) = 9,
-        'Expected 9 categories in margen_por_categoria, got ' || jsonb_array_length(v_result);
+        'T1 FAIL: expected 9 categories in margen_por_categoria, got ' || jsonb_array_length(v_result);
 
-    -- Assert: Lentes Monofocales (Monofocal/Resina = S/1,310) has non-zero ventas
-    SELECT value INTO v_cat
-    FROM jsonb_array_elements(v_result)
-    WHERE value->>'categoria' = 'Lentes Monofocales';
-    ASSERT v_cat IS NOT NULL, 'Lentes Monofocales not found in margen_por_categoria';
-    v_ventas := (v_cat->>'ventas')::NUMERIC;
-    ASSERT v_ventas > 0,
-        'Expected Lentes Monofocales ventas > 0, got ' || v_ventas;
+    FOR v_case IN
+        SELECT * FROM (VALUES
+            ('Lentes Monofocales', 310::NUMERIC),
+            ('Lentes Progresivos', 600),
+            ('Lentes Bifocales', 180),
+            ('Servicios Extra', 45),
+            ('Otros Lentes', 70)
+        ) AS c(categoria, ventas)
+    LOOP
+        SELECT value INTO v_cat FROM jsonb_array_elements(v_result) WHERE value ->> 'categoria' = v_case.categoria;
+        ASSERT v_cat IS NOT NULL, 'T1 FAIL: ' || v_case.categoria || ' not found in margen_por_categoria';
+        ASSERT (v_cat ->> 'ventas')::NUMERIC > 0,
+            'T1 FAIL: expected ' || v_case.categoria || ' ventas > 0, got ' || (v_cat ->> 'ventas');
+        ASSERT (v_cat ->> 'ventas')::NUMERIC = v_case.ventas,
+            'T1 FAIL: ' || v_case.categoria || ' ventas = ' || (v_cat ->> 'ventas') || ' (expected ' || v_case.ventas || ')';
+    END LOOP;
 
-    -- Assert: Lentes Progresivos (Progresivo/Resina = S/600) has non-zero ventas
-    SELECT value INTO v_cat
-    FROM jsonb_array_elements(v_result)
-    WHERE value->>'categoria' = 'Lentes Progresivos';
-    ASSERT v_cat IS NOT NULL, 'Lentes Progresivos not found in margen_por_categoria';
-    v_ventas := (v_cat->>'ventas')::NUMERIC;
-    ASSERT v_ventas > 0,
-        'Expected Lentes Progresivos ventas > 0, got ' || v_ventas;
-
-    -- Assert: Lentes Bifocales (Bifocal/Resina = S/580) has non-zero ventas
-    SELECT value INTO v_cat
-    FROM jsonb_array_elements(v_result)
-    WHERE value->>'categoria' = 'Lentes Bifocales';
-    ASSERT v_cat IS NOT NULL, 'Lentes Bifocales not found in margen_por_categoria';
-    v_ventas := (v_cat->>'ventas')::NUMERIC;
-    ASSERT v_ventas > 0,
-        'Expected Lentes Bifocales ventas > 0, got ' || v_ventas;
-
-    -- Assert: Servicios Extra has non-zero ventas (S/428 from servicios_extra UNION ALL)
-    SELECT value INTO v_cat
-    FROM jsonb_array_elements(v_result)
-    WHERE value->>'categoria' = 'Servicios Extra';
-    ASSERT v_cat IS NOT NULL, 'Servicios Extra not found in margen_por_categoria';
-    v_ventas := (v_cat->>'ventas')::NUMERIC;
-    ASSERT v_ventas > 0,
-        'Expected Servicios Extra ventas > 0, got ' || v_ventas;
-
-    RAISE NOTICE 'T1 PASS: CASE mapping produces non-zero ventas for know categories';
+    RAISE NOTICE 'T1 PASS: inline CASE mapping routes each lens type to its category';
 END;
 $$;
+
+ROLLBACK;

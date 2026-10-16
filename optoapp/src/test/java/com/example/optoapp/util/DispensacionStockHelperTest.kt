@@ -8,6 +8,7 @@ import com.example.optoapp.data.montura.MonturaInventoryCoordinator
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Before
@@ -131,6 +132,42 @@ class DispensacionStockHelperTest {
                 },
             )
         }
+    }
+
+    @Test
+    fun salidaVenta_recordsTheFrameCurrentCost() = runTest {
+        assertEquals(55.0, salidaVentaCostoFor(costo = 55.0), 0.0)
+    }
+
+    @Test
+    fun salidaVenta_frameWithoutCost_recordsZero() = runTest {
+        assertEquals(0.0, salidaVentaCostoFor(costo = 0.0), 0.0)
+    }
+
+    @Test
+    fun restockOnce_neverTouchesFrameCost() = runTest {
+        coEvery { coordinator.getMonturaById("m1", "o1") } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 4, costo = 55.0))
+        coEvery { coordinator.insertMonturaMovimientoIfAbsent(any()) } returns true
+        coEvery { coordinator.adjustMonturaStockLocal("m1", "o1", 1) } returns 1
+
+        helper.restockOnce("m1", "o1", 1, "d1:anul:i1", "Reposición por anulación")
+
+        coVerify(exactly = 1) {
+            coordinator.insertMonturaMovimientoIfAbsent(match { it.tipo == "AJUSTE" && it.costoUnitario == 0.0 })
+        }
+    }
+
+    private suspend fun salidaVentaCostoFor(costo: Double): Double {
+        coEvery { coordinator.getMonturaById("m1", any()) } returns
+            Resource.Success(Montura(id = "m1", opticaId = "o1", stockActual = 3, costo = costo))
+        coEvery { coordinator.adjustMonturaStock("m1", "o1", -1) } returns 1
+        val movimiento = slot<MonturaMovimiento>()
+        coEvery { coordinator.insertMonturaMovimiento(capture(movimiento)) } returns Unit
+
+        helper.adjustStockAndRegistrarMovimiento("m1", "o1", -1, "SALIDA_VENTA", "disp-1", "Venta")
+
+        return movimiento.captured.costoUnitario
     }
 
     @Test

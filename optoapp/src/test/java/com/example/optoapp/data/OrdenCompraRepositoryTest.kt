@@ -49,7 +49,9 @@ class OrdenCompraRepositoryTest {
         repository = OrdenCompraRepository(
             db.ordenCompraDao(),
             db.ordenCompraItemDao(),
+            db.monturaDao(),
             coordinator,
+            RoomTransactionRunner(db),
             ocLazyScheduler,
         )
     }

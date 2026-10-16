@@ -16,17 +16,18 @@ import io.mockk.coVerifyOrder
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
 class DownloadSyncCoordinatorTest {
 
     @Test
-    fun constructor_takesNineDependencies() {
+    fun constructor_takesElevenDependencies() {
         val constructors = DownloadSyncCoordinator::class.java.declaredConstructors
         assertEquals(1, constructors.size)
-        assertEquals(9, constructors[0].parameterTypes.size)
+        assertEquals(11, constructors[0].parameterTypes.size)
     }
 
     @Test
@@ -91,6 +92,8 @@ class DownloadSyncCoordinatorTest {
         configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
         costoProductoDao = mockk<CostoProductoDao>(relaxed = true),
         costoBiseladoDao = mockk<CostoBiseladoDao>(relaxed = true),
+        costoLcDao = mockk(relaxed = true),
+        servicioTipoDao = mockk(relaxed = true),
     )
 
     private fun stubSyncInfra() {

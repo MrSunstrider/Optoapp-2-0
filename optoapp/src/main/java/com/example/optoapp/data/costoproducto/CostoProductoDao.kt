@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CostoProductoDao {
+    // ISO yyyy-MM-dd strings compare chronologically; two open rows after a sync conflict resolve to the newest.
     @Query(
         """
         SELECT * FROM costos_productos
@@ -14,19 +15,22 @@ interface CostoProductoDao {
           AND material = :material
           AND tipo_lente = :tipoLente
           AND stock_o_fabricacion = :stockOFabricacion
-          AND (tratamiento IS NULL AND :tratamiento IS NULL OR tratamiento = :tratamiento)
-          AND (serie IS NULL AND :serie IS NULL OR serie = :serie)
-          AND vigente_hasta IS NULL
+          AND tratamiento IS :tratamiento
+          AND serie IS :serie
+          AND vigente_desde <= :fecha
+          AND (vigente_hasta IS NULL OR vigente_hasta >= :fecha)
+        ORDER BY vigente_desde DESC
         LIMIT 1
     """,
     )
-    suspend fun lookup(
+    suspend fun lookupVigente(
         opticaId: String,
         material: String,
         tipoLente: String,
         stockOFabricacion: String,
         tratamiento: String?,
         serie: Int?,
+        fecha: String,
     ): CostoProductoEntity?
 
     @Query(
@@ -50,9 +54,6 @@ interface CostoProductoDao {
     )
     suspend fun getByOpticaIdList(opticaId: String): List<CostoProductoEntity>
 
-    @Upsert
-    suspend fun upsertAll(entities: List<CostoProductoEntity>)
-
     @Query(
         """
         SELECT * FROM costos_productos
@@ -60,16 +61,29 @@ interface CostoProductoDao {
           AND material = :material
           AND tipo_lente = :tipoLente
           AND stock_o_fabricacion = :stockOFabricacion
-          AND (laboratorio_id IS NULL OR laboratorio_id = :laboratorioId)
-          AND vigente_hasta IS NULL
-        LIMIT 1
+          AND tratamiento IS :tratamiento
+          AND serie IS :serie
+          AND laboratorio_id IS :laboratorioId
+        ORDER BY vigente_desde DESC
     """,
     )
-    suspend fun lookupLc(
+    suspend fun getHistorial(
         opticaId: String,
         material: String,
         tipoLente: String,
         stockOFabricacion: String,
+        tratamiento: String?,
+        serie: Int?,
         laboratorioId: String?,
-    ): CostoProductoEntity?
+    ): List<CostoProductoEntity>
+
+    // Closed versions are included because closing a row is itself an edit the server must receive.
+    @Query("SELECT * FROM costos_productos WHERE optica_id = :opticaId")
+    suspend fun getAllByOpticaIdList(opticaId: String): List<CostoProductoEntity>
+
+    @Query("SELECT * FROM costos_productos WHERE id = :id")
+    suspend fun getById(id: String): CostoProductoEntity?
+
+    @Upsert
+    suspend fun upsertAll(entities: List<CostoProductoEntity>)
 }

@@ -32,12 +32,14 @@ class SyncFinanzasUseCaseKtTest {
         every { Log.e(any(), any<String>(), any()) } returns 0
     }
 
-    private fun stubServicioExtraChildUploads(uploadCoordinator: UploadSyncCoordinator) {
+    private fun stubServicioCatalogAndChildUploads(uploadCoordinator: UploadSyncCoordinator) {
+        coEvery { uploadCoordinator.uploadServicioTipos(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicioExtraItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalosServicioExtra(any()) } returns 0
     }
 
-    private fun stubServicioExtraChildDownloads(downloadCoordinator: DownloadSyncCoordinator) {
+    private fun stubServicioCatalogAndChildDownloads(downloadCoordinator: DownloadSyncCoordinator) {
+        coEvery { downloadCoordinator.downloadServicioTipos(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicioExtraItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalosServicioExtra(any()) } returns 0
     }
@@ -117,7 +119,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -127,6 +129,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -151,7 +154,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
@@ -161,6 +164,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -184,7 +188,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -198,6 +202,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -214,9 +219,10 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 1
-        stubServicioExtraChildUploads(uploadCoordinator)
+        stubServicioCatalogAndChildUploads(uploadCoordinator)
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
@@ -226,6 +232,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -247,13 +254,13 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { uploadCoordinator.uploadDispensaciones(any()) } returns 0
         coEvery { uploadCoordinator.uploadDispensacionItems(any()) } returns 0
         coEvery { uploadCoordinator.uploadServicios(any()) } returns 0
-        stubServicioExtraChildUploads(uploadCoordinator)
+        stubServicioCatalogAndChildUploads(uploadCoordinator)
         coEvery { uploadCoordinator.uploadPagos(any()) } returns 0
         coEvery { uploadCoordinator.uploadGastosOperativos(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 2
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -263,6 +270,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosProductos(any()) } returns 0
         coEvery { uploadCoordinator.uploadCostosBiselado(any()) } returns 0
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 0
         coEvery { uploadCoordinator.uploadRegalos(any()) } returns 0
 
         val useCase = SyncFinanzasUseCase(
@@ -270,6 +278,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         useCase("optica-test")
@@ -297,6 +306,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -320,6 +330,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -349,7 +360,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
@@ -363,6 +374,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -396,7 +408,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -410,6 +422,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -435,7 +448,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
         coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
@@ -449,6 +462,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -476,6 +490,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -496,7 +511,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -510,6 +525,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -527,7 +543,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
         coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
-        stubServicioExtraChildDownloads(downloadCoordinator)
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
         coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
         coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
         coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
@@ -541,6 +557,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -570,6 +587,7 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
         )
 
         val result = useCase("optica-test")
@@ -582,7 +600,10 @@ class SyncFinanzasUseCaseKtTest {
         assertFalse(ioErr2.message!!.contains("Pagos upload failed"))
     }
 
-    private fun relaxedSync(discard: DiscardLosingClaimUseCase): Triple<SyncFinanzasUseCase, UploadSyncCoordinator, DownloadSyncCoordinator> {
+    private fun relaxedSync(
+        discard: DiscardLosingClaimUseCase,
+        recalc: ResumenRecalcCoordinator = mockk(relaxed = true),
+    ): Triple<SyncFinanzasUseCase, UploadSyncCoordinator, DownloadSyncCoordinator> {
         val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
         val downloadCoordinator = mockk<DownloadSyncCoordinator>(relaxed = true)
         val deletionSyncHelper = mockk<DeletionSyncHelper>(relaxed = true)
@@ -591,8 +612,50 @@ class SyncFinanzasUseCaseKtTest {
             uploadSyncCoordinator = uploadCoordinator,
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = discard,
+            resumenRecalcCoordinator = recalc,
         )
         return Triple(useCase, uploadCoordinator, downloadCoordinator)
+    }
+
+    @Test
+    fun syncFinanzas_flushesPendingRecalcsAfterTheLastUploadAndBeforeResumenDownload() = runTest {
+        val recalc = mockk<ResumenRecalcCoordinator>()
+        coEvery { recalc.flush("optica-test") } returns 4
+        val (useCase, uploadCoordinator, downloadCoordinator) = relaxedSync(mockk(relaxed = true), recalc)
+
+        val result = useCase("optica-test") as com.example.optoapp.data.Resource.Success
+
+        coVerifyOrder {
+            uploadCoordinator.uploadRegalos("optica-test")
+            recalc.flush("optica-test")
+            downloadCoordinator.downloadResumenDiario("optica-test")
+        }
+        assertEquals(4, result.data!!.resumenRecalcDias)
+    }
+
+    @Test
+    fun syncFinanzas_flushesEvenWhenNothingWasUploaded() = runTest {
+        val recalc = mockk<ResumenRecalcCoordinator>()
+        coEvery { recalc.flush(any()) } returns 1
+        val (useCase, _, _) = relaxedSync(mockk(relaxed = true), recalc)
+
+        useCase("optica-test", skipUpload = true)
+        useCase("optica-test")
+
+        coVerify(exactly = 2) { recalc.flush("optica-test") }
+    }
+
+    @Test
+    fun syncFinanzas_flushFailureIsNonFatalAndResumenStillDownloads() = runTest {
+        val recalc = mockk<ResumenRecalcCoordinator>()
+        coEvery { recalc.flush(any()) } throws IllegalStateException("boom")
+        val (useCase, _, downloadCoordinator) = relaxedSync(mockk(relaxed = true), recalc)
+
+        val result = useCase("optica-test")
+
+        coVerify { downloadCoordinator.downloadResumenDiario("optica-test") }
+        assertTrue(result is com.example.optoapp.data.Resource.Success)
+        assertEquals(0, (result as com.example.optoapp.data.Resource.Success).data!!.resumenRecalcDias)
     }
 
     @Test
@@ -610,6 +673,26 @@ class SyncFinanzasUseCaseKtTest {
             uploadCoordinator.uploadPagos("optica-test")
             downloadCoordinator.downloadDispensaciones("optica-test")
         }
+    }
+
+    @Test
+    fun syncFinanzas_syncsCostosLcRightAfterCostosBiseladoInBothPhases() = runTest {
+        val (useCase, uploadCoordinator, downloadCoordinator) = relaxedSync(mockk(relaxed = true))
+        coEvery { uploadCoordinator.uploadCostosLc(any()) } returns 2
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 3
+
+        val result = useCase("optica-test") as com.example.optoapp.data.Resource.Success
+
+        coVerifyOrder {
+            uploadCoordinator.uploadCostosBiselado("optica-test")
+            uploadCoordinator.uploadCostosLc("optica-test")
+            uploadCoordinator.uploadPagos("optica-test")
+            downloadCoordinator.downloadCostosBiselado("optica-test")
+            downloadCoordinator.downloadCostosLc("optica-test")
+            downloadCoordinator.downloadPagos("optica-test")
+        }
+        assertEquals(2, result.data!!.uploadedCostosLc)
+        assertEquals(3, result.data!!.downloadedCostosLc)
     }
 
     @Test

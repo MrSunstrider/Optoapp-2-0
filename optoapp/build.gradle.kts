@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
 import java.util.Properties
 
 plugins {
@@ -31,11 +32,11 @@ spotless {
                     "ktlint_standard_package-name" to "disabled",
                     // Strict comment-wrapping too noisy for existing codebase
                     "ktlint_standard_comment-wrapping" to "disabled",
-                    // TODO: re-enable gradually — 130+ files to fix
+                    // 130+ legacy files use wildcard imports; enforcing it would block unrelated changes
                     "ktlint_standard_no-wildcard-imports" to "disabled",
-                    // TODO: rename entity files (PacienteEntity -> Paciente)
+                    // Entity files keep the Entity suffix while the class does not (Paciente in PacienteEntity.kt)
                     "ktlint_standard_filename" to "disabled",
-                    // TODO: remove or populate intentional empty files (Daos.kt, Entities.kt)
+                    // Daos.kt and Entities.kt only hold comments pointing to the split per-module files
                     "ktlint_standard_no-empty-file" to "disabled",
                     // Formatting
                     "indent_size" to "4",
@@ -173,6 +174,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material3.window.size)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.vico.compose.m3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
@@ -203,6 +205,7 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.mockk)
+    // AGENTS.md limits Robolectric to real in-memory Room tests (DAOs, withTransaction rollback)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.androidx.room.testing)
@@ -229,6 +232,15 @@ dependencies {
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
+    }
+}
+
+// Robolectric loads production classes through its own classloader without a code source location;
+// JaCoCo skips such classes by default, so every Robolectric-hosted test would record zero coverage.
+tasks.withType<Test>().configureEach {
+    extensions.configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
     }
 }
 

@@ -83,6 +83,8 @@ class ServiciosViewModelMonturasTest {
             postSaveSyncScheduler,
             cancelServicioExtraUseCase,
             stockHelper,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         )
         advanceUntilIdle()
 

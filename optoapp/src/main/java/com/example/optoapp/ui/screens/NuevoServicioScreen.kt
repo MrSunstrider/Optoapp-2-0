@@ -9,16 +9,19 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.OrderReadOnlyBanner
 import com.example.optoapp.ui.components.WizardStepHeader
+import com.example.optoapp.ui.components.servicio.ServicioEjecutorSection
 import com.example.optoapp.ui.components.servicio.ServicioForm
 
-private val WIZARD_STEPS = listOf("Datos", "Pagos")
+private val WIZARD_STEPS = listOf(R.string.servicio_nuevo_step_datos, R.string.servicio_nuevo_step_pagos)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +83,7 @@ fun NuevoServicioScreen(
     }
 
     val monturas by viewModel.monturas.collectAsState()
+    val tiposServicio by viewModel.tiposServicio.collectAsState()
     val isEdit = servicioId != null && servicioId != "null"
     val servicioAnulable = allServicios.firstOrNull { it.id == uiState.id }
         ?.takeIf { isEdit && it.id in cancelableServicioIds }
@@ -106,18 +110,18 @@ fun NuevoServicioScreen(
         snackbarHost = { SnackbarHost(snackbarHostState, modifier = Modifier.navigationBarsPadding()) },
         topBar = {
             OptoTopAppBar(
-                title = if (!isEdit) "Nuevo Servicio" else "Editar Servicio",
+                title = stringResource(if (!isEdit) R.string.servicio_nuevo_title else R.string.servicio_nuevo_title_editar),
                 navigationIcon = {
                     IconButton(onClick = {
                         if (currentStep > 0) currentStep-- else navController.popBackStack()
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.servicio_nuevo_atras_cd))
                     }
                 },
                 actions = {
                     if (currentStep == WIZARD_STEPS.lastIndex) {
                         IconButton(onClick = { saveAction() }, enabled = canSave) {
-                            Icon(Icons.Default.Check, contentDescription = "Guardar")
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.common_save))
                         }
                     }
                 },
@@ -135,19 +139,19 @@ fun NuevoServicioScreen(
                     OutlinedButton(
                         onClick = { currentStep-- },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Anterior") }
+                    ) { Text(stringResource(R.string.servicio_nuevo_anterior)) }
                 }
                 if (currentStep < WIZARD_STEPS.lastIndex) {
                     Button(
                         onClick = { currentStep++ },
                         modifier = Modifier.weight(1f),
-                    ) { Text("Siguiente") }
+                    ) { Text(stringResource(R.string.servicio_nuevo_siguiente)) }
                 } else {
                     Button(
                         onClick = { saveAction() },
                         enabled = canSave,
                         modifier = Modifier.weight(1f),
-                    ) { Text(if (!isEdit) "Guardar Servicio" else "Actualizar Servicio") }
+                    ) { Text(stringResource(if (!isEdit) R.string.servicio_nuevo_guardar else R.string.servicio_nuevo_actualizar)) }
                 }
             }
         },
@@ -163,7 +167,7 @@ fun NuevoServicioScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             WizardStepHeader(
-                labels = WIZARD_STEPS,
+                labels = WIZARD_STEPS.map { stringResource(it) },
                 currentStep = currentStep,
                 totalSteps = WIZARD_STEPS.size,
                 modifier = Modifier.fillMaxWidth(),
@@ -197,6 +201,17 @@ fun NuevoServicioScreen(
                 onShowDatePicker = { showDatePicker = true },
                 step = currentStep,
                 isPacienteLocked = isPacienteLocked,
+                ejecutorSection = {
+                    ServicioEjecutorSection(
+                        costo = uiState.costo,
+                        tipos = tiposServicio,
+                        habilitado = !uiState.isReadOnly,
+                        onTipo = viewModel::seleccionarTipoServicio,
+                        onRealizadoPor = viewModel::seleccionarRealizadoPor,
+                        onNombre = viewModel::updateRealizadoPorNombre,
+                        onCosto = viewModel::updateCostoServicio,
+                    )
+                },
             )
 
             if (servicioAnulable != null) {
@@ -205,7 +220,7 @@ fun NuevoServicioScreen(
                     enabled = !anulando,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("Anular servicio") }
+                ) { Text(stringResource(R.string.servicio_nuevo_anular)) }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

@@ -22,4 +22,5 @@ data class GastoOperativoEntity(
     val isRecurring: Boolean = false,
     val frecuencia: String = "mensual",
     val createdAt: String? = null,
+    val tipoGasto: String? = null,
 )

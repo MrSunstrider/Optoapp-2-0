@@ -6,6 +6,7 @@ import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.domain.CostoVentaCalculator
 import com.example.optoapp.domain.MovimientoFinanciero
 import com.example.optoapp.domain.Origen
 import com.example.optoapp.domain.PagoEffect
@@ -177,9 +178,18 @@ class ReportesViewModel @Inject constructor(
                         .filter { it.servicioExtraId != null }
                         .groupBy { it.servicioExtraId!! }
                         .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
+                    val itemsByDisp = repository.getDispensacionItemsSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
+                    val regalosByDisp = repository.getRegalosSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
+                    val itemsByServ = repository.getServicioExtraItemsSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
+                    val regalosByServ = repository.getRegalosServicioExtraSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
                     val dispMovs = disps
                         .filter { it.fecha >= start && it.fecha <= end }
                         .map { d ->
+                            val costo = CostoVentaCalculator.dispensacion(
+                                items = itemsByDisp[d.id].orEmpty(),
+                                costoUnitarioSnapshot = null,
+                                regalos = regalosByDisp[d.id].orEmpty(),
+                            )
                             MovimientoFinanciero(
                                 id = d.id,
                                 fecha = d.fecha,
@@ -188,16 +198,18 @@ class ReportesViewModel @Inject constructor(
                                 origenId = d.id,
                                 montoTotal = d.montoTotal,
                                 montoPagado = pagosSumByDisp[d.id] ?: 0.0,
-                                costo = 0.0,
+                                costo = costo.costo,
                                 pacienteId = d.pacienteId,
                                 opticaId = d.opticaId,
                                 descripcion = "OT ${d.ot}",
                                 vinculadoA = d.ot.takeIf { it.isNotBlank() },
+                                costoIncompleto = costo.costoIncompleto,
                             )
                         }
                     val servMovs = servs
                         .filter { it.fecha >= start && it.fecha <= end }
                         .map { s ->
+                            val costo = CostoVentaCalculator.servicio(s, itemsByServ[s.id].orEmpty(), regalosByServ[s.id].orEmpty())
                             MovimientoFinanciero(
                                 id = s.id,
                                 fecha = s.fecha,
@@ -206,11 +218,12 @@ class ReportesViewModel @Inject constructor(
                                 origenId = s.id,
                                 montoTotal = s.montoTotal,
                                 montoPagado = aCuentaSumByServ[s.id] ?: 0.0,
-                                costo = 0.0,
+                                costo = costo.costo,
                                 pacienteId = s.pacienteId ?: "",
                                 opticaId = s.opticaId,
                                 descripcion = s.descripcion.takeIf { it.isNotBlank() } ?: "Servicio OT ${s.ot}",
                                 vinculadoA = s.ot.takeIf { it.isNotBlank() },
+                                costoIncompleto = costo.costoIncompleto,
                             )
                         }
                     dispMovs + servMovs
@@ -218,8 +231,20 @@ class ReportesViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val movimientosPorOrigenId: StateFlow<Map<String, MovimientoFinanciero>> = allMovimientosDelPeriodo
+        .map { movs -> movs.associateBy { it.origenId } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     val totalVendido: StateFlow<Double> = allMovimientosDelPeriodo
         .map { movs -> movs.sumOf { it.montoTotal } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val costoTotal: StateFlow<Double> = allMovimientosDelPeriodo
+        .map { movs -> movs.sumOf { it.costo } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+
+    val margenTotal: StateFlow<Double> = allMovimientosDelPeriodo
+        .map { movs -> movs.sumOf { it.montoTotal - it.costo } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     val totalPagado: StateFlow<Double> = sessionManager.opticaId

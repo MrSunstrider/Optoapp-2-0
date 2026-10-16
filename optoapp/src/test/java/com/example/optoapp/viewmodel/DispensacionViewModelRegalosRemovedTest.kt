@@ -2,9 +2,8 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
-import com.example.optoapp.data.costobiselado.CostoBiseladoDao
-import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.domain.AnularDispensacionUseCase
+import com.example.optoapp.domain.CalcularCostoItemUseCase
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -70,8 +69,8 @@ class DispensacionViewModelRegalosRemovedTest {
         calcularMontoPagadoUseCase,
         mockk<AnularDispensacionUseCase>(relaxed = true),
         mockk<ReclamarDispensacionUseCase>(relaxed = true),
-        mockk<CostoProductoDao>(relaxed = true),
-        mockk<CostoBiseladoDao>(relaxed = true),
+        mockk<CalcularCostoItemUseCase>(relaxed = true),
+        mockk(relaxed = true),
         mockk(relaxed = true),
     )
 

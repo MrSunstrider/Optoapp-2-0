@@ -9,20 +9,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.optoapp.R
 import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.ui.components.OrderEstadoChip
 import com.example.optoapp.ui.components.common.EmptyState
-import java.util.Locale
+import com.example.optoapp.ui.theme.saldoColor
+import com.example.optoapp.util.MoneyFormatter
 
 @Composable
 fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit, aCuentaSumMap: Map<String, Double> = emptyMap()) {
     if (servicios.isEmpty()) {
         EmptyState(
-            title = "Sin servicios",
-            subtitle = "No hay servicios varios registrados.",
+            title = stringResource(R.string.paciente_serv_vacio_titulo),
+            subtitle = stringResource(R.string.paciente_serv_vacio_mensaje),
         )
     } else {
         LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -44,9 +47,8 @@ fun ServiciosExtraList(servicios: List<ServicioExtra>, onEdit: (String) -> Unit,
                         }
                         Text(serv.descripcion, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(text = "Saldo:", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            val formattedSaldo = String.format(Locale.US, "%.2f", saldo)
-                            Text("s/. $formattedSaldo", color = if (saldo > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
+                            Text(text = stringResource(R.string.paciente_serv_saldo), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(MoneyFormatter.format(saldo), color = saldoColor(saldo), fontWeight = FontWeight.Bold)
                         }
                     }
                 }

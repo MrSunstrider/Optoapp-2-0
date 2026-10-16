@@ -54,10 +54,18 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 ## Sync Architecture
 
 - **Offline-first**: Room local → Supabase remote
-- **Order**: pacientes → historial → finanzas (upload 8 tables, download 10 tables) → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
+- **Order**: pacientes → historial → finanzas → proveedores → ordenes_compra → inventory_kpis → inventario → inventario_fisico
+- **Finanzas tables** (`SyncFinanzasUseCase`): upload 12 — dispensaciones, dispensacion_items, servicio_tipos, servicios_extra, servicio_extra_items, regalos_servicio_extra, costos_productos, costos_biselado, costos_lc, pagos, gastos_operativos, regalos. Download 14 — the same 12 plus resumen_diario and configuracion_financiera. Parents sync before children (servicio_tipos before servicios_extra). The cost matrices and servicio_tipos upload only locally modified rows.
 - **JWT**: margin check at 300s before sync (`SyncSessionHelper`); auto-refresh + retry on 401 (`NetworkRetryHelper`)
 - **resumen_diario**: recalculado via RPC `recalcular_resumen_diario` en cada sync finanzas
+- **Pending recalcs**: past-day cost edits leave `pending_recalc` markers in `SyncStateTracker`; every finanzas sync flushes them after the last upload (regalos) and before downloading `resumen_diario`, calling `recalcular_resumen_diario_rango` in windows of at most 31 days (`ResumenRecalcCoordinator`). A marker clears only after its window's RPC succeeds and its cause row (plus child batches) synced after it was marked.
 - **Conflict resolution**: local vs remote timestamps; conflicted entities skipped on upload
+
+## Navigation
+
+- Routes live in `ui/navigation/Route.kt`; the nav graph is `ui/screens/MainDrawerScreen.kt` (drawer entries in `DrawerSections.kt`).
+- Costos y Gastos has one route: `Route.CostosYGastos.createRoute(tab, mes)` with optional `tab` (`CostosTab`: lentes, biselado, lc, gastos, servicios; missing or unknown → gastos) and `mes` (`MesArg`, `yyyy-MM`, clamped to the current month). Both `CostosYGastosViewModel` and `CostosHeaderViewModel` read them from `SavedStateHandle`.
+- Month-scoped screens take `mes` the same way: `Route.AnalisisDetalle`, `Route.OtsSinCosto`. OT cost edits open `Route.EditarDispensacion(..., seccion = costo)`.
 
 ## Auth
 
@@ -96,7 +104,7 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 - **No AI attribution** in commits. Conventional commits only (`feat:`, `fix:`, `chore:`).
 - **No WHAT comments** — code is self-documenting. Only WHY.
 - **Naming**: Kotlin `camelCase/PascalCase`, PostgreSQL `snake_case`, Android resources `snake_case`.
-- **Room columns** are camelCase (mirror Kotlin fields). snake_case in queries silently matches nothing.
+- **Room columns** are camelCase (mirror Kotlin fields) unless the entity renames them with `@ColumnInfo(name = ...)`; queries must use the entity's actual column name, and a mismatched name silently matches nothing. The cost matrices (`costos_productos`, `costos_biselado`, `costos_lc`) use `@ColumnInfo` snake_case names.
 - **Gradle**: config cache enabled; clean with `--no-configuration-cache` if stale.
 - **Web companion**: separate repo `optoapp-web`, shares same Supabase DB.
 - **`IMPROVEMENT-PLAN.md`**: known issues C1-C4 (critical), H1-H11 (high).

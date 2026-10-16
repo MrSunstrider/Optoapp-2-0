@@ -59,8 +59,8 @@ class DispensacionViewModelLifecycleStateTest {
             anular,
             mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true),
             eliminar,
+            mockk(relaxed = true),
         )
         testDispatcher.scheduler.advanceUntilIdle()
     }

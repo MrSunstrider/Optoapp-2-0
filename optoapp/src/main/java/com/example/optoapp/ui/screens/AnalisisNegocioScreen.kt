@@ -15,25 +15,32 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.common.MonthSelector
+import com.example.optoapp.ui.components.common.MonthSelectorState
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
+import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
-import com.example.optoapp.viewmodel.GastosViewModel
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import com.example.optoapp.viewmodel.CostosYGastosViewModel
+import java.time.YearMonth
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -41,11 +48,11 @@ fun AnalisisNegocioScreen(
     navController: NavController,
     viewModel: AnalisisNegocioViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
-    gastosViewModel: GastosViewModel = hiltViewModel(),
+    gastosViewModel: CostosYGastosViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val gastos by gastosViewModel.allGastos.collectAsState()
     val gastosUiState by gastosViewModel.uiState.collectAsState()
+    val gastos = gastosUiState.gastosOperativos
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = null)
     val canView = opticaRol != null && AppRoles.canViewBiAndReports(opticaRol!!)
 
@@ -54,10 +61,10 @@ fun AnalisisNegocioScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             OptoTopAppBar(
-                title = "Análisis Financiero",
+                title = stringResource(R.string.analisis_title),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.analisis_atras_cd))
                     }
                 },
             )
@@ -79,10 +86,10 @@ fun AnalisisNegocioScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(Icons.Default.Lock, contentDescription = "Bloqueado", modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
+                Icon(Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(16.dp))
-                Text("Acceso restringido", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                Text("Tu rol no tiene permiso para ver esta sección.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.analisis_acceso_restringido), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                Text(stringResource(R.string.analisis_acceso_restringido_mensaje), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             return@Scaffold
         }
@@ -109,9 +116,9 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Datos limitados — sin conexión", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.warningAmber)
+                        Text(stringResource(R.string.analisis_datos_limitados), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.warningAmber)
                     }
                 }
             }
@@ -122,21 +129,20 @@ fun AnalisisNegocioScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
+                        Icon(Icons.Default.Error, contentDescription = null, tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(32.dp))
                         Spacer(Modifier.height(8.dp))
                         Text(error, color = MaterialTheme.colorScheme.alertRed, style = MaterialTheme.typography.bodyMedium)
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = { viewModel.refresh() }) {
-                            Text("Reintentar")
+                            Text(stringResource(R.string.analisis_reintentar))
                         }
                     }
                 }
             }
 
-            MonthSwitcher(
-                currentMonth = uiState.mesSeleccionado,
-                onPrevious = { viewModel.navigateMonth(-1) },
-                onNext = { viewModel.navigateMonth(1) },
+            MonthSelector(
+                state = MonthSelectorState(YearMonth.from(uiState.mesSeleccionado), viewModel.mesActual),
+                onMonthSelected = viewModel::selectMonth,
             )
 
             uiState.analisis?.let { analisis ->
@@ -152,10 +158,10 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Warning, contentDescription = "Advertencia", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "Este cálculo se basa en pocos meses. Podría no ser preciso.",
+                            stringResource(R.string.analisis_estacionalidad_aviso),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.warningAmber,
                         )
@@ -164,7 +170,7 @@ fun AnalisisNegocioScreen(
             }
 
             Text(
-                "Recomendaciones",
+                stringResource(R.string.analisis_recomendaciones),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -188,9 +194,9 @@ fun AnalisisNegocioScreen(
                         modifier = Modifier.padding(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Icon(Icons.Default.Lightbulb, contentDescription = "Recomendacion", tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Lightbulb, contentDescription = null, tint = MaterialTheme.colorScheme.warningAmber, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Sin recomendaciones por ahora — tus métricas están dentro de lo esperado.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.analisis_sin_recomendaciones), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -198,7 +204,7 @@ fun AnalisisNegocioScreen(
             if (!uiState.isLoading && uiState.analisis == null && uiState.error == null) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        Text("Sin datos para este mes", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.analisis_sin_datos_mes), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -216,21 +222,20 @@ fun AnalisisNegocioScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                var deleteTarget by remember { mutableStateOf<String?>(null) }
                 Column(modifier = Modifier.padding(14.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.MoneyOff, contentDescription = "Sin costo", tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.MoneyOff, contentDescription = null, tint = MaterialTheme.colorScheme.alertRed, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Gastos del mes", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(stringResource(R.string.analisis_gastos_mes), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             IconButton(
                                 modifier = Modifier.size(28.dp),
                                 onClick = { gastosViewModel.refreshGastos() },
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Actualizar gastos", modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.analisis_actualizar_gastos_cd), modifier = Modifier.size(16.dp))
                             }
                         }
-                        Text("S/ ${formatNumber(totalGastos)}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
+                        Text(MoneyFormatter.format(totalGastos), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.alertRed)
                     }
                     if (gastosMes.isNotEmpty()) {
                         Spacer(Modifier.height(6.dp))
@@ -240,7 +245,7 @@ fun AnalisisNegocioScreen(
                                     .fillMaxWidth()
                                     .combinedClickable(
                                         onClick = { gastosViewModel.editGasto(g) },
-                                        onLongClick = { deleteTarget = g.id },
+                                        onLongClick = { gastosViewModel.confirmDeleteGasto(g) },
                                     )
                                     .padding(vertical = 4.dp, horizontal = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -248,11 +253,11 @@ fun AnalisisNegocioScreen(
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text("${g.categoria}${if (!g.descripcion.isNullOrBlank()) " · ${g.descripcion}" else ""}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(gastoEtiqueta(g.categoria, g.descripcion), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         if (g.isRecurring) {
                                             Spacer(Modifier.width(6.dp))
                                             Surface(shape = RoundedCornerShape(4.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)) {
-                                                Text("Recurrente", modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp), fontSize = 9.sp, color = MaterialTheme.colorScheme.primary)
+                                                Text(stringResource(R.string.analisis_gasto_recurrente_chip), modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp), fontSize = 9.sp, color = MaterialTheme.colorScheme.primary)
                                             }
                                         }
                                     }
@@ -262,25 +267,25 @@ fun AnalisisNegocioScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     )
                                 }
-                                Text("S/ ${formatNumber(g.monto.toDouble())}", fontSize = 12.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
+                                Text(MoneyFormatter.format(g.monto.toDouble()), fontSize = 12.sp, color = MaterialTheme.colorScheme.alertRed, fontWeight = FontWeight.Medium)
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
                                     onClick = { gastosViewModel.editGasto(g) },
                                 ) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(14.dp))
+                                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.gastos_editar_cd), modifier = Modifier.size(14.dp))
                                 }
                                 IconButton(
                                     modifier = Modifier.size(28.dp),
-                                    onClick = { deleteTarget = g.id },
+                                    onClick = { gastosViewModel.confirmDeleteGasto(g) },
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.alertRed)
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.gastos_eliminar_cd), modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.alertRed)
                                 }
                             }
                         }
                     } else {
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "No hay gastos registrados",
+                            stringResource(R.string.analisis_sin_gastos),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
@@ -288,34 +293,45 @@ fun AnalisisNegocioScreen(
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { gastosViewModel.showNewGasto() }, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Default.Add, contentDescription = "Agregar", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Agregar", fontSize = 12.sp)
+                            Text(stringResource(R.string.analisis_agregar), fontSize = 12.sp)
                         }
                         if (gastosMes.isNotEmpty()) {
-                            OutlinedButton(onClick = { navController.navigate(Route.Gastos.route) }, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista", modifier = Modifier.size(16.dp))
+                            OutlinedButton(
+                                onClick = { navController.navigate(rutaVerTodosGastos(YearMonth.from(uiState.mesSeleccionado))) },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Ver todos", fontSize = 12.sp)
+                                Text(stringResource(R.string.analisis_ver_todos), fontSize = 12.sp)
                             }
                         }
                     }
 
-                    if (deleteTarget != null) {
-                        val target = gastos.find { it.id == deleteTarget } ?: return@Column
+                    gastosUiState.deletingGasto?.let { target ->
                         AlertDialog(
-                            onDismissRequest = { deleteTarget = null },
-                            title = { Text("Eliminar gasto") },
-                            text = { Text("¿Eliminar \"${target.categoria}${if (!target.descripcion.isNullOrBlank()) " · ${target.descripcion}" else ""}\" por S/ ${formatNumber(target.monto.toDouble())}?") },
-                            confirmButton = {
-                                Button(onClick = {
-                                    gastosViewModel.delete(target)
-                                    deleteTarget = null
-                                }, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed)) {
-                                    Text("Eliminar")
+                            onDismissRequest = { gastosViewModel.dismissDeleteGasto() },
+                            title = { Text(stringResource(R.string.analisis_eliminar_gasto_titulo)) },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val etiqueta = gastoEtiqueta(target.categoria, target.descripcion)
+                                    Text(stringResource(R.string.analisis_eliminar_gasto_confirmacion, etiqueta, MoneyFormatter.format(target.monto.toDouble())))
+                                    gastosUiState.gastoDeleteError?.let {
+                                        Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                                    }
                                 }
                             },
-                            dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancelar") } },
+                            confirmButton = {
+                                Button(
+                                    onClick = { gastosViewModel.deleteGasto() },
+                                    enabled = !gastosUiState.isLoading,
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.alertRed),
+                                ) {
+                                    Text(stringResource(R.string.analisis_eliminar))
+                                }
+                            },
+                            dismissButton = { TextButton(onClick = { gastosViewModel.dismissDeleteGasto() }) { Text(stringResource(R.string.analisis_cancelar)) } },
                         )
                     }
                 }
@@ -323,14 +339,14 @@ fun AnalisisNegocioScreen(
 
             if (uiState.analisis != null) {
                 Button(
-                    onClick = { navController.navigate(Route.AnalisisDetalle.route) },
+                    onClick = { navController.navigate(Route.AnalisisDetalle.createRoute(YearMonth.from(uiState.mesSeleccionado))) },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 ) {
                     @Suppress("DEPRECATION")
-                    Icon(Icons.Default.TrendingUp, contentDescription = "Tendencia")
+                    Icon(Icons.Default.TrendingUp, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Ver análisis completo")
+                    Text(stringResource(R.string.analisis_ver_analisis_completo))
                 }
             }
         }
@@ -346,7 +362,10 @@ fun AnalisisNegocioScreen(
             }
             AlertDialog(
                 onDismissRequest = { gastosViewModel.dismissDialog() },
-                title = { Text(if (gastosUiState.editingGasto != null) "Editar Gasto" else "Nuevo Gasto", fontWeight = FontWeight.Bold) },
+                title = {
+                    val tituloRes = if (gastosUiState.editingGasto != null) R.string.analisis_editar_gasto else R.string.analisis_nuevo_gasto
+                    Text(stringResource(tituloRes), fontWeight = FontWeight.Bold)
+                },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         var expanded by remember { mutableStateOf(false) }
@@ -355,7 +374,7 @@ fun AnalisisNegocioScreen(
                                 value = gastosUiState.categoria,
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text("Categoría") },
+                                label = { Text(stringResource(R.string.analisis_categoria)) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                 modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                             )
@@ -371,62 +390,42 @@ fun AnalisisNegocioScreen(
                         OutlinedTextField(
                             value = gastosUiState.monto,
                             onValueChange = { gastosViewModel.updateMonto(it) },
-                            label = { Text("Monto") },
+                            label = { Text(stringResource(R.string.analisis_monto)) },
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
                             modifier = Modifier.fillMaxWidth(),
                         )
-                        OutlinedTextField(value = gastosUiState.descripcion, onValueChange = { gastosViewModel.updateDescripcion(it) }, label = { Text("Descripción") }, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(value = gastosUiState.descripcion, onValueChange = { gastosViewModel.updateDescripcion(it) }, label = { Text(stringResource(R.string.analisis_descripcion)) }, modifier = Modifier.fillMaxWidth())
                         OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Default.DateRange, contentDescription = "Fecha", modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(com.example.optoapp.util.DateUtils.formatLocalized(gastosUiState.fecha))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Switch(checked = gastosUiState.isRecurring, onCheckedChange = { gastosViewModel.toggleRecurrente() })
                             Spacer(Modifier.width(8.dp))
-                            Text("Gasto recurrente mensual", fontSize = 13.sp)
+                            Text(stringResource(R.string.analisis_gasto_recurrente), fontSize = 13.sp)
+                        }
+                        gastosUiState.gastoFormError?.let {
+                            Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                         }
                     }
                 },
-                confirmButton = { Button(onClick = { gastosViewModel.save() }) { Text("Guardar") } },
-                dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text("Cancelar") } },
+                confirmButton = {
+                    Button(onClick = { gastosViewModel.saveGasto() }, enabled = !gastosUiState.isLoading) {
+                        Text(stringResource(R.string.analisis_guardar))
+                    }
+                },
+                dismissButton = { TextButton(onClick = { gastosViewModel.dismissDialog() }) { Text(stringResource(R.string.analisis_cancelar)) } },
             )
         }
     }
 }
 
+internal fun rutaVerTodosGastos(mes: YearMonth): String = Route.CostosYGastos.createRoute(CostosTab.GASTOS, mes)
+
 @Composable
-private fun MonthSwitcher(
-    currentMonth: java.time.LocalDate,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.forLanguageTag("es-PE"))
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onPrevious) {
-                @Suppress("DEPRECATION")
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Mes anterior")
-            }
-            Text(
-                text = currentMonth.format(formatter).replaceFirstChar { it.uppercase() },
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-            IconButton(onClick = onNext) {
-                @Suppress("DEPRECATION")
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Mes siguiente")
-            }
-        }
-    }
-}
+private fun gastoEtiqueta(categoria: String, descripcion: String?): String =
+    if (descripcion.isNullOrBlank()) categoria else stringResource(R.string.analisis_gasto_etiqueta, categoria, descripcion)
 
 @Composable
 private fun ResumenCard(analisis: AnalisisMensual) {
@@ -438,26 +437,26 @@ private fun ResumenCard(analisis: AnalisisMensual) {
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Resumen del mes", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(R.string.analisis_resumen_mes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MetricItem(
                     modifier = Modifier.weight(1f),
-                    label = "Vendiste",
-                    value = "S/ ${formatNumber(analisis.ventasMes)}",
+                    label = stringResource(R.string.analisis_vendiste),
+                    value = MoneyFormatter.format(analisis.ventasMes),
                     color = MaterialTheme.colorScheme.positiveGreen,
                 )
                 MetricItem(
                     modifier = Modifier.weight(1f),
-                    label = "Cobraste",
-                    value = "S/ ${formatNumber(analisis.cobrosMes)}",
+                    label = stringResource(R.string.analisis_cobraste),
+                    value = MoneyFormatter.format(analisis.cobrosMes),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
             MetricItem(
                 modifier = Modifier.fillMaxWidth(),
-                label = "Saldo pendiente",
-                value = "S/ ${formatNumber(saldo)}",
+                label = stringResource(R.string.analisis_saldo_pendiente),
+                value = MoneyFormatter.format(saldo),
                 color = if (saldo > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
             )
             Card(
@@ -466,27 +465,27 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Margen neto", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.analisis_margen_neto), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "De cada S/ 100 que vendés, te quedan S/ ${Math.round(analisis.margenNetoPct)} (margen neto)",
+                        stringResource(R.string.analisis_margen_neto_explicacion, Math.round(analisis.margenNetoPct)),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color =                         if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
+                        color = if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
                     )
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MetricItem(
                     modifier = Modifier.weight(1f),
-                    label = "Ticket prom.",
-                    value = "S/ ${formatNumber(analisis.ticketPromedio)}",
+                    label = stringResource(R.string.analisis_ticket_promedio),
+                    value = MoneyFormatter.format(analisis.ticketPromedio),
                     color = MaterialTheme.colorScheme.primary,
                 )
                 MetricItem(
                     modifier = Modifier.weight(1f),
-                    label = "Ventas",
-                    value = "${analisis.cantidadVentas}",
+                    label = stringResource(R.string.analisis_ventas),
+                    value = analisis.cantidadVentas.toString(),
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -544,7 +543,7 @@ internal fun RecomendacionCard(
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
                     if (feedbackSent) Icons.Default.CheckCircle else Icons.Default.Info,
-                    contentDescription = "Retroalimentacion",
+                    contentDescription = null,
                     tint = if (feedbackSent) MaterialTheme.colorScheme.positiveGreen else accentColor,
                     modifier = Modifier.size(20.dp),
                 )
@@ -565,19 +564,22 @@ internal fun RecomendacionCard(
                     rec.accion?.let { accion ->
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "→ $accion",
+                            stringResource(R.string.analisis_recomendacion_accion, accion),
                             style = MaterialTheme.typography.bodySmall,
                             color = accentColor,
                             fontWeight = FontWeight.Medium,
                         )
                     }
                 }
+                val prioridadLabel = stringResource(rec.prioridad.labelRes())
+                val prioridadDescription = stringResource(R.string.analisis_prioridad_descripcion, prioridadLabel)
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = accentColor.copy(alpha = 0.15f),
+                    modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = prioridadDescription },
                 ) {
                     Text(
-                        rec.prioridad.name,
+                        prioridadLabel,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         style = MaterialTheme.typography.labelSmall,
                         color = accentColor,
@@ -594,13 +596,13 @@ internal fun RecomendacionCard(
                 ) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = "Completado",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.positiveGreen,
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        "Gracias por tu valoración",
+                        stringResource(R.string.analisis_gracias_valoracion),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.positiveGreen,
                         fontWeight = FontWeight.Medium,
@@ -616,24 +618,24 @@ internal fun RecomendacionCard(
                         onClick = { onFeedback(true) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.ThumbUp, contentDescription = "Positivo", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ThumbUp, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Útil")
+                        Text(stringResource(R.string.analisis_util))
                     }
                     FilledTonalButton(
                         onClick = { onFeedback(false) },
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.ThumbDown, contentDescription = "Negativo", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.ThumbDown, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("No me sirve")
+                        Text(stringResource(R.string.analisis_no_me_sirve))
                     }
                 }
             }
             if (hasError) {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "No se pudo enviar tu valoración. Intentalo de nuevo.",
+                    stringResource(R.string.analisis_valoracion_error),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.alertRed,
                 )
@@ -641,5 +643,3 @@ internal fun RecomendacionCard(
         }
     }
 }
-
-private fun formatNumber(value: Double): String = com.example.optoapp.util.NumberFormatter.formatCurrency(value)

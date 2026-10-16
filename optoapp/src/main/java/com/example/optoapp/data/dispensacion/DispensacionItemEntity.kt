@@ -104,4 +104,7 @@ data class DispensacionItem(
     @SerialName("costo_real_lc")
     @ColumnInfo(name = "costo_real_lc")
     val costoRealLc: Double? = null,
+    @SerialName("costo_origen")
+    @ColumnInfo(name = "costo_origen")
+    val costoOrigen: String? = null,
 )
