@@ -85,7 +85,7 @@ class ServiciosViewModelMonturasTest {
             stockHelper,
             mockk(relaxed = true),
             mockk(relaxed = true),
-        )
+        mockk(relaxed = true))
         advanceUntilIdle()
 
         val monturas = viewModel.monturas.first()

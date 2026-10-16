@@ -21,6 +21,7 @@ import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.ResumenRecalcMarker
+import com.example.optoapp.domain.VendedorAttribution
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.inventarioParaServicioExtra
 import com.example.optoapp.domain.inventario.monturaMatchesDescripcion
@@ -32,6 +33,8 @@ import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
 import com.example.optoapp.util.MontoDraftFormatting
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -86,6 +89,7 @@ class ServiciosViewModel @Inject constructor(
     private val stockHelper: DispensacionStockHelper,
     private val servicioTipoDao: ServicioTipoDao,
     private val resumenRecalcMarker: ResumenRecalcMarker,
+    private val supabase: SupabaseClient,
 ) : ViewModel() {
 
     companion object {
@@ -382,6 +386,16 @@ class ServiciosViewModel @Inject constructor(
                 } else {
                     emptyList()
                 }
+                val existingForSeller = if (state.isEdit) {
+                    (repository.getServicioById(finalId, currentOpticaId) as? Resource.Success)?.data
+                } else {
+                    null
+                }
+                val sellerId = if (state.isEdit) {
+                    VendedorAttribution.forEdit(null, existingForSeller?.vendedorUserId)
+                } else {
+                    VendedorAttribution.forCreate(runCatching { supabase.auth.currentUserOrNull()?.id }.getOrNull())
+                }
 
                 val servicio = ServicioExtra(
                     id = finalId,
@@ -401,6 +415,7 @@ class ServiciosViewModel @Inject constructor(
                     realizadoPorNombre = state.costo.realizadoPorNombre.trim()
                         .takeIf { state.costo.realizadoPor == CostoServicioResolver.TERCERO && it.isNotBlank() },
                     costoReal = state.costo.costoReal(),
+                    vendedorUserId = sellerId,
                 )
 
                 val persistedItems = validItems.map { ui ->

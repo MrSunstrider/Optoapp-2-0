@@ -100,7 +100,7 @@ class ServiciosViewModelTest {
         mockk(relaxed = true) { coEvery { adjustStockAndRegistrarMovimiento(any(), any(), any(), any(), any(), any()) } returns Result.success(1) },
         servicioTipoDao,
         ResumenRecalcMarker(tracker),
-    )
+        mockk(relaxed = true))
 
     private fun storedServicio(costoReal: Double = 0.0) = ServicioExtra(
         id = "s1", ot = "S-001", descripcion = "Armazón", montoTotal = 100.0, aCuenta = 0.0, estado = "Pendiente",

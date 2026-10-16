@@ -92,7 +92,7 @@ class ServiciosViewModelPagoValidationTest {
         stockHelper,
         mockk(relaxed = true),
         mockk(relaxed = true),
-    )
+        mockk(relaxed = true))
 
     @Test
     fun `saveServicio accepts abono plus reembolso within total via PagoEffect`() = runTest(testDispatcher) {

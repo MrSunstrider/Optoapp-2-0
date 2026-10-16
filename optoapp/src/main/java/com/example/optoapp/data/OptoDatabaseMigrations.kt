@@ -714,8 +714,8 @@ val MIGRATION_24_25 = object : Migration(24, 25) {
 
 val MIGRATION_25_26 = object : Migration(25, 26) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // fecha is TEXT (LocalDate TypeConverter stores ISO-8601 string, not epoch Long)
-        // No DEFAULT values — must match Room entity annotations exactly
+        // Room rejects the upgrade when CREATE TABLE defaults diverge from entity annotations;
+        // LocalDate is stored as ISO text via TypeConverter, not as epoch Long.
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS arqueo_caja (
@@ -1200,8 +1200,8 @@ val MIGRATION_39_40 = object : Migration(39, 40) {
 
 val MIGRATION_40_41 = object : Migration(40, 41) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        // Left empty although v41 registered costos_lc: rewriting a shipped step would not reach devices
-        // already past it, so MIGRATION_55_56 creates the missing table instead.
+        // Rewriting a shipped empty step would never run on devices already past v41;
+        // costos_lc is created later in MIGRATION_55_56 for both upgrade paths.
     }
 }
 
@@ -1553,13 +1553,20 @@ val MIGRATION_56_57 = object : Migration(56, 57) {
     }
 }
 
+val MIGRATION_57_58 = object : Migration(57, 58) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE dispensaciones ADD COLUMN vendedorUserId TEXT")
+        db.execSQL("ALTER TABLE servicios_extra ADD COLUMN vendedorUserId TEXT")
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """
     UPDATE $table
     SET updatedAt = COALESCE(
         NULLIF(TRIM(COALESCE(updatedAt, '')), ''),
-        '$LEGACY_NULL_UPDATED_AT'
+        '${LEGACY_NULL_UPDATED_AT}'
     )
     WHERE updatedAt IS NULL OR TRIM(COALESCE(updatedAt, '')) = ''
     """.trimIndent()

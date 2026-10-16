@@ -126,13 +126,6 @@ class DispensacionRepository(
 
     suspend fun deleteItemsByDispensacionId(dispensacionId: String, opticaId: String): Int = dispensacionItemDao.deleteByDispensacionId(dispensacionId, opticaId)
 
-    @Suppress("DEPRECATION")
-    @Deprecated(
-        message = "Use getItemsListByOptica to enforce multi-tenant isolation",
-        replaceWith = ReplaceWith("getItemsListByOptica(opticaId)"),
-    )
-    suspend fun getAllDispensacionItems(): List<DispensacionItem> = dispensacionItemDao.getAllItems()
-
     fun getPagosByDispensacion(dispensacionId: String, opticaId: String): Flow<List<Pago>> =
         pagoDao.getPagosByDispensacion(dispensacionId, opticaId)
 
@@ -240,6 +233,7 @@ class DispensacionRepository(
             updatedAt = servicio.updatedAt, updatedBy = servicio.updatedBy,
             motivoAnulacion = servicio.motivoAnulacion,
             fechaAnulacion = servicio.fechaAnulacion,
+            vendedorUserId = servicio.vendedorUserId,
         )
     }
 

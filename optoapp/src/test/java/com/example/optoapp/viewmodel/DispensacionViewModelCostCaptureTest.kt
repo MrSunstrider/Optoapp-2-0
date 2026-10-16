@@ -105,7 +105,7 @@ class DispensacionViewModelCostCaptureTest {
         calcularCostoItem,
         mockk(relaxed = true),
         ResumenRecalcMarker(tracker),
-    )
+        mockk(relaxed = true))
 
     // Awaits in real time because the save transaction runs on Dispatchers.IO, outside the test scheduler.
     private suspend fun DispensacionViewModel.guardar(dispensacionId: String?) {

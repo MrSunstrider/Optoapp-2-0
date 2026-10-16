@@ -29,6 +29,7 @@ import com.example.optoapp.domain.RecetaCosto
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
 import com.example.optoapp.domain.ResumenRecalcMarker
+import com.example.optoapp.domain.VendedorAttribution
 import com.example.optoapp.domain.lastCreditMetodo
 import com.example.optoapp.domain.auth.AuthorizationGuard
 import com.example.optoapp.domain.inventario.InventarioItemKind
@@ -37,6 +38,8 @@ import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.DispensacionStockHelper
 import com.example.optoapp.util.MontoDraftFormatting
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -145,6 +148,7 @@ class DispensacionViewModel @Inject constructor(
     private val calcularCostoItem: CalcularCostoItemUseCase,
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
     private val resumenRecalcMarker: ResumenRecalcMarker,
+    private val supabase: SupabaseClient,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -513,6 +517,11 @@ class DispensacionViewModel @Inject constructor(
                 distanciaLente = if (primerItem.tipoLente == "Monofocal") primerItem.distanciaLente else "",
                 altura = if (requiereAltura) primerItem.altura.trim() else "",
                 evaluacionId = s.evaluacionId?.ifBlank { null },
+                vendedorUserId = if (isNew) {
+                    VendedorAttribution.forCreate(runCatching { supabase.auth.currentUserOrNull()?.id }.getOrNull())
+                } else {
+                    null
+                },
             )
 
             fun isTienda(m: DispensacionItem) = m.origenMontura == "Tienda" && m.monturaId.isNotBlank()
@@ -643,6 +652,7 @@ class DispensacionViewModel @Inject constructor(
         reclamoOrigenId = persisted.reclamoOrigenId,
         motivoAnulacion = persisted.motivoAnulacion,
         fechaAnulacion = persisted.fechaAnulacion,
+        vendedorUserId = VendedorAttribution.forEdit(edited.vendedorUserId, persisted.vendedorUserId),
     )
 
     // Gifts are left out: this save never changes them, so they cannot move the day's cost.

@@ -26,7 +26,8 @@ interface ServicioExtraDao {
         opticaId=:opticaId, fecha_entrega=:fechaEntrega,
         motivoAnulacion=COALESCE(:motivoAnulacion, motivoAnulacion),
         fechaAnulacion=COALESCE(:fechaAnulacion, fechaAnulacion),
-        updatedAt=:updatedAt, updatedBy=:updatedBy
+        updatedAt=:updatedAt, updatedBy=:updatedBy,
+        vendedorUserId=COALESCE(:vendedorUserId, vendedorUserId)
         WHERE id=:id AND opticaId=:opticaId
     """,
     )
@@ -47,6 +48,7 @@ interface ServicioExtraDao {
         updatedBy: String?,
         motivoAnulacion: String? = null,
         fechaAnulacion: java.time.LocalDate? = null,
+        vendedorUserId: String? = null,
     ): Int
 
     @Query("SELECT * FROM servicios_extra WHERE fecha >= :start AND fecha <= :end AND opticaId = :opticaId ORDER BY fecha DESC")

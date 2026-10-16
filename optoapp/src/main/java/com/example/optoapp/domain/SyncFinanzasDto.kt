@@ -54,6 +54,7 @@ data class DispensacionRemota(
     @SerialName("reclamo_origen_id") val reclamoOrigenId: String? = null,
     @SerialName("motivo_anulacion") val motivoAnulacion: String? = null,
     @SerialName("fecha_anulacion") val fechaAnulacion: String? = null,
+    @SerialName("vendedor_user_id") val vendedorUserId: String? = null,
 ) {
     fun toEntity() = DispensacionOptica(
         id = id, ot = ot ?: "", monturaId = monturaId ?: "", pacienteId = pacienteId,
@@ -78,6 +79,7 @@ data class DispensacionRemota(
         reclamoOrigenId = reclamoOrigenId.normalizeOptionalFk(),
         motivoAnulacion = motivoAnulacion,
         fechaAnulacion = fechaAnulacion?.let(LocalDate::parse),
+        vendedorUserId = vendedorUserId.normalizeOptionalFk(),
     )
 
     internal fun optId(remoteId: String) = remoteId.ifBlank { "mi_optica_base" }
@@ -105,6 +107,7 @@ data class ServicioRemoto(
     @SerialName("realizado_por") val realizadoPor: String? = null,
     @SerialName("realizado_por_nombre") val realizadoPorNombre: String? = null,
     @SerialName("costo_real") val costoReal: Double = 0.0,
+    @SerialName("vendedor_user_id") val vendedorUserId: String? = null,
 ) {
     fun toEntity() = ServicioExtra(
         id = id,
@@ -127,6 +130,7 @@ data class ServicioRemoto(
         realizadoPor = realizadoPor,
         realizadoPorNombre = realizadoPorNombre,
         costoReal = costoReal,
+        vendedorUserId = vendedorUserId.normalizeOptionalFk(),
     )
 }
 
@@ -614,6 +618,7 @@ fun DispensacionOptica.toRemoto(pagosSum: Double = montoPagado): DispensacionRem
     reclamoOrigenId = reclamoOrigenId.normalizeOptionalFk(),
     motivoAnulacion = motivoAnulacion,
     fechaAnulacion = fechaAnulacion?.toString(),
+    vendedorUserId = vendedorUserId.normalizeOptionalFk(),
 )
 
 fun Pago.toRemoto(): PagoRemoto = PagoRemoto(
@@ -671,6 +676,7 @@ fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = Servi
     realizadoPor = realizadoPor,
     realizadoPorNombre = realizadoPorNombre,
     costoReal = costoReal,
+    vendedorUserId = vendedorUserId.normalizeOptionalFk(),
 )
 
 internal fun String?.normalizeOptionalFk(): String? = this?.trim()?.takeIf { it.isNotBlank() }

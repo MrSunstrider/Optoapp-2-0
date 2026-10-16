@@ -81,7 +81,7 @@ class DispensacionViewModelPagoValidationTest {
             mockk<CalcularCostoItemUseCase>(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-        )
+        mockk(relaxed = true))
     }
 
     @Test

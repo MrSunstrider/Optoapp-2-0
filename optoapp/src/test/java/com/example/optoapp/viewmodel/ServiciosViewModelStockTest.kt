@@ -83,7 +83,7 @@ class ServiciosViewModelStockTest {
         stockHelper,
         mockk(relaxed = true),
         mockk(relaxed = true),
-    )
+        mockk(relaxed = true))
 
     @Test
     fun saveServicio_with_monturaId_registers_SALIDA_VENTA() = runTest(testDispatcher) {

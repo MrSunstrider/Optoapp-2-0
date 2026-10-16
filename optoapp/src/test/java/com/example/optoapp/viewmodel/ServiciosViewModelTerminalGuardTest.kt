@@ -79,7 +79,7 @@ class ServiciosViewModelTerminalGuardTest {
         val viewModel = ServiciosViewModel(
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true),
             mockk<CancelServicioExtraUseCase>(relaxed = true), stockHelper, mockk(relaxed = true), mockk(relaxed = true),
-        )
+        mockk(relaxed = true))
         viewModel.updateUiState {
             it.copy(
                 id = servicioId, ot = "S-1", isEdit = true, estado = "Entregado",
