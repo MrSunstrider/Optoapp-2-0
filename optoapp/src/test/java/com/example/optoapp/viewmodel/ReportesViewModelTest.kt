@@ -76,7 +76,8 @@ class ReportesViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
@@ -100,7 +101,8 @@ class ReportesViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
@@ -115,7 +117,8 @@ class ReportesViewModelTest {
 
     @Test
     fun `empty period returns zero totalVendido`() = runTest(testDispatcher) {
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
@@ -141,7 +144,8 @@ class ReportesViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagosEnPeriodo)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
@@ -178,7 +182,8 @@ class ReportesViewModelTest {
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
         every { repository.getPagosByDateRangeForOptica(any(), any(), opticaId) } returns flowOf(pagosEnPeriodo)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
@@ -204,7 +209,8 @@ class ReportesViewModelTest {
         every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
         every { repository.getAllServiciosForOptica(opticaId) } returns flowOf(servicios)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         viewModel.setPeriodo("Diario")
         viewModel.setFechaDiario(today)
         advanceUntilIdle()
@@ -225,7 +231,8 @@ class ReportesViewModelTest {
         )
         every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         advanceUntilIdle()
 
         val result = viewModel.pagosSumByDispensacion.first()
@@ -239,7 +246,8 @@ class ReportesViewModelTest {
         )
         every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         advanceUntilIdle()
 
         val result = viewModel.pagosSumByDispensacion.first()
@@ -254,7 +262,8 @@ class ReportesViewModelTest {
         )
         every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         advanceUntilIdle()
 
         val result = viewModel.aCuentaSumByServicio.first()
@@ -268,7 +277,8 @@ class ReportesViewModelTest {
         )
         every { repository.getAllPagosFlowForOptica(opticaId) } returns flowOf(pagos)
 
-        viewModel = ReportesViewModel(repository, sessionManager)
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
         advanceUntilIdle()
 
         val result = viewModel.aCuentaSumByServicio.first()
@@ -295,7 +305,8 @@ class ReportesViewModelTest {
         coEvery { repository.getRegalosServicioExtraSnapshotForOptica(opticaId) } returns emptyList()
     }
 
-    private fun mensualViewModel(): ReportesViewModel = ReportesViewModel(repository, sessionManager).apply {
+    private fun mensualViewModel(): ReportesViewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true)).apply {
         setPeriodo("Mensual")
         setFechaDiario(today)
     }

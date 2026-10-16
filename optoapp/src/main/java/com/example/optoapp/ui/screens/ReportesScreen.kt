@@ -29,10 +29,14 @@ import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.theme.alertRed
+import com.example.optoapp.ui.theme.positiveGreen
+import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.FileShareUtils
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.util.ReporteFinancieroPdfGenerator
+import com.example.optoapp.util.ReportePdfExtras
 import com.example.optoapp.viewmodel.ReportesViewModel
 import kotlinx.coroutines.launch
 
@@ -74,6 +78,12 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     val isDataLoading by viewModel.isLoading.collectAsState()
     var isPdfLoading by remember { mutableStateOf(false) }
     var selectedModule by remember { mutableStateOf(ReportModule.RESUMEN) }
+    val periodComparison by viewModel.periodComparison.collectAsState()
+    val pacientesReporte by viewModel.pacientesReporte.collectAsState()
+    val inventarioReporte by viewModel.inventarioReporte.collectAsState()
+    val clinicoReporte by viewModel.clinicoReporte.collectAsState()
+    val equipoReporte by viewModel.equipoReporte.collectAsState()
+    val comisionPct by viewModel.comisionPct.collectAsState()
 
     val ventasPeriodo = totalCobrado - cobrosPeriodo
     val porCobrar = totalVendido - ventasPeriodo
@@ -105,6 +115,13 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                                     ticketPromedio = ticketPromedio,
                                     pagosSumByDispensacion = pagosSumByDispensacion,
                                     aCuentaSumByServicio = aCuentaSumByServicio,
+                                    extras = ReportePdfExtras(
+                                        comparison = periodComparison,
+                                        pacientes = pacientesReporte,
+                                        inventario = inventarioReporte,
+                                        clinico = clinicoReporte,
+                                        equipo = equipoReporte,
+                                    ),
                                 )
                                 FileShareUtils.openPdf(context, pdf, context.getString(R.string.reportes_abrir_pdf))
                             } catch (e: Exception) {
@@ -281,6 +298,24 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
 
                 ReportModule.VENTAS -> {
+                    periodComparison?.let { cmp ->
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                shape = RoundedCornerShape(12.dp),
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(stringResource(R.string.reportes_vs_periodo_anterior), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format("%.1f%%", it) } ?: "—"
+                                    val margenPct = cmp.margenDeltaPct()?.let { String.format("%.1f%%", it) } ?: "—"
+                                    Text(stringResource(R.string.reportes_delta_vendido, MoneyFormatter.format(cmp.vendidoDelta), vendidoPct), fontSize = 13.sp)
+                                    Text(stringResource(R.string.reportes_delta_margen, MoneyFormatter.format(cmp.margenDelta), margenPct), fontSize = 13.sp)
+                                    Text(stringResource(R.string.reportes_delta_tx, cmp.transaccionesDelta), fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
                     item {
                         Text(stringResource(R.string.reportes_detalle), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
@@ -342,18 +377,90 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                     }
                 }
 
-                ReportModule.PACIENTES,
-                ReportModule.INVENTARIO,
-                ReportModule.CLINICO,
-                ReportModule.EQUIPO,
-                -> {
+                ReportModule.PACIENTES -> {
                     item {
                         Card(modifier = Modifier.fillMaxWidth()) {
-                            Text(
-                                stringResource(R.string.reportes_modulo_proximamente),
-                                modifier = Modifier.padding(24.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_pacientes_altas, pacientesReporte.altas), fontWeight = FontWeight.Bold)
+                                Text(
+                                    stringResource(
+                                        R.string.reportes_pacientes_sexo,
+                                        pacientesReporte.hombres,
+                                        pacientesReporte.mujeres,
+                                        pacientesReporte.sinSexo,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.INVENTARIO -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_inv_modelos, inventarioReporte.modelos))
+                                Text(stringResource(R.string.reportes_inv_stock, inventarioReporte.stockTotal))
+                                Text(stringResource(R.string.reportes_inv_bajo, inventarioReporte.lowStock))
+                                Text(stringResource(R.string.reportes_inv_salidas, inventarioReporte.salidasVentaPeriodo))
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.CLINICO -> {
+                    item {
+                        Card(modifier = Modifier.fillMaxWidth()) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_clinico_evals, clinicoReporte.evaluaciones), fontWeight = FontWeight.Bold)
+                                clinicoReporte.porDiagnostico.take(12).forEach { (label, count) ->
+                                    Text(stringResource(R.string.reportes_clinico_diag, label, count), fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ReportModule.EQUIPO -> {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                val next = when {
+                                    comisionPct < 2.5 -> 5.0
+                                    comisionPct < 7.5 -> 10.0
+                                    else -> 0.0
+                                }
+                                viewModel.setComisionPct(next)
+                            },
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.reportes_equipo_comision_pct, comisionPct), fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.reportes_equipo_pct_hint), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                equipoReporte.filas.forEach { row ->
+                                    Text(
+                                        stringResource(
+                                            R.string.reportes_equipo_fila,
+                                            row.displayName,
+                                            MoneyFormatter.format(row.vendido),
+                                            MoneyFormatter.format(row.comision),
+                                        ),
+                                        fontSize = 13.sp,
+                                    )
+                                }
+                                if (equipoReporte.sinAtribuirCount > 0) {
+                                    Text(
+                                        stringResource(
+                                            R.string.reportes_equipo_sin_atribuir,
+                                            MoneyFormatter.format(equipoReporte.sinAtribuirVendido),
+                                            equipoReporte.sinAtribuirCount,
+                                        ),
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.warningAmber,
+                                    )
+                                }
+                            }
                         }
                     }
                 }

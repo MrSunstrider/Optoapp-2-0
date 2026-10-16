@@ -107,12 +107,12 @@ Answer: “¿Qué pasó en el periodo y qué puedo exportar / liquidar?” — e
 | T1 | S6–S9,S11 | inline | done | KPIs REAL; UX tabs missing; no vendedorUserId (L7) |
 | T-attr | S9,S12 | inline | done | Room v57 `vendedorUserId` + create defaults + sync + supabase mig |
 | T-tabs | S7,S11,S12 | inline | done | `ReportModule` tabs; Resumen KPIs / Ventas list / placeholders |
-| T2 | S2,S7,S8 | inline | pending | Ventas detallados + comparativos periodo |
-| T3 | S1 | inline | pending | Pacientes altas/retención/demografía |
-| T4 | S3 | inline | pending | Inventario rotación/stock/monturas |
-| T5 | S4 | inline | pending | Clínicas emetropías/diagnósticos/lentes/monturas |
-| T-equipo | S6,S9,S12 | inline | pending | Ventas por usuario + comisión % configurable (default 0) |
-| T6 | S7,S12 | inline | pending | PDF upgrade path (sectioned rich export) |
+| T2 | S2,S7,S8 | inline | done | `PeriodComparison` + Ventas compare card; GREEN PeriodComparisonTest |
+| T3 | S1 | inline | done | Pacientes altas/demografía via `ReportesModuleStats.pacientes` |
+| T4 | S3 | inline | done | Inventario stock/low/salidas via `ReportesModuleStats.inventario` |
+| T5 | S4 | inline | done | Clínico evaluaciones + diagnóstico counts |
+| T-equipo | S6,S9,S12 | inline | done | Equipo by vendedorUserId + `CommissionConfigJson` (default 0) |
+| T6 | S7,S12 | inline | done | PDF extras sections via `ReportePdfSectionLines` |
 | T7 | all | inline | pending | GGA; RDD/JD on migration + export+PII |
 
 **Merge note:** Analista stack also plans Room 56→57 (seguimiento). Before merging both to main, rebase so Reportes becomes 57→58 (or combine migrations). Do not ship two conflicting 56→57 definitions.
@@ -138,3 +138,7 @@ L8. User (2026-10-16): `todo` — full Must #5 apply authorized. Branch `feat/re
 L9. T-attr done (2026-10-16): `vendedorUserId` on dispensaciones + servicios_extra; MIGRATION_56_57; supabase `20261016150000_vendedor_user_id.sql`; sync DTOs; create defaults via `VendedorAttribution` + auth uid; edits preserve seller. GREEN `VendedorAttributionTest` + `Migration56To57Test`. Next: T-tabs.
 
 L10. T-tabs done (2026-10-16): `ReportModule` + ScrollableTabRow; Resumen = KPIs/cobros/composición; Ventas = detalle list (real costs); Pacientes/Inventario/Clínico/Equipo placeholders. GREEN `ReportModuleOrderTest`. Next: T2 comparativos.
+
+L11. User (2026-10-16): finish Reportes + JD/fixes + merge Analista+Reportes + remote migrate + R8 release + clean branches (end of day).
+
+L12. T2–T6 done (2026-10-16): period compare; pacientes/inventario/clínico/equipo tabs wired; commission % cycle 0/5/10 in Equipo; PDF sectioned extras. Focused Reportes tests GREEN. Next: T7 JD then Room rebase 57→58 after Analista #178 on main.

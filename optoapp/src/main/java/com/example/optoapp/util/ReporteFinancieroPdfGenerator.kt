@@ -26,6 +26,7 @@ object ReporteFinancieroPdfGenerator {
         ticketPromedio: Double,
         pagosSumByDispensacion: Map<String, Double> = emptyMap(),
         aCuentaSumByServicio: Map<String, Double> = emptyMap(),
+        extras: ReportePdfExtras = ReportePdfExtras(),
     ): File {
         val dir = File(context.cacheDir, "reportes").apply { mkdirs() }
         val file = File(dir, "reporte-financiero-${System.currentTimeMillis()}.pdf")
@@ -129,6 +130,28 @@ object ReporteFinancieroPdfGenerator {
                 canvas.drawText("S/ ${serv.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
                 canvas.drawText("S/ ${aCuenta.toMoney()}", MARGIN + 450f, y, textPaint)
                 y += ROW_H
+            }
+        }
+
+        val sectionLines = ReportePdfSectionLines.build(extras)
+        if (sectionLines.isNotEmpty()) {
+            if (y + ROW_H > PAGE_H - MARGIN) newPage()
+            y += 8f
+            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
+            y += 12f
+            sectionLines.forEach { line ->
+                if (y + ROW_H > PAGE_H - MARGIN) newPage()
+                if (line.isEmpty()) {
+                    y += 6f
+                } else {
+                    val paint = if (line == line.uppercase(Locale.ROOT) && !line.contains(':')) {
+                        subtitlePaint
+                    } else {
+                        textPaint
+                    }
+                    canvas.drawText(line.take(90), MARGIN, y, paint)
+                    y += ROW_H
+                }
             }
         }
 
