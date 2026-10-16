@@ -11,4 +11,12 @@ interface FeedbackRecomendacionDao {
 
     @Query("SELECT * FROM feedback_recomendaciones WHERE opticaId = :opticaId ORDER BY fecha DESC")
     suspend fun getByOpticaId(opticaId: String): List<FeedbackRecomendacionEntity>
+
+    @Query(
+        "SELECT * FROM feedback_recomendaciones WHERE opticaId = :opticaId AND periodo = :periodo ORDER BY fecha DESC",
+    )
+    suspend fun getByOpticaIdAndPeriodo(
+        opticaId: String,
+        periodo: String,
+    ): List<FeedbackRecomendacionEntity>
 }

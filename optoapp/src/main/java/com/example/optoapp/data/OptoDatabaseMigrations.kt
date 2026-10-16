@@ -1534,6 +1534,25 @@ val MIGRATION_55_56 = object : Migration(55, 56) {
     }
 }
 
+// Adds period-scoped seguimiento columns; backfills estado from legacy fueUtil.
+val MIGRATION_56_57 = object : Migration(56, 57) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE feedback_recomendaciones ADD COLUMN estado TEXT NOT NULL DEFAULT ''",
+        )
+        db.execSQL(
+            "ALTER TABLE feedback_recomendaciones ADD COLUMN periodo TEXT NOT NULL DEFAULT ''",
+        )
+        db.execSQL(
+            """
+            UPDATE feedback_recomendaciones
+            SET estado = CASE WHEN fueUtil = 1 THEN 'HECHO' ELSE 'NO_APLICA' END
+            WHERE estado = '' OR estado IS NULL
+            """.trimIndent(),
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """

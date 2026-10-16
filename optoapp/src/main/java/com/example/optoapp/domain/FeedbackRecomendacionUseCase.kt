@@ -7,23 +7,38 @@ import javax.inject.Inject
 open class FeedbackRecomendacionUseCase @Inject constructor(
     private val feedbackRecomendacionDao: FeedbackRecomendacionDao,
 ) {
-    suspend fun marcarUtil(recomendacionId: String, opticaId: String) {
+    companion object {
+        fun stableId(opticaId: String, periodo: String, recomendacionId: String): String =
+            "$opticaId|$periodo|$recomendacionId"
+    }
+
+    suspend fun marcarSeguimiento(
+        recomendacionId: String,
+        opticaId: String,
+        periodo: String,
+        estado: SeguimientoEstado,
+    ) {
         feedbackRecomendacionDao.upsert(
             FeedbackRecomendacionEntity(
+                id = stableId(opticaId, periodo, recomendacionId),
                 recomendacionId = recomendacionId,
                 opticaId = opticaId,
-                fueUtil = true,
+                fueUtil = estado.fueUtil,
+                estado = estado.name,
+                periodo = periodo,
             ),
         )
     }
 
-    suspend fun marcarNoUtil(recomendacionId: String, opticaId: String) {
-        feedbackRecomendacionDao.upsert(
-            FeedbackRecomendacionEntity(
-                recomendacionId = recomendacionId,
-                opticaId = opticaId,
-                fueUtil = false,
-            ),
-        )
+    suspend fun listarPorPeriodo(
+        opticaId: String,
+        periodo: String,
+    ): Map<String, SeguimientoEstado> {
+        return feedbackRecomendacionDao.getByOpticaIdAndPeriodo(opticaId, periodo)
+            .mapNotNull { row ->
+                val estado = SeguimientoEstado.fromStorage(row.estado) ?: return@mapNotNull null
+                row.recomendacionId to estado
+            }
+            .toMap()
     }
 }

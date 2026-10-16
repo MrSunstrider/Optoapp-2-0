@@ -315,6 +315,10 @@
     <string name="analisis_gracias_valoracion">Gracias por tu valoración</string>
     <string name="analisis_util">Útil</string>
     <string name="analisis_no_me_sirve">No me sirve</string>
+    <string name="analisis_seguimiento_hecho">Hecho</string>
+    <string name="analisis_seguimiento_mas_tarde">Más tarde</string>
+    <string name="analisis_seguimiento_no_aplica">No aplica</string>
+    <string name="analisis_seguimiento_registrado">Seguimiento: %1$s</string>
     <string name="analisis_valoracion_error">No se pudo enviar tu valoración. Inténtalo de nuevo.</string>
     <string name="analisis_detalle_title">Análisis completo</string>
     <string name="analisis_sin_datos_disponibles">Sin datos disponibles</string>
