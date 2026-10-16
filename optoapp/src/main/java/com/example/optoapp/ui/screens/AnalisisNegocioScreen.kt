@@ -667,6 +667,24 @@ private fun MetricItem(
     }
 }
 
+@Composable
+private fun SeguimientoChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (selected) {
+        Button(onClick = onClick, modifier = modifier) {
+            Text(label)
+        }
+    } else {
+        FilledTonalButton(onClick = onClick, modifier = modifier) {
+            Text(label)
+        }
+    }
+}
+
 @androidx.annotation.VisibleForTesting
 @Composable
 internal fun RecomendacionCard(
@@ -750,47 +768,33 @@ internal fun RecomendacionCard(
                 }
             }
             Spacer(Modifier.height(8.dp))
-            if (seguimiento != null) {
-                val labelRes = when (seguimiento) {
-                    SeguimientoEstado.HECHO -> R.string.analisis_seguimiento_hecho
-                    SeguimientoEstado.MAS_TARDE -> R.string.analisis_seguimiento_mas_tarde
-                    SeguimientoEstado.NO_APLICA -> R.string.analisis_seguimiento_no_aplica
-                }
-                Text(
-                    stringResource(R.string.analisis_seguimiento_registrado, stringResource(labelRes)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.positiveGreen,
-                    fontWeight = FontWeight.Medium,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SeguimientoChip(
+                    label = stringResource(R.string.analisis_seguimiento_hecho),
+                    selected = seguimiento == SeguimientoEstado.HECHO,
+                    onClick = { onSeguimiento(SeguimientoEstado.HECHO) },
+                    modifier = Modifier.weight(1f),
                 )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilledTonalButton(
-                        onClick = { onSeguimiento(SeguimientoEstado.HECHO) },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(stringResource(R.string.analisis_seguimiento_hecho))
-                    }
-                    FilledTonalButton(
-                        onClick = { onSeguimiento(SeguimientoEstado.MAS_TARDE) },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(stringResource(R.string.analisis_seguimiento_mas_tarde))
-                    }
-                    FilledTonalButton(
-                        onClick = { onSeguimiento(SeguimientoEstado.NO_APLICA) },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(stringResource(R.string.analisis_seguimiento_no_aplica))
-                    }
-                }
+                SeguimientoChip(
+                    label = stringResource(R.string.analisis_seguimiento_mas_tarde),
+                    selected = seguimiento == SeguimientoEstado.MAS_TARDE,
+                    onClick = { onSeguimiento(SeguimientoEstado.MAS_TARDE) },
+                    modifier = Modifier.weight(1f),
+                )
+                SeguimientoChip(
+                    label = stringResource(R.string.analisis_seguimiento_no_aplica),
+                    selected = seguimiento == SeguimientoEstado.NO_APLICA,
+                    onClick = { onSeguimiento(SeguimientoEstado.NO_APLICA) },
+                    modifier = Modifier.weight(1f),
+                )
             }
             if (hasError) {
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    stringResource(R.string.analisis_valoracion_error),
+                    stringResource(R.string.analisis_seguimiento_error),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.alertRed,
                 )

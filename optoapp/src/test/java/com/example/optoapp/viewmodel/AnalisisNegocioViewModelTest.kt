@@ -158,7 +158,8 @@ class AnalisisNegocioViewModelTest {
     ) {
         coEvery { obtenerAnalisisMensual(opticaId, any()) } returns analisis
         coEvery { obtenerDeudores(opticaId) } returns deudores
-        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns recomendaciones
+        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any(), any()) } returns recomendaciones
+        coEvery { feedbackRecomendacion.listarPorPeriodo(any(), any()) } returns emptyMap()
     }
 
     private val saldoEsperado = 10000.0 - 8000.0
@@ -380,7 +381,7 @@ class AnalisisNegocioViewModelTest {
     fun `cancellation does not produce error state`() = runTest(testDispatcher) {
         coEvery { obtenerAnalisisMensual(opticaId, any()) } throws CancellationException("Test cancel")
         coEvery { obtenerDeudores(opticaId) } returns Resource.Success(createDeudores())
-        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any()) } returns Resource.Success(createRecomendaciones())
+        coEvery { generarRecomendaciones(any(), any<List<Deudor>>(), any(), any()) } returns Resource.Success(createRecomendaciones())
 
         try {
             viewModel = createViewModel()
