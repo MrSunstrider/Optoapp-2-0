@@ -1,9 +1,9 @@
 # Analista de negocio (Must #4)
 
 Objective: Behave as a **business analyst** — concise facts that guide growth, advice and assistance — **not** a report dump. Distinct from Reportes (evidence/export/calc).  
-Branch: `feat/analista-negocio` (from `main`)  
-Delivery: `auto-chain` + `stacked-to-main` (standing)  
-Cycle: ODD → Strict TDD → GGA (pre-commit) → RDD host-relay when risk high → Judgment Day opt-in on money/recs surfaces  
+Branch: `feat/analista-negocio` (integration); stacked `feat/analista-s1-coach-engine` → `s2-seguimiento` → `s3-coach-ui`  
+Delivery: `auto-chain` + `stacked-to-main` — #174 → #175 → #176 (Closes #173 on #176)  
+Cycle: ODD → Strict TDD → GGA (pre-commit) → RDD host-relay when risk high → Judgment Day APPROVED (recs+migración)  
 Runner: `./gradlew :optoapp:testDebugUnitTest --stacktrace`
 
 ## Product job (user intent)
@@ -106,3 +106,5 @@ L10. T4 done (2026-10-15): `SeguimientoEstado` HECHO/MAS_TARDE/NO_APLICA; Room M
 L11. T5 done (2026-10-16): Screen IA coach-first — Plan de acción before ContextoBreve (margen/PE/cobertura); KPI ResumenCard demoted behind `metricasDetalleExpanded`; secondary atajos Detalle/Costos. GREEN `AnalisisCoachIaOrderTest`. Next: T6 regression/GGA.
 
 L12. T6 done (2026-10-16): Confirmed admin|gerente gate (`AppRolesAnalisisGateTest`); Análisis has no commission/payroll copy (`AnalisisScopeGuardTest`); full unit suite GREEN on T5; no money RPC/migration in T5–T6 → RDD not due. Feature Must #4 apply slice complete on branch.
+
+L13. User (2026-10-16): `PR/stack a main, Judgment Day en recs+migración`. JD APPROVED after fixes: ALERTA_CAIDA scoped to `mesAnalisis`, chips unlocked, TOCTOU mutex on listar+publish. Stacked PRs: #174 (coach+impact, size:exception), #175 (seguimiento+Room v57, size:exception), #176 (coach-first UI + JD fixes, Closes #173). Merge order: 174 → retarget 175 to main → 176.
