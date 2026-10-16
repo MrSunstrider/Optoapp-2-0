@@ -26,6 +26,8 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisMensual
+import com.example.optoapp.domain.ConfianzaInterpretacion
+import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -144,6 +146,10 @@ fun AnalisisNegocioScreen(
                 state = MonthSelectorState(YearMonth.from(uiState.mesSeleccionado), viewModel.mesActual),
                 onMonthSelected = viewModel::selectMonth,
             )
+
+            uiState.interpretacion?.let { interpretacion ->
+                InterpretacionCoachCard(interpretacion = interpretacion)
+            }
 
             uiState.analisis?.let { analisis ->
                 ResumenCard(analisis = analisis)
@@ -426,6 +432,60 @@ internal fun rutaVerTodosGastos(mes: YearMonth): String = Route.CostosYGastos.cr
 @Composable
 private fun gastoEtiqueta(categoria: String, descripcion: String?): String =
     if (descripcion.isNullOrBlank()) categoria else stringResource(R.string.analisis_gasto_etiqueta, categoria, descripcion)
+
+@Composable
+private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
+    val confianzaLabel = when (interpretacion.confianza) {
+        ConfianzaInterpretacion.ALTA -> stringResource(R.string.analisis_confianza_alta)
+        ConfianzaInterpretacion.MEDIA -> stringResource(R.string.analisis_confianza_media)
+        ConfianzaInterpretacion.BAJA -> stringResource(R.string.analisis_confianza_baja)
+    }
+    val confianzaColor = when (interpretacion.confianza) {
+        ConfianzaInterpretacion.ALTA -> MaterialTheme.colorScheme.positiveGreen
+        ConfianzaInterpretacion.MEDIA -> MaterialTheme.colorScheme.warningAmber
+        ConfianzaInterpretacion.BAJA -> MaterialTheme.colorScheme.alertRed
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.analisis_lectura_mes),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                interpretacion.titular,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                confianzaLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = confianzaColor,
+            )
+            interpretacion.puntos.forEach { punto ->
+                Text(
+                    "• $punto",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            interpretacion.proximaAccion?.let { accion ->
+                Text(
+                    stringResource(R.string.analisis_proxima_accion, accion),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
 
 @Composable
 private fun ResumenCard(analisis: AnalisisMensual) {

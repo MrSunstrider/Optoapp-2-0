@@ -272,6 +272,11 @@
     <string name="analisis_datos_limitados">Datos limitados — sin conexión</string>
     <string name="analisis_reintentar">Reintentar</string>
     <string name="analisis_estacionalidad_aviso">Este cálculo se basa en pocos meses. Podría no ser preciso.</string>
+    <string name="analisis_lectura_mes">Lectura del mes</string>
+    <string name="analisis_confianza_alta">Confianza alta en los costos</string>
+    <string name="analisis_confianza_media">Confianza media en los costos</string>
+    <string name="analisis_confianza_baja">Confianza baja en los costos</string>
+    <string name="analisis_proxima_accion">Próxima acción: %1$s</string>
     <string name="analisis_recomendaciones">Recomendaciones</string>
     <string name="analisis_sin_recomendaciones">Sin recomendaciones por ahora — tus métricas están dentro de lo esperado.</string>
     <string name="analisis_sin_datos_mes">Sin datos para este mes</string>

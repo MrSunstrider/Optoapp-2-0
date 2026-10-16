@@ -175,6 +175,12 @@ class AnalisisNegocioViewModelTest {
         assertEquals("ventasMes should match", 10000.0, state.analisis!!.ventasMes, 0.001)
         assertEquals("deudores should be populated", 2, state.deudores.size)
         assertEquals("recomendaciones should be populated", 3, state.recomendaciones.size)
+        assertNotNull("interpretacion coach summary should be populated", state.interpretacion)
+        assertEquals(
+            "proximaAccion should mirror top recommendation title",
+            state.recomendaciones.first().titulo,
+            state.interpretacion!!.proximaAccion,
+        )
         assertEquals("isLoading should be false after load", false, state.isLoading)
         assertNull("error should be null after successful load", state.error)
     }

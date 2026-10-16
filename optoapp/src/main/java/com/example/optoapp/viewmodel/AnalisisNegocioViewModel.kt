@@ -10,6 +10,8 @@ import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Deudor
 import com.example.optoapp.domain.FeedbackRecomendacionUseCase
 import com.example.optoapp.domain.GenerarRecomendacionesUseCase
+import com.example.optoapp.domain.InterpretacionAnalista
+import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
 import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Recomendacion
@@ -32,6 +34,7 @@ import javax.inject.Inject
 data class AnalisisNegocioUiState(
     val mesSeleccionado: LocalDate = DateUtils.today().withDayOfMonth(1),
     val analisis: AnalisisMensual? = null,
+    val interpretacion: InterpretacionMes? = null,
     val deudores: List<Deudor> = emptyList(),
     val recomendaciones: List<Recomendacion> = emptyList(),
     val isLoading: Boolean = false,
@@ -142,11 +145,16 @@ class AnalisisNegocioViewModel @Inject constructor(
                     )
                     val recError = (recomendacionesResult as? Resource.Error)?.message
                     val errors = (rpcErrors + listOfNotNull(recError)).toSet()
+                    val recomendaciones = (recomendacionesResult as? Resource.Success)?.data ?: emptyList()
+                    val interpretacion = analisis?.let {
+                        InterpretacionAnalista.fromAnalisis(it, recomendaciones.firstOrNull()?.titulo)
+                    }
 
                     _uiState.value = _uiState.value.copy(
                         analisis = analisis,
+                        interpretacion = interpretacion,
                         deudores = deudores,
-                        recomendaciones = (recomendacionesResult as? Resource.Success)?.data ?: emptyList(),
+                        recomendaciones = recomendaciones,
                         isLoading = false,
                         error = errors.joinToString("; ").ifEmpty { null },
                         isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
