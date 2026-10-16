@@ -256,6 +256,13 @@
     <string name="reportes_servicios_extra">Servicios Extra</string>
     <string name="reportes_detalle">Detalle</string>
     <string name="reportes_sin_movimientos">Sin movimientos en este período</string>
+    <string name="reportes_tab_resumen">Resumen</string>
+    <string name="reportes_tab_ventas">Ventas</string>
+    <string name="reportes_tab_pacientes">Pacientes</string>
+    <string name="reportes_tab_inventario">Inventario</string>
+    <string name="reportes_tab_clinico">Clínico</string>
+    <string name="reportes_tab_equipo">Equipo</string>
+    <string name="reportes_modulo_proximamente">Este módulo se construye en Reportes ricos. Los datos del período siguen disponibles en Resumen y Ventas.</string>
     <string name="reportes_dispensacion_ot">Dispensación · OT %1$s</string>
     <string name="reportes_servicio_descripcion">Servicio · %1$s</string>
     <string name="reportes_sin_descripcion">Sin descripción</string>

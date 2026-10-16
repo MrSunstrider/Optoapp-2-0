@@ -106,7 +106,7 @@ Answer: “¿Qué pasó en el periodo y qué puedo exportar / liquidar?” — e
 | T0 | S11 | inline | done | UX/UI plan added (L5) |
 | T1 | S6–S9,S11 | inline | done | KPIs REAL; UX tabs missing; no vendedorUserId (L7) |
 | T-attr | S9,S12 | inline | done | Room v57 `vendedorUserId` + create defaults + sync + supabase mig |
-| T-tabs | S7,S11,S12 | inline | pending | `ReportModuleTabs` shell; Resumen = current KPIs |
+| T-tabs | S7,S11,S12 | inline | done | `ReportModule` tabs; Resumen KPIs / Ventas list / placeholders |
 | T2 | S2,S7,S8 | inline | pending | Ventas detallados + comparativos periodo |
 | T3 | S1 | inline | pending | Pacientes altas/retención/demografía |
 | T4 | S3 | inline | pending | Inventario rotación/stock/monturas |
@@ -136,3 +136,5 @@ L7. User (2026-10-16): `ahora reportes ricos, mejorar uxui creo qye ya lo as hec
 L8. User (2026-10-16): `todo` — full Must #5 apply authorized. Branch `feat/reportes-ricos` from main. Commission % configurable default 0 (S12). Start T-attr then T-tabs → T2…T7.
 
 L9. T-attr done (2026-10-16): `vendedorUserId` on dispensaciones + servicios_extra; MIGRATION_56_57; supabase `20261016150000_vendedor_user_id.sql`; sync DTOs; create defaults via `VendedorAttribution` + auth uid; edits preserve seller. GREEN `VendedorAttributionTest` + `Migration56To57Test`. Next: T-tabs.
+
+L10. T-tabs done (2026-10-16): `ReportModule` + ScrollableTabRow; Resumen = KPIs/cobros/composición; Ventas = detalle list (real costs); Pacientes/Inventario/Clínico/Equipo placeholders. GREEN `ReportModuleOrderTest`. Next: T2 comparativos.
