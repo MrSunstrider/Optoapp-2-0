@@ -17,6 +17,9 @@ interface CostoProductoDao {
           AND stock_o_fabricacion = :stockOFabricacion
           AND tratamiento IS :tratamiento
           AND serie IS :serie
+          AND subtipo_bifocal IS :subtipoBifocal
+          AND indice_refraccion IS :indiceRefraccion
+          AND curva_base IS :curvaBase
           AND vigente_desde <= :fecha
           AND (vigente_hasta IS NULL OR vigente_hasta >= :fecha)
         ORDER BY vigente_desde DESC
@@ -31,6 +34,9 @@ interface CostoProductoDao {
         tratamiento: String?,
         serie: Int?,
         fecha: String,
+        subtipoBifocal: String? = null,
+        indiceRefraccion: String? = null,
+        curvaBase: String? = null,
     ): CostoProductoEntity?
 
     @Query(

@@ -535,6 +535,8 @@
     <string name="disp_productos">Productos</string>
     <string name="disp_paso_orden">Orden</string>
     <string name="disp_paso_gestion">Gestión</string>
+    <string name="disp_paso_costos_margen">Costos y margen</string>
+    <string name="ot_costo_regalos">Regalos</string>
     <string name="disp_prisma_valor_base">%1$sΔ base %2$s</string>
     <string name="disp_prisma_valor">%1$sΔ</string>
     <string name="disp_prisma_vacio">—</string>

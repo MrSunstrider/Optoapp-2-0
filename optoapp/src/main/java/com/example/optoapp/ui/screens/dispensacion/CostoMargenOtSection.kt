@@ -47,9 +47,11 @@ import java.util.Locale
 
 internal const val PASO_ORDEN = 0
 internal const val PASO_PRODUCTOS = 1
+internal const val PASO_GESTION = 2
+internal const val PASO_COSTOS = 3
 
 internal fun pasoInicialDispensacion(seccion: String?): Int =
-    if (seccion == Route.EditarDispensacion.SECCION_COSTO) PASO_PRODUCTOS else PASO_ORDEN
+    if (seccion == Route.EditarDispensacion.SECCION_COSTO) PASO_COSTOS else PASO_ORDEN
 
 data class FilaCostoOt(
     val componente: ComponenteCosto,
@@ -66,6 +68,7 @@ data class ItemCostoOt(
 
 data class CostoMargenOtModel(
     val items: List<ItemCostoOt>,
+    val costoRegalos: Double,
     val costoTotal: Double,
     val margen: Double,
     val margenPct: Double?,
@@ -82,13 +85,20 @@ data class CostoMargenOtModel(
         // Limited to single-origin values because mixto or faltante cannot tell which component they describe.
         private val ORIGENES_UNIFORMES = setOf(CostoOrigenResolver.MANUAL, CostoOrigenResolver.MATRIZ)
 
-        fun from(montoTotal: Double?, items: List<DispensacionItemUi>): CostoMargenOtModel {
+        fun from(
+            montoTotal: Double?,
+            items: List<DispensacionItemUi>,
+            costoRegalos: Double = 0.0,
+        ): CostoMargenOtModel {
             val itemsOt = items.map(::itemOt)
-            val costoTotal = itemsOt.sumOf { item -> item.filas.sumOf { it.valor } }
+            val costoItems = itemsOt.sumOf { item -> item.filas.sumOf { it.valor } }
+            val regalos = costoRegalos.coerceAtLeast(0.0)
+            val costoTotal = costoItems + regalos
             val total = montoTotal ?: 0.0
             val margen = total - costoTotal
             return CostoMargenOtModel(
                 items = itemsOt,
+                costoRegalos = regalos,
                 costoTotal = costoTotal,
                 margen = margen,
                 margenPct = if (total > 0.0) margen / total * 100 else null,
@@ -156,6 +166,9 @@ fun CostoMargenOtSection(
                     onRestablecer = { componente -> onRestablecer(index, componente) },
                 )
                 HorizontalDivider()
+            }
+            if (modelo.costoRegalos > 0.0) {
+                FilaTotal(stringResource(R.string.ot_costo_regalos), MoneyFormatter.format(modelo.costoRegalos))
             }
             FilaTotal(stringResource(R.string.ot_costo_total), modelo.costoTotalTexto)
             FilaTotal(stringResource(R.string.ot_costo_margen), modelo.margenTexto)

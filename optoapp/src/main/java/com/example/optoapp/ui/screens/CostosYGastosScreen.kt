@@ -201,7 +201,7 @@ private fun MatricesDialogs(uiState: CostosYGastosUiState, viewModel: CostosYGas
     uiState.formBiselado?.let { form ->
         FormBiseladoDialog(
             form = form,
-            materiales = viewModel.materialesOpticos,
+            materiales = viewModel.materialesOpticos(),
             onCambio = viewModel::updateFormBiselado,
             onGuardar = viewModel::saveBiselado,
             onDismiss = viewModel::dismissFormBiselado,
@@ -298,7 +298,7 @@ private fun MatrizDeCostosTab(
                                 modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
                             )
                             ExposedDropdownMenu(expanded = materialExpanded, onDismissRequest = { materialExpanded = false }) {
-                                viewModel.materialesOpticos.forEach { mat ->
+                                viewModel.materialesOpticos().forEach { mat ->
                                     DropdownMenuItem(text = { Text(mat) }, onClick = {
                                         viewModel.updateCostoMaterial(mat)
                                         materialExpanded = false

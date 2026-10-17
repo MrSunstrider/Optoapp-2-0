@@ -34,15 +34,15 @@ class NuevaDispensacionScreenTest {
     }
 
     @Test
-    fun wizardSteps_newModeHasTwoSteps() {
-        val steps = wizardStepsForMode(isEditMode = false)
-        assertEquals(listOf(R.string.disp_paso_orden, R.string.disp_productos), steps)
-    }
-
-    @Test
-    fun wizardSteps_editModeHasGestionStep() {
-        val steps = wizardStepsForMode(isEditMode = true)
-        assertEquals(listOf(R.string.disp_paso_orden, R.string.disp_productos, R.string.disp_paso_gestion), steps)
+    fun wizardSteps_alwaysFourSteps_includingCostosMargen() {
+        val expected = listOf(
+            R.string.disp_paso_orden,
+            R.string.disp_productos,
+            R.string.disp_paso_gestion,
+            R.string.disp_paso_costos_margen,
+        )
+        assertEquals(expected, wizardStepsForMode(isEditMode = false))
+        assertEquals(expected, wizardStepsForMode(isEditMode = true))
     }
 
     @Test

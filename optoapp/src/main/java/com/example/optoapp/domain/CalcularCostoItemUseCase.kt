@@ -6,6 +6,9 @@ import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.montura.MonturaDao
+import com.example.optoapp.domain.costo.LensCatalogRules
+import com.example.optoapp.domain.costo.LensCatalogSelection
+import com.example.optoapp.domain.costo.LensRecetaInput
 import com.example.optoapp.util.AppLogger
 import java.time.LocalDate
 import javax.inject.Inject
@@ -18,6 +21,7 @@ data class RecetaCosto(
     val odCil: Double?,
     val oiEsf: Double?,
     val oiCil: Double?,
+    val adicion: Double? = null,
     val lcMaterial: String? = null,
     val lcLaboratorio: String? = null,
 ) {
@@ -27,6 +31,7 @@ data class RecetaCosto(
             odCil = evaluacion.recetaOdCil.toGraduacion(),
             oiEsf = evaluacion.recetaOiEsf.toGraduacion(),
             oiCil = evaluacion.recetaOiCil.toGraduacion(),
+            adicion = (evaluacion.addCercaOd ?: evaluacion.addCercaOi).toGraduacion(),
             lcMaterial = evaluacion.lcMaterial?.takeIf { it.isNotBlank() },
             lcLaboratorio = evaluacion.lcLaboratorio?.takeIf { it.isNotBlank() },
         )
@@ -56,53 +61,96 @@ class CalcularCostoItemUseCase @Inject constructor(
         }
         val componentes = linkedMapOf<ComponenteCosto, Double?>()
         val ojos = ojosConEsfera(receta)
-        ojos.forEach { (componente, ojo) -> componentes[componente] = costoLente(opticaId, item, ojo, fechaIso) }
+        ojos.forEach { (componente, ojo) ->
+            componentes[componente] = costoLente(opticaId, item, ojo, receta?.adicion, fechaIso)
+        }
         if (item.origenMontura == ORIGEN_TIENDA && item.monturaId.isNotBlank()) {
             componentes[ComponenteCosto.MONTURA] = monturaDao.getMonturaByIdForOptica(item.monturaId, opticaId)
                 ?.costo?.takeIf { it > 0.0 }
         }
         if (item.tipoAro.isNotBlank()) {
-            componentes[ComponenteCosto.BISELADO] = costoBiselado(opticaId, item, ojos.values, fechaIso)
+            componentes[ComponenteCosto.BISELADO] = costoBiselado(opticaId, item, ojos.values, receta?.adicion, fechaIso)
         }
         return CostoItemCalculado(componentes)
     }
 
-    private data class Ojo(val esfera: Double, val cilindro: Double?) {
-        val stockOFabricacion: String = tipoLente(esfera, cilindro)
-        val serie: Int? = if (stockOFabricacion == STOCK) seriePorCilindro(cilindro) else null
-    }
+    private data class Ojo(val esfera: Double, val cilindro: Double?)
 
     private fun ojosConEsfera(receta: RecetaCosto?): Map<ComponenteCosto, Ojo> = buildMap {
         receta?.odEsf?.let { put(ComponenteCosto.OD, Ojo(it, receta.odCil)) }
         receta?.oiEsf?.let { put(ComponenteCosto.OI, Ojo(it, receta.oiCil)) }
     }
 
-    private suspend fun costoLente(opticaId: String, item: DispensacionItem, ojo: Ojo, fecha: String): Double? =
-        costoProductoDao.lookupVigente(
-            opticaId = opticaId,
-            material = item.materialLente,
+    private fun resolveForEye(
+        item: DispensacionItem,
+        ojo: Ojo,
+        adicion: Double?,
+    ) = LensCatalogRules.resolve(
+        LensCatalogSelection(
             tipoLente = item.tipoLente,
-            stockOFabricacion = ojo.stockOFabricacion,
-            tratamiento = item.tratamientos.sorted().joinToString(" + ").ifBlank { null },
-            serie = ojo.serie,
+            distancia = item.distanciaLente.takeIf { it.isNotBlank() },
+            subTipoBifocal = item.subTipoBifocal.takeIf { it.isNotBlank() },
+            familia = item.materialLente,
+            tratamientos = item.tratamientos,
+            discromatopsiaTipo = item.filtroDiscromatopsiaTipo.takeIf { it.isNotBlank() },
+            curvaBase = item.curvaBase?.takeIf { it.isNotBlank() },
+            indiceRefraccion = item.altoIndice?.takeIf { it.isNotBlank() },
+            forzarStockIgnorandoAstigmatismo = item.forzarStockIgnorandoAstigmatismo,
+        ),
+        LensRecetaInput(esfera = ojo.esfera, cilindro = ojo.cilindro, adicion = adicion),
+    )
+
+    private suspend fun costoLente(
+        opticaId: String,
+        item: DispensacionItem,
+        ojo: Ojo,
+        adicion: Double?,
+        fecha: String,
+    ): Double? {
+        val resolution = resolveForEye(item, ojo, adicion)
+        if (resolution.requiresManualIrCost) return null
+        return costoProductoDao.lookupVigente(
+            opticaId = opticaId,
+            material = resolution.matrixFamilia,
+            tipoLente = item.tipoLente,
+            stockOFabricacion = resolution.stockOFabricacion,
+            tratamiento = resolution.matrixTratamiento,
+            serie = resolution.serie,
             fecha = fecha,
+            subtipoBifocal = item.subTipoBifocal.takeIf { it.isNotBlank() },
+            // altoIndice on the item is also used for biselado; only matrix IR rows need it here.
+            indiceRefraccion = if (resolution.requiresManualIrCost) {
+                item.altoIndice?.takeIf { it.isNotBlank() }
+            } else {
+                null
+            },
+            curvaBase = if (resolution.requiresCurvaBase) {
+                item.curvaBase?.takeIf { it.isNotBlank() }
+            } else {
+                null
+            },
         )?.costoUnitario
+    }
 
     private suspend fun costoBiselado(
         opticaId: String,
         item: DispensacionItem,
         ojos: Collection<Ojo>,
+        adicion: Double?,
         fecha: String,
     ): Double? {
-        val fabricacion = ojos.any { it.stockOFabricacion == FABRICACION }
-        val serie = if (fabricacion) null else ojos.mapNotNull { it.serie }.maxOrNull() ?: seriePorCilindro(null)
+        val resolutions = ojos.map { resolveForEye(item, it, adicion) }
+        val fabricacion = resolutions.any { it.stockOFabricacion == LensCatalogRules.FABRICACION }
+        val serie = if (fabricacion) null else resolutions.mapNotNull { it.serie }.maxOrNull()
+            ?: LensCatalogRules.seriePorCilindro(null)
         val altoIndice = AltoIndiceNormalizer.normalize(item.altoIndice)
             ?: AltoIndiceNormalizer.fromTratamientos(item.tratamientos)
+        val materialBase = biseladoMaterialKey(item.materialLente)
         return costoBiseladoDao.lookupVigente(
             opticaId = opticaId,
-            material = item.materialLente,
+            material = materialBase,
             tipoAro = tipoAroMatriz(item.tipoAro),
-            stockOFabricacion = if (fabricacion) FABRICACION else STOCK,
+            stockOFabricacion = if (fabricacion) LensCatalogRules.FABRICACION else LensCatalogRules.STOCK,
             serie = serie,
             fecha = fecha,
         ).firstOrNull { AltoIndiceNormalizer.matches(it.altoIndice, altoIndice) }?.costoPorPar
@@ -132,23 +180,25 @@ class CalcularCostoItemUseCase @Inject constructor(
     companion object {
         private const val TAG = "CalcularCostoItem"
         private const val ORIGEN_TIENDA = "Tienda"
-        private const val STOCK = "stock"
-        private const val FABRICACION = "fabricacion"
 
         fun esLenteDeContacto(item: DispensacionItem): Boolean = item.tipoLente.contains("Contacto", ignoreCase = true)
 
-        fun tipoLente(esfera: Double, cilindro: Double?): String =
-            if (abs(esfera) > 6.00 || abs(cilindro ?: 0.0) > 6.00) FABRICACION else STOCK
-
-        fun seriePorCilindro(cilindro: Double?): Int? {
-            val absCil = abs(cilindro ?: 0.0)
-            return when {
-                absCil <= 2.00 -> 1
-                absCil <= 4.00 -> 2
-                absCil <= 6.00 -> 3
-                else -> null
-            }
+        /** Maps product family to substrate used by costos_biselado rows. */
+        fun biseladoMaterialKey(familia: String): String = when {
+            familia.startsWith("Policarbonato", ignoreCase = true) -> "Policarbonato"
+            familia.startsWith("Cristal", ignoreCase = true) -> "Cristal"
+            familia.startsWith("Trivex", ignoreCase = true) -> "Trivex"
+            else -> "Resina"
         }
+
+        fun tipoLente(esfera: Double, cilindro: Double?): String =
+            if (abs(esfera) > 6.00 || abs(cilindro ?: 0.0) > 6.00) {
+                LensCatalogRules.FABRICACION
+            } else {
+                LensCatalogRules.STOCK
+            }
+
+        fun seriePorCilindro(cilindro: Double?): Int? = LensCatalogRules.seriePorCilindro(cilindro)
 
         fun tipoAroMatriz(tipoAro: String): String = when {
             tipoAro.contains("Completo", ignoreCase = true) -> "aro_completo"

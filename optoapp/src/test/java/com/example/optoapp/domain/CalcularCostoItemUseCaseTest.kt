@@ -41,7 +41,9 @@ class CalcularCostoItemUseCaseTest {
         costoBiseladoDao = mockk()
         monturaDao = mockk()
         costoLcDao = mockk()
-        coEvery { costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any()) } returns null
+        coEvery {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns null
         coEvery { costoBiseladoDao.lookupVigente(any(), any(), any(), any(), any(), any()) } returns emptyList()
         coEvery { monturaDao.getMonturaByIdForOptica(any(), any()) } returns null
         coEvery { costoLcDao.lookupVigente(any(), any(), any(), any(), any()) } returns emptyList()
@@ -94,6 +96,7 @@ class CalcularCostoItemUseCaseTest {
         coEvery {
             costoProductoDao.lookupVigente(
                 opticaId, "Resina", "Monofocal", stockOFabricacion, "Antireflex", serie, fechaIso,
+                null, null, null,
             )
         } returns lente(costo)
     }
@@ -139,7 +142,9 @@ class CalcularCostoItemUseCaseTest {
         val result = useCase(opticaId, item(origenMontura = "Tienda", monturaId = "m1"), null, fecha)
 
         assertEquals(mapOf(MONTURA to 80.0), result.componentes)
-        coVerify(exactly = 0) { costoProductoDao.lookupVigente(any(), any(), "montura", any(), any(), any(), any()) }
+        coVerify(exactly = 0) {
+            costoProductoDao.lookupVigente(any(), any(), "montura", any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -249,7 +254,9 @@ class CalcularCostoItemUseCaseTest {
         val result = useCase(opticaId, lcItem(), recetaSerie2.copy(lcLaboratorio = "lab1"), fecha)
 
         assertEquals(mapOf(LC to 45.0), result.componentes)
-        coVerify(exactly = 0) { costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test

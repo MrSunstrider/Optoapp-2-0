@@ -89,6 +89,9 @@ data class DispensacionItem(
     @SerialName("curva_base")
     @ColumnInfo(name = "curva_base")
     val curvaBase: String? = null,
+    @SerialName("forzar_stock_astigmatismo")
+    @ColumnInfo(name = "forzar_stock_astigmatismo")
+    val forzarStockIgnorandoAstigmatismo: Boolean = false,
     @SerialName("costo_real_od")
     @ColumnInfo(name = "costo_real_od")
     val costoRealOd: Double? = null,

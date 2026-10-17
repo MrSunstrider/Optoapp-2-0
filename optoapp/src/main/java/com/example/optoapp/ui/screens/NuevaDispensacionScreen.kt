@@ -51,6 +51,9 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.components.dispensacion.LenteForm
 import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtModel
 import com.example.optoapp.ui.screens.dispensacion.CostoMargenOtSection
+import com.example.optoapp.ui.screens.dispensacion.PASO_COSTOS
+import com.example.optoapp.ui.screens.dispensacion.PASO_GESTION
+import com.example.optoapp.ui.screens.dispensacion.PASO_ORDEN
 import com.example.optoapp.ui.screens.dispensacion.PASO_PRODUCTOS
 import com.example.optoapp.ui.screens.dispensacion.pasoInicialDispensacion
 import com.example.optoapp.ui.theme.saldoColor
@@ -62,8 +65,12 @@ import com.example.optoapp.viewmodel.OrderLifecycleState
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-internal fun wizardStepsForMode(isEditMode: Boolean): List<Int> =
-    if (isEditMode) listOf(R.string.disp_paso_orden, R.string.disp_productos, R.string.disp_paso_gestion) else listOf(R.string.disp_paso_orden, R.string.disp_productos)
+internal fun wizardStepsForMode(isEditMode: Boolean): List<Int> = listOf(
+    R.string.disp_paso_orden,
+    R.string.disp_productos,
+    R.string.disp_paso_gestion,
+    R.string.disp_paso_costos_margen,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -234,7 +241,7 @@ fun NuevaDispensacionScreen(
             }
 
             when (currentStep) {
-                0 -> StepOrden(
+                PASO_ORDEN -> StepOrden(
                     uiState = uiState,
                     viewModel = viewModel,
                     selectedEvaluacion = selectedEvaluacion,
@@ -242,29 +249,29 @@ fun NuevaDispensacionScreen(
                     onEvaluacionExpandedChange = { evaluacionExpanded = it },
                     onShowDatePicker = { showDatePicker = true },
                 )
-                1 -> StepProductos(
+                PASO_PRODUCTOS -> StepProductos(
                     uiState = uiState,
                     viewModel = viewModel,
                     monturasActivas = monturasActivas,
                     expandedItems = expandedItems,
                     canAddItems = !lifecycle.isReadOnly,
+                )
+                PASO_GESTION -> StepGestion(
+                    uiState = uiState,
+                    lifecycle = lifecycle,
+                    viewModel = viewModel,
+                    dispensacionId = dispensacionId,
+                    pacienteId = pacienteId,
+                    navController = navController,
+                    onGestionarCostos = { currentStep = PASO_COSTOS },
+                )
+                PASO_COSTOS -> StepCostosMargen(
+                    uiState = uiState,
+                    viewModel = viewModel,
+                    editable = !lifecycle.isReadOnly,
                     enfocarCosto = enfocarCosto,
                     onCostoEnfocado = { enfocarCosto = false },
                 )
-                2 -> if (isEditMode) {
-                    StepGestion(
-                        uiState = uiState,
-                        lifecycle = lifecycle,
-                        viewModel = viewModel,
-                        dispensacionId = dispensacionId!!,
-                        pacienteId = pacienteId,
-                        navController = navController,
-                        onGestionarCostos = {
-                            currentStep = PASO_PRODUCTOS
-                            enfocarCosto = true
-                        },
-                    )
-                }
             }
 
             if (!uiState.error.isNullOrBlank()) {
@@ -401,17 +408,7 @@ private fun StepProductos(
     monturasActivas: List<com.example.optoapp.data.Montura>,
     expandedItems: MutableMap<Int, Boolean>,
     canAddItems: Boolean,
-    enfocarCosto: Boolean,
-    onCostoEnfocado: () -> Unit,
 ) {
-    val seccionCosto = remember { BringIntoViewRequester() }
-    LaunchedEffect(enfocarCosto) {
-        if (enfocarCosto) {
-            seccionCosto.bringIntoView()
-            onCostoEnfocado()
-        }
-    }
-
     Text(
         stringResource(R.string.disp_productos),
         fontWeight = FontWeight.Bold,
@@ -444,13 +441,54 @@ private fun StepProductos(
             Text(stringResource(R.string.disp_agregar_producto))
         }
     }
+}
 
+@Composable
+private fun StepCostosMargen(
+    uiState: com.example.optoapp.viewmodel.DispensacionUiState,
+    viewModel: DispensacionViewModel,
+    editable: Boolean,
+    enfocarCosto: Boolean,
+    onCostoEnfocado: () -> Unit,
+) {
+    val seccionCosto = remember { BringIntoViewRequester() }
+    LaunchedEffect(enfocarCosto) {
+        if (enfocarCosto) {
+            seccionCosto.bringIntoView()
+            onCostoEnfocado()
+        }
+    }
     val montoTotal = uiState.montoTotal.replace(",", ".").toDoubleOrNull()
+    val costoRegalos = remember(uiState.regalos) {
+        uiState.regalos.sumOf { it.cantidad * it.costoUnitario }
+    }
+    Text(
+        stringResource(R.string.disp_paso_costos_margen),
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        "Monto contrato: ${MoneyFormatter.format(montoTotal ?: 0.0)}",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    uiState.items.forEachIndexed { index, _ ->
+        OutlinedButton(
+            onClick = { viewModel.calculateCosts(index) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = editable,
+        ) {
+            Text("${stringResource(R.string.disp_calcular_costos)} · ${index + 1}")
+        }
+    }
     CostoMargenOtSection(
-        modelo = remember(montoTotal, uiState.items) { CostoMargenOtModel.from(montoTotal, uiState.items) },
+        modelo = remember(montoTotal, uiState.items, costoRegalos) {
+            CostoMargenOtModel.from(montoTotal, uiState.items, costoRegalos)
+        },
         onEditar = viewModel::setCostoOverride,
         onRestablecer = viewModel::clearCostoOverride,
-        editable = canAddItems,
+        editable = editable,
         modifier = Modifier.bringIntoViewRequester(seccionCosto),
     )
 }
@@ -473,7 +511,7 @@ private fun StepGestion(
     uiState: com.example.optoapp.viewmodel.DispensacionUiState,
     lifecycle: OrderLifecycleState,
     viewModel: DispensacionViewModel,
-    dispensacionId: String,
+    dispensacionId: String?,
     pacienteId: String,
     navController: NavController,
     onGestionarCostos: () -> Unit,
@@ -491,52 +529,54 @@ private fun StepGestion(
         }
     }
 
-    metodoReembolsoSugerido?.let { sugerido ->
-        ReclamoDialog(
-            ot = uiState.ot,
-            montoTotalOriginal = uiState.montoTotal.replace(",", ".").toDoubleOrNull() ?: 0.0,
-            creditoTransferido = uiState.montoPagado,
-            metodoReembolsoSugerido = sugerido,
-            submitting = uiState.isLoading,
-            onConfirm = { motivo, nuevoMontoTotal, metodoReembolso ->
-                viewModel.crearReclamo(dispensacionId, motivo, nuevoMontoTotal, metodoReembolso) { replacementId ->
-                    metodoReembolsoSugerido = null
-                    navController.popBackStack()
-                    navController.navigate(Route.EditarDispensacion(pacienteId, replacementId).route)
-                }
-            },
-            onDismiss = { metodoReembolsoSugerido = null },
-        )
-    }
+    if (dispensacionId != null) {
+        metodoReembolsoSugerido?.let { sugerido ->
+            ReclamoDialog(
+                ot = uiState.ot,
+                montoTotalOriginal = uiState.montoTotal.replace(",", ".").toDoubleOrNull() ?: 0.0,
+                creditoTransferido = uiState.montoPagado,
+                metodoReembolsoSugerido = sugerido,
+                submitting = uiState.isLoading,
+                onConfirm = { motivo, nuevoMontoTotal, metodoReembolso ->
+                    viewModel.crearReclamo(dispensacionId, motivo, nuevoMontoTotal, metodoReembolso) { replacementId ->
+                        metodoReembolsoSugerido = null
+                        navController.popBackStack()
+                        navController.navigate(Route.EditarDispensacion(pacienteId, replacementId).route)
+                    }
+                },
+                onDismiss = { metodoReembolsoSugerido = null },
+            )
+        }
 
-    if (showAnularDialog) {
-        MotivoDialog(
-            title = stringResource(R.string.disp_anular_titulo),
-            confirmText = stringResource(R.string.disp_anular_confirmar),
-            message = stringResource(R.string.disp_anular_mensaje),
-            submitting = uiState.isLoading,
-            onConfirm = { motivo ->
-                viewModel.anularDispensacion(dispensacionId, motivo) {
-                    showAnularDialog = false
-                    viewModel.loadDispensacion(dispensacionId)
-                }
-            },
-            onDismiss = { showAnularDialog = false },
-        )
-    }
+        if (showAnularDialog) {
+            MotivoDialog(
+                title = stringResource(R.string.disp_anular_titulo),
+                confirmText = stringResource(R.string.disp_anular_confirmar),
+                message = stringResource(R.string.disp_anular_mensaje),
+                submitting = uiState.isLoading,
+                onConfirm = { motivo ->
+                    viewModel.anularDispensacion(dispensacionId, motivo) {
+                        showAnularDialog = false
+                        viewModel.loadDispensacion(dispensacionId)
+                    }
+                },
+                onDismiss = { showAnularDialog = false },
+            )
+        }
 
-    if (showDeleteDialog) {
-        ConfirmDeleteDialog(
-            itemName = stringResource(R.string.disp_ot_nombre, uiState.ot).trim(),
-            deleting = uiState.isLoading,
-            onConfirm = {
-                viewModel.deleteDispensacion(dispensacionId) {
-                    showDeleteDialog = false
-                    navController.popBackStack()
-                }
-            },
-            onDismiss = { if (!uiState.isLoading) showDeleteDialog = false },
-        )
+        if (showDeleteDialog) {
+            ConfirmDeleteDialog(
+                itemName = stringResource(R.string.disp_ot_nombre, uiState.ot).trim(),
+                deleting = uiState.isLoading,
+                onConfirm = {
+                    viewModel.deleteDispensacion(dispensacionId) {
+                        showDeleteDialog = false
+                        navController.popBackStack()
+                    }
+                },
+                onDismiss = { if (!uiState.isLoading) showDeleteDialog = false },
+            )
+        }
     }
 
     Card(
@@ -546,7 +586,16 @@ private fun StepGestion(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(stringResource(R.string.disp_informacion_financiera), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
 
-            val monto = uiState.montoTotal.toDoubleOrNull() ?: 0.0
+            OptoTextField(
+                value = uiState.montoTotal,
+                onValueChange = { viewModel.updateUiState { s -> s.copy(montoTotal = it) } },
+                label = stringResource(R.string.disp_monto_total),
+                keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal,
+                enabled = !lifecycle.isReadOnly,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            val monto = uiState.montoTotal.replace(",", ".").toDoubleOrNull() ?: 0.0
             val pagado = uiState.pagos.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) }
             val saldo = monto - pagado
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -569,10 +618,12 @@ private fun StepGestion(
                 Text(stringResource(R.string.disp_estado), fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 OrderEstadoChip(uiState.estadoEntrega, saldo = saldo)
             }
-            OutlinedButton(
-                onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text(stringResource(R.string.disp_gestionar_pagos)) }
+            if (dispensacionId != null) {
+                OutlinedButton(
+                    onClick = { navController.navigate(Route.InformacionFinanciera(dispensacionId).route) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(stringResource(R.string.disp_gestionar_pagos)) }
+            }
             OutlinedButton(
                 onClick = onGestionarCostos,
                 modifier = Modifier.fillMaxWidth(),
@@ -581,13 +632,13 @@ private fun StepGestion(
                 Spacer(Modifier.width(6.dp))
                 Text(stringResource(R.string.disp_gestionar_costos))
             }
-            if (!lifecycle.isReadOnly) {
+            if (dispensacionId != null && !lifecycle.isReadOnly) {
                 FechaEntregaControls(uiState = uiState, viewModel = viewModel)
             }
         }
     }
 
-    if (lifecycle.canCancel) {
+    if (dispensacionId != null && lifecycle.canCancel) {
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedButton(
             onClick = { showAnularDialog = true },
@@ -598,7 +649,7 @@ private fun StepGestion(
             Text(stringResource(R.string.disp_anular_orden))
         }
     }
-    if (lifecycle.canClaim) {
+    if (dispensacionId != null && lifecycle.canClaim) {
         OutlinedButton(
             onClick = { scope.launch { metodoReembolsoSugerido = viewModel.metodoReembolsoSugerido(dispensacionId) } },
             enabled = !uiState.isLoading,
@@ -607,7 +658,7 @@ private fun StepGestion(
             Text(stringResource(R.string.disp_reclamar_garantia))
         }
     }
-    if (lifecycle.canHardDelete) {
+    if (dispensacionId != null && lifecycle.canHardDelete) {
         TextButton(
             onClick = { showDeleteDialog = true },
             enabled = !uiState.isLoading,

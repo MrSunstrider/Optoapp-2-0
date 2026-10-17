@@ -87,7 +87,8 @@ object LensCatalogRules {
             selection.distancia,
             selection.subTipoBifocal,
         )
-        val selectedExtras = selection.tratamientos.filter { it in allowed || it in family.extras }
+        // Keep persisted extras even when not in the current allowed list (legacy labels).
+        val selectedExtras = selection.tratamientos.filter { it.isNotBlank() }
         val hasDiscromatopsia = selectedExtras.contains(LensTreatments.DISCROMATOPSIA)
         val hasSolar = selectedExtras.contains(LensTreatments.SOLAR)
 

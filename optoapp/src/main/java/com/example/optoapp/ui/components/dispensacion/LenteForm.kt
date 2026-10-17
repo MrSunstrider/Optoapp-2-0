@@ -1,12 +1,32 @@
 package com.example.optoapp.ui.components.dispensacion
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -14,10 +34,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
 import com.example.optoapp.domain.OpticalCatalog
+import com.example.optoapp.domain.costo.LensCatalogRules
+import com.example.optoapp.domain.costo.LensCatalogSelection
+import com.example.optoapp.domain.costo.LensProductCatalog
+import com.example.optoapp.domain.costo.LensTreatments
 import com.example.optoapp.ui.components.MonturaSearchField
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
 import com.example.optoapp.viewmodel.DispensacionItemUi
+
+private val DISCROMATOPSIA_TIPOS = listOf(
+    "", "550 Rojo", "550 Rojo-Violeta", "550 Rojo-Marrón", "585 nm", "600 Rojo",
+    "Amarillo 450 nm (tritan)", "Amarillo 500 nm (tritan)",
+    "EnChroma Indoor", "EnChroma Outdoor",
+    "Pilestone A: rojo-verde leve/moderado", "Pilestone B: rojo-verde fuerte", "Pilestone C: interior",
+    "Pilestone D: protan (deficiencia roja)", "Pilestone E: tritan (azul-amarillo)",
+)
+
+private val CURVAS_SOLAR = listOf("", "4", "6", "8")
+private val INDICES_IR = listOf("", "1.6", "1.7", "1.7 rose", "1.8")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +64,43 @@ fun LenteForm(
     onUpdate: (DispensacionItemUi) -> Unit,
     onRemove: () -> Unit,
 ) {
-    Column(modifier = Modifier.padding(0.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val familias = remember(item.tipoLente, item.distanciaLente, item.subTipoBifocal) {
+        LensCatalogRules.familias(
+            item.tipoLente,
+            item.distanciaLente.takeIf { it.isNotBlank() },
+            item.subTipoBifocal.takeIf { it.isNotBlank() },
+        )
+    }
+    val tratamientosPermitidos = remember(item.tipoLente, item.materialLente, item.distanciaLente, item.subTipoBifocal) {
+        LensCatalogRules.tratamientosPermitidos(
+            item.tipoLente,
+            item.materialLente,
+            item.distanciaLente.takeIf { it.isNotBlank() },
+            item.subTipoBifocal.takeIf { it.isNotBlank() },
+        )
+    }
+    val preview = remember(item) {
+        if (item.tipoLente.isBlank() || item.materialLente.isBlank()) {
+            null
+        } else {
+            LensCatalogRules.resolve(
+                LensCatalogSelection(
+                    tipoLente = item.tipoLente,
+                    distancia = item.distanciaLente.takeIf { it.isNotBlank() },
+                    subTipoBifocal = item.subTipoBifocal.takeIf { it.isNotBlank() },
+                    familia = item.materialLente,
+                    tratamientos = item.tratamientos,
+                    discromatopsiaTipo = item.filtroDiscromatopsiaTipo.takeIf { it.isNotBlank() },
+                    curvaBase = item.curvaBase.takeIf { it.isNotBlank() },
+                    indiceRefraccion = item.altoIndice.takeIf { it.isNotBlank() },
+                    forzarStockIgnorandoAstigmatismo = item.forzarStockIgnorandoAstigmatismo,
+                ),
+                null,
+            )
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!isOnlyItem) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onRemove) {
@@ -38,17 +109,23 @@ fun LenteForm(
             }
         }
 
-        OptoDropdownMenuField(label = "Tipo de Lente", selected = item.tipoLente, options = OpticalCatalog.TIPO_LENTE) {
-            val cleaned = when (it) {
-                "Bifocal" -> item.copy(tipoLente = it, distanciaLente = "", altura = "")
-                "Monofocal" -> item.copy(tipoLente = it, subTipoBifocal = "", altura = "")
-                "Multifocal", "Ocupacional" -> item.copy(tipoLente = it, subTipoBifocal = "", distanciaLente = "")
-                else -> item.copy(tipoLente = it, subTipoBifocal = "", distanciaLente = "", altura = "")
-            }
-            onUpdate(cleaned)
+        OptoDropdownMenuField(label = "Tipo de Lente", selected = item.tipoLente, options = LensProductCatalog.TIPOS) { tipo ->
+            onUpdate(
+                item.copy(
+                    tipoLente = tipo,
+                    distanciaLente = "",
+                    subTipoBifocal = "",
+                    altura = "",
+                    materialLente = "",
+                    tratamientos = emptyList(),
+                    filtroDiscromatopsiaTipo = "",
+                    curvaBase = "",
+                    altoIndice = "",
+                ),
+            )
         }
 
-        if (item.tipoLente == "Lentes de Contacto") {
+        if (item.tipoLente == LensProductCatalog.TIPO_LC) {
             OptoDropdownMenuField(label = "Tipo de LC", selected = item.materialLente, options = listOf("Cosmético", "Graduado", "Terapéutico")) {
                 onUpdate(item.copy(materialLente = it))
             }
@@ -58,78 +135,173 @@ fun LenteForm(
             OptoDropdownMenuField(label = "Modalidad", selected = item.notasDiseno, options = listOf("Diario", "Quincenal", "Mensual", "Anual")) {
                 onUpdate(item.copy(notasDiseno = it))
             }
-        } else {
-            if (item.tipoLente == "Bifocal") {
-                OptoDropdownMenuField(label = "Sub-tipo Bifocal", selected = item.subTipoBifocal, options = listOf("Flaptop", "Invisible")) {
-                    onUpdate(item.copy(subTipoBifocal = it))
+        } else if (item.tipoLente.isNotBlank()) {
+            if (item.tipoLente == LensProductCatalog.TIPO_BIFOCAL) {
+                OptoDropdownMenuField(label = "Sub-tipo Bifocal", selected = item.subTipoBifocal, options = LensProductCatalog.SUBTIPOS_BIFOCAL) {
+                    onUpdate(item.copy(subTipoBifocal = it, materialLente = "", tratamientos = emptyList()))
                 }
             }
 
-            if (item.tipoLente == "Monofocal") {
-                OptoDropdownMenuField(label = "Distancia", selected = item.distanciaLente, options = listOf("Lejos", "Intermedia", "Cerca")) {
-                    onUpdate(item.copy(distanciaLente = it))
+            if (item.tipoLente == LensProductCatalog.TIPO_MONOFOCAL) {
+                OptoDropdownMenuField(label = "Distancia", selected = item.distanciaLente, options = LensProductCatalog.DISTANCIAS_MONOFOCAL) {
+                    onUpdate(
+                        item.copy(
+                            distanciaLente = it,
+                            materialLente = "",
+                            tratamientos = emptyList(),
+                            filtroDiscromatopsiaTipo = "",
+                            curvaBase = "",
+                        ),
+                    )
                 }
             }
 
-            if (item.tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")) {
-                OptoTextField(value = item.altura, onValueChange = { onUpdate(item.copy(altura = it)) }, label = "Altura (mm)", keyboardType = KeyboardType.Decimal)
+            if (item.tipoLente in setOf(
+                    LensProductCatalog.TIPO_BIFOCAL,
+                    LensProductCatalog.TIPO_MULTIFOCAL,
+                    LensProductCatalog.TIPO_OCUPACIONAL,
+                )
+            ) {
+                OptoTextField(
+                    value = item.altura,
+                    onValueChange = { onUpdate(item.copy(altura = it)) },
+                    label = "Altura (mm)",
+                    keyboardType = KeyboardType.Decimal,
+                )
             }
 
-            OptoDropdownMenuField(label = "Material del Lente", selected = item.materialLente, options = OpticalCatalog.MATERIALES) {
-                onUpdate(item.copy(materialLente = it))
+            val familiaReady = when (item.tipoLente) {
+                LensProductCatalog.TIPO_MONOFOCAL -> item.distanciaLente.isNotBlank()
+                LensProductCatalog.TIPO_BIFOCAL -> item.subTipoBifocal.isNotBlank()
+                else -> true
             }
 
-            Text("Tratamientos", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            if (familiaReady && familias.isNotEmpty()) {
+                OptoDropdownMenuField(label = "Familia / material", selected = item.materialLente, options = familias) {
+                    onUpdate(
+                        item.copy(
+                            materialLente = it,
+                            tratamientos = emptyList(),
+                            filtroDiscromatopsiaTipo = "",
+                            curvaBase = "",
+                            altoIndice = "",
+                        ),
+                    )
+                }
+            }
 
-            if (item.tratamientos.isNotEmpty()) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    item.tratamientos.forEach { trat ->
+            if (item.materialLente.isNotBlank()) {
+                Text("Tratamientos adicionales", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                if (item.tratamientos.isNotEmpty()) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        item.tratamientos.forEach { trat ->
+                            AssistChip(
+                                onClick = {
+                                    onUpdate(
+                                        item.copy(
+                                            tratamientos = item.tratamientos - trat,
+                                            filtroDiscromatopsiaTipo = if (trat == LensTreatments.DISCROMATOPSIA) {
+                                                ""
+                                            } else {
+                                                item.filtroDiscromatopsiaTipo
+                                            },
+                                            curvaBase = if (trat == LensTreatments.SOLAR) "" else item.curvaBase,
+                                        ),
+                                    )
+                                },
+                                label = { Text(trat, fontSize = 12.sp) },
+                                trailingIcon = {
+                                    Icon(Icons.Default.Close, contentDescription = "Quitar", modifier = Modifier.size(16.dp))
+                                },
+                            )
+                        }
+                    }
+                }
+
+                val available = tratamientosPermitidos.filter { it !in item.tratamientos }
+                if (available.isNotEmpty()) {
+                    var addExpanded by remember { mutableStateOf(false) }
+                    Box {
                         AssistChip(
-                            onClick = { onUpdate(item.copy(tratamientos = item.tratamientos - trat)) },
-                            label = { Text(trat, fontSize = 12.sp) },
-                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = "Quitar", modifier = Modifier.size(16.dp)) },
+                            onClick = { addExpanded = true },
+                            label = { Text("+ Añadir", fontSize = 12.sp) },
+                            leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        )
+                        DropdownMenu(expanded = addExpanded, onDismissRequest = { addExpanded = false }) {
+                            available.forEach { opt ->
+                                DropdownMenuItem(
+                                    text = { Text(opt) },
+                                    onClick = {
+                                        onUpdate(item.copy(tratamientos = item.tratamientos + opt))
+                                        addExpanded = false
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (item.tratamientos.contains(LensTreatments.DISCROMATOPSIA)) {
+                    Text(
+                        "Requiere evaluación previa: Ishihara + D-15 + prueba de filtro",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OptoDropdownMenuField(
+                        label = "Tipo de Filtro Discromatopsia",
+                        selected = item.filtroDiscromatopsiaTipo,
+                        options = DISCROMATOPSIA_TIPOS,
+                    ) { onUpdate(item.copy(filtroDiscromatopsiaTipo = it)) }
+                }
+
+                if (item.tratamientos.contains(LensTreatments.SOLAR)) {
+                    OptoDropdownMenuField(label = "Curva base solar", selected = item.curvaBase, options = CURVAS_SOLAR) {
+                        onUpdate(item.copy(curvaBase = it))
+                    }
+                }
+
+                if (preview?.requiresManualIrCost == true) {
+                    OptoDropdownMenuField(label = "Índice de refracción (IR)", selected = item.altoIndice, options = INDICES_IR) {
+                        onUpdate(item.copy(altoIndice = it))
+                    }
+                    Text(
+                        "Alto índice: el costo se ingresa manualmente en Costos y margen",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                if (item.tipoLente in setOf(LensProductCatalog.TIPO_BIFOCAL, LensProductCatalog.TIPO_MULTIFOCAL)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            "Forzar stock (omitir astigmatismo)",
+                            modifier = Modifier.weight(1f),
+                            fontSize = 13.sp,
+                        )
+                        Switch(
+                            checked = item.forzarStockIgnorandoAstigmatismo,
+                            onCheckedChange = { onUpdate(item.copy(forzarStockIgnorandoAstigmatismo = it)) },
                         )
                     }
                 }
-            }
 
-            val available = OpticalCatalog.TRATAMIENTOS.filter { it !in item.tratamientos }
-            if (available.isNotEmpty()) {
-                var addExpanded by remember { mutableStateOf(false) }
-                Box {
-                    AssistChip(
-                        onClick = { addExpanded = true },
-                        label = { Text("+ Añadir", fontSize = 12.sp) },
-                        leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                    )
-                    DropdownMenu(expanded = addExpanded, onDismissRequest = { addExpanded = false }) {
-                        available.forEach { opt ->
-                            DropdownMenuItem(text = { Text(opt) }, onClick = {
-                                onUpdate(item.copy(tratamientos = item.tratamientos + opt))
-                                addExpanded = false
-                            })
-                        }
+                preview?.let { res ->
+                    val label = if (res.stockOFabricacion == LensCatalogRules.STOCK) {
+                        "Serie estimada: stock · ${res.serie ?: "—"}ª (confirma con la refracción)"
+                    } else {
+                        "Serie estimada: fabricación (confirma con la refracción)"
                     }
+                    Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
                 }
             }
 
             OptoTextField(value = item.colorLente, onValueChange = { onUpdate(item.copy(colorLente = it)) }, label = "Color del Lente")
             OptoTextField(value = item.notasDiseno, onValueChange = { onUpdate(item.copy(notasDiseno = it)) }, label = "Notas de Diseño")
-
-            if (item.tratamientos.contains("Filtro Discromatopsia")) {
-                Text("Requiere evaluación previa: Ishihara + D-15 + prueba de filtro", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OptoDropdownMenuField(
-                    label = "Tipo de Filtro Discromatopsia",
-                    selected = item.filtroDiscromatopsiaTipo,
-                    options = listOf(
-                        "", "550 Rojo", "550 Rojo-Violeta", "550 Rojo-Marrón", "585 nm", "600 Rojo",
-                        "Amarillo 450 nm (tritan)", "Amarillo 500 nm (tritan)",
-                        "EnChroma Indoor", "EnChroma Outdoor",
-                        "Pilestone A: rojo-verde leve/moderado", "Pilestone B: rojo-verde fuerte", "Pilestone C: interior",
-                        "Pilestone D: protan (deficiencia roja)", "Pilestone E: tritan (azul-amarillo)",
-                    ),
-                ) { selected -> onUpdate(item.copy(filtroDiscromatopsiaTipo = selected)) }
-            }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text("Montura", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -156,27 +328,18 @@ fun LenteForm(
                         )
                     },
                     onClear = {
-                        onUpdate(
-                            item.copy(
-                                monturaId = "",
-                                descripcionMontura = "",
-                                tipoAro = "",
-                                materialMontura = "",
-                            ),
-                        )
+                        onUpdate(item.copy(monturaId = "", descripcionMontura = "", tipoAro = "", materialMontura = ""))
                     },
-                    onlyInStock = false,
-                    modifier = Modifier.fillMaxWidth(),
                 )
             }
 
-            OptoDropdownMenuField(label = "Tipo de Aro", selected = item.tipoAro, options = OpticalCatalog.TIPO_ARO.keys.toList()) {
-                onUpdate(item.copy(tipoAro = it))
+            if (item.tipoAro.isNotBlank() || item.origenMontura == "Paciente") {
+                OptoDropdownMenuField(
+                    label = "Tipo de aro",
+                    selected = item.tipoAro,
+                    options = OpticalCatalog.TIPO_ARO.keys.toList(),
+                ) { onUpdate(item.copy(tipoAro = it)) }
             }
-            OptoDropdownMenuField(label = "Material de la Montura", selected = item.materialMontura, options = OpticalCatalog.MATERIALES_MONTURA) {
-                onUpdate(item.copy(materialMontura = it))
-            }
-            OptoTextField(value = item.descripcionMontura, onValueChange = { onUpdate(item.copy(descripcionMontura = it)) }, label = "Descripción (Marca, Modelo)")
-        } // end else (!Lentes de Contacto)
+        }
     }
 }

@@ -29,11 +29,11 @@ S10. Out of scope: MarginFacts RPC reopen; web UI; historical re-snapshot; per-g
 
 ## Tasks
 
-- [x] T1 S3-S7 — LensCatalogRules + tests (WU1) — route: inline — commit: pending
-- [ ] T2 S6 — Schema matrices + CostosYGastos forms per serie (WU2) — route: inline — commit:
-- [ ] T3 S1,S6,S7 — CalcularCostoItemUseCase via rules (WU3) — route: inline — commit:
-- [ ] T4 S2,S9 — Wizard 4 steps + margen regalos (WU4) — route: inline — commit:
-- [ ] T5 S3,S4 — LenteForm cascade (WU5) — route: inline — commit:
+- [x] T1 S3-S7 — LensCatalogRules + tests (WU1) — route: inline — commit: `d2037261`
+- [x] T2 S6 — Schema matrices + sync keys (WU2) — route: inline — commit: pending
+- [x] T3 S1,S6,S7 — CalcularCostoItemUseCase via rules (WU3) — route: inline — commit: pending
+- [x] T4 S2,S9 — Wizard 4 steps + margen regalos (WU4) — route: inline — commit: pending
+- [x] T5 S3,S4 — LenteForm cascade (WU5) — route: inline — commit: pending
 - [ ] T6 S8 — Biselado bidirectional (WU6) — route: inline — commit:
 - [ ] T7 — Sync, GGA, JD, stacked PRs (WU7) — route: inline — commit:
 
@@ -41,3 +41,6 @@ S10. Out of scope: MarginFacts RPC reopen; web UI; historical re-snapshot; per-g
 
 L1. User authorized: `empezamos con ciclo gentle ai completo, si hay dudas consulta` (2026-10-17).
 L2. Feature doc created; branch `feat/costos-margen-catalogo` from main; starting T1/WU1.
+L3. T1 done: `d2037261` — LensCatalogRulesTest 15/15 green; GGA PASSED on commit.
+L4. User: `hazlo todo, si tienes que mejorar elo uxui hazlo` — authorized full remaining WUs + UX.
+L5. T2–T5 implemented: Room 59 + supabase keys; resolver wired; wizard 4 steps; LenteForm cascade; regalos in margen. WU6 biselado writeback still open.
