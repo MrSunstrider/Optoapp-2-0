@@ -105,7 +105,13 @@ open class OptoRepository(
     fun countEvaluacionesInRangeForOptica(start: LocalDate, end: LocalDate, opticaId: String) = pacienteRepo.countEvaluacionesInRangeForOptica(start, end, opticaId)
     suspend fun getEvaluacionById(id: String, opticaId: String) = pacienteRepo.getEvaluacionById(id, opticaId)
     suspend fun getLastEvaluacionByPacienteId(pacienteId: String, opticaId: String) = pacienteRepo.getLastEvaluacionByPacienteId(pacienteId, opticaId)
-    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) = pacienteRepo.deleteEvaluacion(evaluacion)
+    suspend fun deleteEvaluacion(evaluacion: EvaluacionClinica) {
+        withTransaction {
+            pacienteRepo.deleteEvaluacion(evaluacion)
+            syncStateTracker.markDeleted(evaluacion.opticaId, "evaluacion", evaluacion.id)
+        }
+        postSaveSyncScheduler.get().scheduleHistorialSync(evaluacion.opticaId)
+    }
     suspend fun insertEvaluacion(evaluacion: EvaluacionClinica) {
         val stamped = evaluacion.copy(updatedAt = Instant.now().toString())
         pacienteRepo.insertEvaluacion(stamped)

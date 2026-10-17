@@ -290,6 +290,47 @@ class OptoRepositoryFinanzasTest {
         coVerify(exactly = 0) { scheduler.scheduleFinanzasSync(any()) }
     }
 
+    private suspend fun seedEvaluacion(): EvaluacionClinica {
+        db.pacienteDao().insertPaciente(
+            Paciente(id = "pac_ev", nombreCompleto = "Paciente Eval", edad = 40, telefono = "1", fechaCreacion = testDate, opticaId = opticaId),
+        )
+        val eval = EvaluacionClinica(
+            id = "ev_del",
+            pacienteId = "pac_ev",
+            fecha = testDate,
+            opticaId = opticaId,
+        )
+        db.evaluacionDao().insertEvaluacion(eval)
+        return eval
+    }
+
+    @Test
+    fun deleteEvaluacion_removesRowRecordsTombstoneAndSchedulesHistorialSync() = runTest {
+        val eval = seedEvaluacion()
+
+        repo.deleteEvaluacion(eval)
+
+        assertNull(db.evaluacionDao().getEvaluacionById(eval.id, opticaId))
+        assertEquals(listOf("evaluacion" to eval.id), pendingDeletions())
+        coVerify(exactly = 1) { scheduler.scheduleHistorialSync(opticaId) }
+    }
+
+    @Test
+    fun deleteEvaluacion_failureAfterTombstoneWrite_rollsBackDeleteAndTombstoneAndSkipsSync() = runTest {
+        val eval = seedEvaluacion()
+        coEvery { syncStateTracker.markDeleted(opticaId, "evaluacion", eval.id) } coAnswers {
+            callOriginal()
+            throw IllegalStateException("tombstone failed")
+        }
+
+        val error = runCatching { repo.deleteEvaluacion(eval) }.exceptionOrNull()
+
+        assertEquals("tombstone failed", error?.message)
+        assertNotNull(db.evaluacionDao().getEvaluacionById(eval.id, opticaId))
+        assertEquals(emptyList<Pair<String, String>>(), pendingDeletions())
+        coVerify(exactly = 0) { scheduler.scheduleHistorialSync(any()) }
+    }
+
     private suspend fun pendingDeletions(): List<Pair<String, String>> =
         db.syncEntityStateDao().getPendingDeletions(opticaId).map { it.entityType to it.entityId }
 

@@ -100,8 +100,6 @@ class EvaluacionViewModel @Inject constructor(
             if (result is Resource.Success) {
                 result.data?.let { repoData ->
                     repository.deleteEvaluacion(repoData)
-                    val oid = sessionManager.opticaId.first()
-                    postSaveSyncScheduler.scheduleHistorialSync(oid)
                 }
                 onComplete()
             }

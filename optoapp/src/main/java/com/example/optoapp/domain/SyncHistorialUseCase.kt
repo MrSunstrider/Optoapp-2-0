@@ -9,7 +9,6 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.syncJson
 import com.example.optoapp.domain.sync.EntitySnapshotSerializer
 import com.example.optoapp.util.AppLogger
-import androidx.room.withTransaction
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CancellationException
@@ -37,6 +36,7 @@ open class SyncHistorialUseCase @Inject constructor(
         skipUpload: Boolean = false,
     ): Resource<HistorialSyncResult> = try {
         AppLogger.d(TAG, "Evaluaciones: inicio sync (opticaId=$opticaId, download=$downloadAfterUpload, skipUpload=$skipUpload)")
+        pushPendingEvaluacionDeletions(opticaId)
         val uploaded = if (skipUpload) 0 else uploadEvaluaciones(opticaId)
         val downloaded = if (downloadAfterUpload) downloadEvaluaciones(opticaId) else 0
         AppLogger.d(TAG, "Evaluaciones: fin OK (subidas=$uploaded, bajadas=$downloaded)")
@@ -49,6 +49,39 @@ open class SyncHistorialUseCase @Inject constructor(
     } catch (e: Exception) {
         AppLogger.e(TAG, "Error inesperado sincronizando evaluaciones: ${e.message}", e)
         Resource.Error("Error sincronizando historial clínico: ${e.localizedMessage}")
+    }
+
+    private suspend fun pushPendingEvaluacionDeletions(opticaId: String) {
+        val pending = try {
+            syncStateTracker.dao.getPendingDeletions(opticaId)
+                .filter { it.entityType == "evaluacion" }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error leyendo tombstones de evaluación: ${e.message}", e)
+            return
+        }
+        if (pending.isEmpty()) return
+
+        AppLogger.d(TAG, "Evaluaciones: propagando ${pending.size} eliminaciones a Supabase")
+        for (tombstone in pending) {
+            try {
+                supabase.postgrest[TABLE].delete {
+                    filter {
+                        eq("id", tombstone.entityId)
+                        eq("optica_id", opticaId)
+                    }
+                }
+                syncStateTracker.dao.clearEntityState(opticaId, "evaluacion", tombstone.entityId)
+                AppLogger.d(TAG, "Eliminada remota evaluación ${tombstone.entityId}")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: IOException) {
+                AppLogger.e(TAG, "Error en red eliminando evaluación ${tombstone.entityId}: ${e.message}", e)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Error inesperado eliminando evaluación ${tombstone.entityId}: ${e.message}", e)
+            }
+        }
     }
 
     private suspend fun uploadEvaluaciones(opticaId: String): Int {
@@ -160,7 +193,7 @@ open class SyncHistorialUseCase @Inject constructor(
             syncStateTracker.markError(opticaId, "upload_evaluaciones", "batch", e.message)
             throw e
         }
-        database.withTransaction {
+        repository.withTransaction {
             finalRows.forEach { ev ->
                 syncStateTracker.markSynced(opticaId, "evaluacion", ev.id)
             }
@@ -179,16 +212,17 @@ open class SyncHistorialUseCase @Inject constructor(
             emptySet()
         }
 
-        val remotos = supabase.postgrest[TABLE]
-            .select {
-                filter { eq("optica_id", opticaId) }
-            }
-            .decodeList<EvaluacionRemota>()
+        // Fail closed: unknown tombstones must not resurrect deleted evaluaciones.
+        val deletedIds = queryDeletedEvaluacionIdsWithRetry(opticaId) ?: return 0
+
+        val skipIds = conflictedIds + deletedIds
+
+        val remotos = fetchRemoteEvaluacionesForDownload(opticaId)
 
         if (remotos.isEmpty()) return 0
 
         remotos.forEach { remoto ->
-            if (remoto.id in conflictedIds) return@forEach
+            if (remoto.id in skipIds) return@forEach
             try {
                 val local = remoto.toEntity()
                 repository.withTransaction {
@@ -209,6 +243,38 @@ open class SyncHistorialUseCase @Inject constructor(
         AppLogger.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
         return remotos.size
     }
+
+    private suspend fun queryDeletedEvaluacionIdsWithRetry(opticaId: String): Set<String>? {
+        return try {
+            loadDeletedEvaluacionIds(opticaId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            try {
+                loadDeletedEvaluacionIds(opticaId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (second: Exception) {
+                AppLogger.e(TAG, "Error querying deletion IDs: ${second.message}", second)
+                syncStateTracker.markError(opticaId, "download_evaluaciones", "batch", second.message)
+                null
+            }
+        }
+    }
+
+    private suspend fun loadDeletedEvaluacionIds(opticaId: String): Set<String> =
+        syncStateTracker.dao.getPendingDeletions(opticaId)
+            .filter { it.entityType == "evaluacion" }
+            .map { it.entityId }
+            .toSet()
+
+    // Test seam — override in tests to return controlled data instead of hitting Supabase
+    internal open suspend fun fetchRemoteEvaluacionesForDownload(opticaId: String): List<EvaluacionRemota> =
+        supabase.postgrest[TABLE]
+            .select {
+                filter { eq("optica_id", opticaId) }
+            }
+            .decodeList()
 }
 
 internal fun buildUploadRows(
