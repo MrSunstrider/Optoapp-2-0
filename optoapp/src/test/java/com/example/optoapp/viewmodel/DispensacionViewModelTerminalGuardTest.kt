@@ -16,6 +16,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -87,12 +88,15 @@ class DispensacionViewModelTerminalGuardTest {
                 items = listOf(DispensacionItemUi(id = "i1", tipoLente = "Monofocal", monturaId = monturaId, origenMontura = "Tienda")),
             )
         }
-        var completed = false
-        viewModel.saveDispensacion("pac-1", dispId) { completed = true }
+        val completed = CompletableDeferred<Boolean>()
+        viewModel.saveDispensacion("pac-1", dispId) { completed.complete(true) }
         withContext(Dispatchers.Default) {
-            withTimeout(5_000) { viewModel.uiState.first { !it.isLoading } }
+            withTimeout(5_000) {
+                viewModel.uiState.first { !it.isLoading }
+                if (!completed.isCompleted) completed.complete(false)
+            }
         }
-        return completed
+        return completed.await()
     }
 
     @Test
