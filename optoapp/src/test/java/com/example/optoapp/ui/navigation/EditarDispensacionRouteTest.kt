@@ -33,8 +33,8 @@ class EditarDispensacionRouteTest {
     }
 
     @Test
-    fun `the cost section opens the products step where the section lives`() {
-        assertEquals(1, pasoInicialDispensacion(Route.EditarDispensacion.SECCION_COSTO))
+    fun `the cost section opens the costos step where the section lives`() {
+        assertEquals(3, pasoInicialDispensacion(Route.EditarDispensacion.SECCION_COSTO))
         assertEquals(0, pasoInicialDispensacion(null))
         assertEquals(0, pasoInicialDispensacion("otra"))
     }

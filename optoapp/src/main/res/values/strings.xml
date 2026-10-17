@@ -565,6 +565,8 @@
     <string name="disp_colapsar_cd">Colapsar</string>
     <string name="disp_expandir_cd">Expandir</string>
     <string name="disp_calcular_costos">Calcular costos desde evaluación</string>
+    <string name="disp_calcular_costos_producto">Calcular costos desde evaluación · %1$d</string>
+    <string name="disp_monto_contrato">Monto contrato: %1$s</string>
     <string name="disp_resumen_montura">Montura: %1$s</string>
     <string name="disp_sin_especificar">Sin especificar</string>
     <string name="ot_costo_titulo">Costo y margen</string>

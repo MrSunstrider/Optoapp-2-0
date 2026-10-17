@@ -31,7 +31,7 @@ S10. Out of scope: MarginFacts RPC reopen; web UI; historical re-snapshot; per-g
 
 - [x] T1 S3-S7 — LensCatalogRules + tests (WU1) — route: inline — commit: `d2037261`
 - [x] T2–T5 S1–S9 — schema+resolver+wizard4+LenteForm (WU2–5) — route: inline — commit: `a7691c85`
-- [x] T6 S8 — Biselado + OD/OI bidirectional OT→matriz (WU6) — route: inline — commit: pending
+- [x] T6 S8 — Biselado + OD/OI bidirectional OT→matriz (WU6) — route: inline — commit: `b4def2dd`
 - [ ] T7 — Sync, GGA, JD, stacked PRs (WU7) — route: inline — commit:
 
 ## Log
@@ -42,3 +42,4 @@ L3. T1 done: `d2037261` — LensCatalogRulesTest 15/15 green; GGA PASSED on comm
 L4. User: `hazlo todo, si tienes que mejorar elo uxui hazlo` — authorized full remaining WUs + UX.
 L5. T2–T5 done in `a7691c85` (GGA PASSED). WU6 biselado OT→matriz writeback + WU7 suite/JD/PR still open.
 L6. User: `biselado bidireccional esto tambien deberia hacerse con los costos de los lente OD y OI` — extended S8 to OD/OI; GuardarCostoLenteDesdeOtUseCase + UI wired; focused Guardar* + DispensacionViewModel* green.
+L7. T6 committed `b4def2dd` (GGA PASSED). User also asked JD on all work — launching Judgment Day on branch tip vs main.

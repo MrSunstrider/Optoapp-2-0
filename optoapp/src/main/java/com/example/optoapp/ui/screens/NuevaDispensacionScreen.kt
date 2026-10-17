@@ -469,7 +469,7 @@ private fun StepCostosMargen(
         color = MaterialTheme.colorScheme.primary,
     )
     Text(
-        "Monto contrato: ${MoneyFormatter.format(montoTotal ?: 0.0)}",
+        stringResource(R.string.disp_monto_contrato, MoneyFormatter.format(montoTotal ?: 0.0)),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -479,7 +479,7 @@ private fun StepCostosMargen(
             modifier = Modifier.fillMaxWidth(),
             enabled = editable,
         ) {
-            Text("${stringResource(R.string.disp_calcular_costos)} · ${index + 1}")
+            Text(stringResource(R.string.disp_calcular_costos_producto, index + 1))
         }
     }
     CostoMargenOtSection(
