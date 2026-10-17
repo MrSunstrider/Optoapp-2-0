@@ -212,23 +212,12 @@ open class SyncHistorialUseCase @Inject constructor(
             emptySet()
         }
 
-        val deletedIds = try {
-            syncStateTracker.dao.getPendingDeletions(opticaId)
-                .filter { it.entityType == "evaluacion" }
-                .map { it.entityId }
-                .toSet()
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error querying deletion IDs, proceeding without guard: ${e.message}", e)
-            emptySet()
-        }
+        // Fail closed: unknown tombstones must not resurrect deleted evaluaciones.
+        val deletedIds = queryDeletedEvaluacionIdsWithRetry(opticaId) ?: return 0
 
         val skipIds = conflictedIds + deletedIds
 
-        val remotos = supabase.postgrest[TABLE]
-            .select {
-                filter { eq("optica_id", opticaId) }
-            }
-            .decodeList<EvaluacionRemota>()
+        val remotos = fetchRemoteEvaluacionesForDownload(opticaId)
 
         if (remotos.isEmpty()) return 0
 
@@ -254,6 +243,38 @@ open class SyncHistorialUseCase @Inject constructor(
         AppLogger.d(TAG, "Descargadas ${remotos.size} evaluaciones desde Supabase.")
         return remotos.size
     }
+
+    private suspend fun queryDeletedEvaluacionIdsWithRetry(opticaId: String): Set<String>? {
+        return try {
+            loadDeletedEvaluacionIds(opticaId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            try {
+                loadDeletedEvaluacionIds(opticaId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (second: Exception) {
+                AppLogger.e(TAG, "Error querying deletion IDs: ${second.message}", second)
+                syncStateTracker.markError(opticaId, "download_evaluaciones", "batch", second.message)
+                null
+            }
+        }
+    }
+
+    private suspend fun loadDeletedEvaluacionIds(opticaId: String): Set<String> =
+        syncStateTracker.dao.getPendingDeletions(opticaId)
+            .filter { it.entityType == "evaluacion" }
+            .map { it.entityId }
+            .toSet()
+
+    // Test seam — override in tests to return controlled data instead of hitting Supabase
+    internal open suspend fun fetchRemoteEvaluacionesForDownload(opticaId: String): List<EvaluacionRemota> =
+        supabase.postgrest[TABLE]
+            .select {
+                filter { eq("optica_id", opticaId) }
+            }
+            .decodeList()
 }
 
 internal fun buildUploadRows(
