@@ -84,6 +84,8 @@ class DispensacionViewModelCreateSaveTest {
         mockk<AnularDispensacionUseCase>(relaxed = true),
         mockk<ReclamarDispensacionUseCase>(relaxed = true),
         mockk<CalcularCostoItemUseCase>(relaxed = true),
+        mockk(relaxed = true),  // guardarBiselado
+        mockk(relaxed = true),  // guardarCostoLente
         mockk(relaxed = true),
         mockk(relaxed = true),
         mockk(relaxed = true),

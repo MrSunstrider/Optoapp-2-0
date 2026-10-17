@@ -119,6 +119,9 @@ data class DispensacionItemUi(
     val notasDiseno: String = "",
     val filtroDiscromatopsiaTipo: String = "",
     val subTipoBifocal: String = "",
+    val altoIndice: String = "",
+    val curvaBase: String = "",
+    val forzarStockIgnorandoAstigmatismo: Boolean = false,
     val monturaId: String = "",
     val origenMontura: String = "",
     val tipoAro: String = "",
@@ -146,6 +149,8 @@ class DispensacionViewModel @Inject constructor(
     private val anularDispensacionUseCase: com.example.optoapp.domain.AnularDispensacionUseCase,
     private val reclamarDispensacionUseCase: ReclamarDispensacionUseCase,
     private val calcularCostoItem: CalcularCostoItemUseCase,
+    private val guardarBiseladoDesdeOt: com.example.optoapp.domain.GuardarBiseladoDesdeOtUseCase,
+    private val guardarCostoLenteDesdeOt: com.example.optoapp.domain.GuardarCostoLenteDesdeOtUseCase,
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
     private val resumenRecalcMarker: ResumenRecalcMarker,
     private val supabase: SupabaseClient,
@@ -314,6 +319,9 @@ class DispensacionViewModel @Inject constructor(
         altura = altura, materialLente = materialLente,
         tratamientos = tratamientos, colorLente = colorLente,
         notasDiseno = notasDiseno, filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo, subTipoBifocal = subTipoBifocal,
+        altoIndice = altoIndice.orEmpty(),
+        curvaBase = curvaBase.orEmpty(),
+        forzarStockIgnorandoAstigmatismo = forzarStockIgnorandoAstigmatismo,
         monturaId = monturaId, origenMontura = origenMontura,
         tipoAro = tipoAro, materialMontura = materialMontura,
         descripcionMontura = descripcionMontura, tipoMontura = tipoMontura,
@@ -782,6 +790,75 @@ class DispensacionViewModel @Inject constructor(
         updateItem(itemIndex, item.copy(costoOverrides = item.costoOverrides + (componente to valor)))
     }
 
+    fun persistBiseladoToMatrix(itemIndex: Int) {
+        viewModelScope.launch {
+            val s = _uiState.value
+            val itemUi = s.items.getOrNull(itemIndex) ?: return@launch
+            val costo = itemUi.costoOverrides[ComponenteCosto.BISELADO]
+                ?: itemUi.costoRealBiselado
+                ?: return@launch
+            val opticaId = sessionManager.opticaId.first()
+            val receta = recetaDe(s.evaluacionId, opticaId)
+            applyMatrizResult(
+                guardarBiseladoDesdeOt(
+                    opticaId = opticaId,
+                    item = itemUi.toEntity(s.generatedId, opticaId),
+                    costoPorPar = costo,
+                    receta = receta,
+                    hoy = s.fecha,
+                ),
+                opticaId,
+                okMessage = "Biselado guardado en Costos y gastos",
+            )
+        }
+    }
+
+    fun persistCostoLenteToMatrix(itemIndex: Int, ojo: ComponenteCosto) {
+        if (ojo != ComponenteCosto.OD && ojo != ComponenteCosto.OI) return
+        viewModelScope.launch {
+            val s = _uiState.value
+            val itemUi = s.items.getOrNull(itemIndex) ?: return@launch
+            val costo = when (ojo) {
+                ComponenteCosto.OD -> itemUi.costoOverrides[ComponenteCosto.OD] ?: itemUi.costoRealOd
+                ComponenteCosto.OI -> itemUi.costoOverrides[ComponenteCosto.OI] ?: itemUi.costoRealOi
+                else -> null
+            } ?: return@launch
+            val opticaId = sessionManager.opticaId.first()
+            val receta = recetaDe(s.evaluacionId, opticaId)
+            val label = if (ojo == ComponenteCosto.OD) "OD" else "OI"
+            applyMatrizResult(
+                guardarCostoLenteDesdeOt(
+                    opticaId = opticaId,
+                    item = itemUi.toEntity(s.generatedId, opticaId),
+                    ojo = ojo,
+                    costoUnitario = costo,
+                    receta = receta,
+                    hoy = s.fecha,
+                ),
+                opticaId,
+                okMessage = "Costo lente $label guardado en Costos y gastos",
+            )
+        }
+    }
+
+    private fun applyMatrizResult(
+        result: com.example.optoapp.domain.ResultadoCostoMatriz,
+        opticaId: String,
+        okMessage: String,
+    ) {
+        when (result) {
+            is com.example.optoapp.domain.ResultadoCostoMatriz.Creado,
+            is com.example.optoapp.domain.ResultadoCostoMatriz.Versionado,
+            -> {
+                _uiState.update { it.copy(infoMessage = okMessage, error = null) }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            }
+            is com.example.optoapp.domain.ResultadoCostoMatriz.Rechazado -> {
+                _uiState.update { it.copy(error = result.motivo) }
+            }
+        }
+    }
+
     // Re-runs the preview because clearing must show the same fallback (lookup or persisted snapshot) the save applies.
     fun clearCostoOverride(itemIndex: Int, componente: ComponenteCosto) {
         val item = _uiState.value.items.getOrNull(itemIndex) ?: return
@@ -872,6 +949,7 @@ class DispensacionViewModel @Inject constructor(
             distanciaLente = if (tipoLente == "Monofocal") distanciaLente else "",
             altura = if (requiereAltura) altura.trim() else "",
             subTipoBifocal = if (tipoLente == "Bifocal") subTipoBifocal else "",
+            filtroDiscromatopsiaTipo = filtroDiscromatopsiaTipo,
             notasDiseno = notasDiseno,
             monturaId = monturaId,
             origenMontura = origenMontura,
@@ -880,6 +958,15 @@ class DispensacionViewModel @Inject constructor(
             descripcionMontura = descripcionMontura,
             tipoMontura = tipoMontura,
             opticaId = opticaId,
+            altoIndice = altoIndice.takeIf { it.isNotBlank() },
+            curvaBase = curvaBase.takeIf { it.isNotBlank() },
+            forzarStockIgnorandoAstigmatismo = forzarStockIgnorandoAstigmatismo,
+            costoRealOd = costoRealOd,
+            costoRealOi = costoRealOi,
+            costoRealMontura = costoRealMontura,
+            costoRealBiselado = costoRealBiselado,
+            costoRealLc = costoRealLc,
+            costoOrigen = costoOrigen,
         )
     }
 

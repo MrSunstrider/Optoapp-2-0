@@ -59,6 +59,8 @@ class DispensacionViewModelAnulacionTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
         mockk(relaxed = true))
         testDispatcher.scheduler.advanceUntilIdle()
     }

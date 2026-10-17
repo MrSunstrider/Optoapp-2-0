@@ -41,7 +41,9 @@ class CalcularCostoItemUseCaseTest {
         costoBiseladoDao = mockk()
         monturaDao = mockk()
         costoLcDao = mockk()
-        coEvery { costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any()) } returns null
+        coEvery {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns null
         coEvery { costoBiseladoDao.lookupVigente(any(), any(), any(), any(), any(), any()) } returns emptyList()
         coEvery { monturaDao.getMonturaByIdForOptica(any(), any()) } returns null
         coEvery { costoLcDao.lookupVigente(any(), any(), any(), any(), any()) } returns emptyList()
@@ -94,6 +96,7 @@ class CalcularCostoItemUseCaseTest {
         coEvery {
             costoProductoDao.lookupVigente(
                 opticaId, "Resina", "Monofocal", stockOFabricacion, "Antireflex", serie, fechaIso,
+                null, null, null,
             )
         } returns lente(costo)
     }
@@ -139,7 +142,9 @@ class CalcularCostoItemUseCaseTest {
         val result = useCase(opticaId, item(origenMontura = "Tienda", monturaId = "m1"), null, fecha)
 
         assertEquals(mapOf(MONTURA to 80.0), result.componentes)
-        coVerify(exactly = 0) { costoProductoDao.lookupVigente(any(), any(), "montura", any(), any(), any(), any()) }
+        coVerify(exactly = 0) {
+            costoProductoDao.lookupVigente(any(), any(), "montura", any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -249,7 +254,9 @@ class CalcularCostoItemUseCaseTest {
         val result = useCase(opticaId, lcItem(), recetaSerie2.copy(lcLaboratorio = "lab1"), fecha)
 
         assertEquals(mapOf(LC to 45.0), result.componentes)
-        coVerify(exactly = 0) { costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
@@ -291,5 +298,61 @@ class CalcularCostoItemUseCaseTest {
         val result = useCase(opticaId, lcItem(material = ""), recetaSerie2.copy(lcMaterial = "Hydrogel"), fecha)
 
         assertEquals(mapOf(LC to 45.0), result.componentes)
+    }
+
+    @Test
+    fun manualIrLensLooksUpWithItemAltoIndice() = runTest {
+        val fila = CostoProductoEntity(
+            id = "ir1",
+            opticaId = opticaId,
+            material = "Resina antireflejo alto indice",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "fabricacion",
+            tratamiento = null,
+            serie = null,
+            indiceRefraccion = "1.7",
+            costoUnitario = 55.0,
+            vigenteDesde = "2026-01-01",
+        )
+        coEvery {
+            costoProductoDao.lookupVigente(
+                opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",
+                null, null, fechaIso, null, "1.7", null,
+            )
+        } returns fila
+
+        val result = useCase(
+            opticaId,
+            item(tratamientos = emptyList(), altoIndice = "1.7").copy(materialLente = "Resina antireflejo alto indice"),
+            RecetaCosto(odEsf = -2.0, odCil = null, oiEsf = null, oiCil = null),
+            fecha,
+        )
+
+        assertEquals(mapOf(OD to 55.0), result.componentes)
+    }
+
+    @Test
+    fun manualIrLensWithoutAltoIndiceIsFaltante() = runTest {
+        coEvery {
+            costoProductoDao.lookupVigente(
+                opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",
+                null, null, fechaIso, null, null, null,
+            )
+        } returns null
+
+        val result = useCase(
+            opticaId,
+            item(tratamientos = emptyList()).copy(materialLente = "Resina antireflejo alto indice"),
+            RecetaCosto(odEsf = -2.0, odCil = null, oiEsf = null, oiCil = null),
+            fecha,
+        )
+
+        assertEquals(mapOf(OD to null), result.componentes)
+        coVerify {
+            costoProductoDao.lookupVigente(
+                opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",
+                null, null, fechaIso, null, null, null,
+            )
+        }
     }
 }

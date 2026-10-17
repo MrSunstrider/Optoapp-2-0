@@ -103,7 +103,9 @@ class DispensacionViewModelCostCaptureTest {
         mockk<AnularDispensacionUseCase>(relaxed = true),
         mockk<ReclamarDispensacionUseCase>(relaxed = true),
         calcularCostoItem,
-        mockk(relaxed = true),
+        mockk(relaxed = true),  // guardarBiselado
+        mockk(relaxed = true),  // guardarCostoLente
+        mockk(relaxed = true),  // eliminar
         ResumenRecalcMarker(tracker),
         mockk(relaxed = true))
 

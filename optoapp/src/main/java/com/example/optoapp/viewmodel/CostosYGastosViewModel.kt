@@ -382,6 +382,7 @@ class CostosYGastosViewModel @Inject constructor(
             costoProductoDao.getHistorial(
                 costo.opticaId, costo.material, costo.tipoLente, costo.stockOFabricacion,
                 costo.tratamiento, costo.serie, costo.laboratorioId,
+                costo.subtipoBifocal, costo.indiceRefraccion, costo.curvaBase,
             ).map { VersionPrecio(it.id, it.costoUnitario, it.vigenteDesde, it.vigenteHasta) }
         }
     }
@@ -812,7 +813,10 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    val materialesOpticos = OpticalCatalog.MATERIALES
+    fun materialesOpticos(tipoLente: String = _uiState.value.costoTipoLente): List<String> =
+        com.example.optoapp.domain.costo.LensCatalogRules.familias(
+            tipoLente.ifBlank { com.example.optoapp.domain.costo.LensProductCatalog.TIPO_MONOFOCAL },
+        ).ifEmpty { OpticalCatalog.MATERIALES }
     val tiposLente = OpticalCatalog.TIPO_LENTE.filter { it != "Lentes de Contacto" }
     val tratamientos = OpticalCatalog.TRATAMIENTOS
 

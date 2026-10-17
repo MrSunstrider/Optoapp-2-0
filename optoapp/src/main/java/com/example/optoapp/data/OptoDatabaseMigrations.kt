@@ -1560,6 +1560,17 @@ val MIGRATION_57_58 = object : Migration(57, 58) {
     }
 }
 
+val MIGRATION_58_59 = object : Migration(58, 59) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE costos_productos ADD COLUMN subtipo_bifocal TEXT")
+        db.execSQL("ALTER TABLE costos_productos ADD COLUMN indice_refraccion TEXT")
+        db.execSQL("ALTER TABLE costos_productos ADD COLUMN curva_base TEXT")
+        db.execSQL(
+            "ALTER TABLE dispensacion_items ADD COLUMN forzar_stock_astigmatismo INTEGER NOT NULL DEFAULT 0",
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """

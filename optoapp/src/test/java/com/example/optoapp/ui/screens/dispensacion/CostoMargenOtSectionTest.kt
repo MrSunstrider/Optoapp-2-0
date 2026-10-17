@@ -117,4 +117,17 @@ class CostoMargenOtSectionTest {
         assertEquals("S/ 155.00", modelo.margenTexto)
         assertEquals("50.0 %", modelo.margenPctTexto)
     }
+
+    @Test
+    fun `regalos increase costoTotal and decrease margen`() {
+        val sinRegalos = CostoMargenOtModel.from(200.0, listOf(capturado))
+        val conRegalos = CostoMargenOtModel.from(200.0, listOf(capturado), costoRegalos = 20.0)
+
+        assertEquals(140.0, sinRegalos.costoTotal, 0.001)
+        assertEquals(60.0, sinRegalos.margen, 0.001)
+        assertEquals(160.0, conRegalos.costoTotal, 0.001)
+        assertEquals(40.0, conRegalos.margen, 0.001)
+        assertEquals(20.0, conRegalos.costoRegalos, 0.001)
+        assertEquals("S/ 40.00", conRegalos.margenTexto)
+    }
 }
