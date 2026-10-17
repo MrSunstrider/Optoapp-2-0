@@ -77,7 +77,9 @@ class DispensacionViewModelDeleteTest {
         calcularMontoPagadoUseCase,
         mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
         mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true),
-        mockk(relaxed = true),
+        mockk(relaxed = true),  // calcularCostoItem
+        mockk(relaxed = true),  // guardarBiselado
+        mockk(relaxed = true),  // guardarCostoLente
         eliminar,
         mockk(relaxed = true),
         mockk(relaxed = true)).also { testDispatcher.scheduler.advanceUntilIdle() }

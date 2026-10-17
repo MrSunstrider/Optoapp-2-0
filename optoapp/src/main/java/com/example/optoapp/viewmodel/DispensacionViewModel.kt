@@ -149,6 +149,8 @@ class DispensacionViewModel @Inject constructor(
     private val anularDispensacionUseCase: com.example.optoapp.domain.AnularDispensacionUseCase,
     private val reclamarDispensacionUseCase: ReclamarDispensacionUseCase,
     private val calcularCostoItem: CalcularCostoItemUseCase,
+    private val guardarBiseladoDesdeOt: com.example.optoapp.domain.GuardarBiseladoDesdeOtUseCase,
+    private val guardarCostoLenteDesdeOt: com.example.optoapp.domain.GuardarCostoLenteDesdeOtUseCase,
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
     private val resumenRecalcMarker: ResumenRecalcMarker,
     private val supabase: SupabaseClient,
@@ -786,6 +788,75 @@ class DispensacionViewModel @Inject constructor(
     fun setCostoOverride(itemIndex: Int, componente: ComponenteCosto, valor: Double) {
         val item = _uiState.value.items.getOrNull(itemIndex) ?: return
         updateItem(itemIndex, item.copy(costoOverrides = item.costoOverrides + (componente to valor)))
+    }
+
+    fun persistBiseladoToMatrix(itemIndex: Int) {
+        viewModelScope.launch {
+            val s = _uiState.value
+            val itemUi = s.items.getOrNull(itemIndex) ?: return@launch
+            val costo = itemUi.costoOverrides[ComponenteCosto.BISELADO]
+                ?: itemUi.costoRealBiselado
+                ?: return@launch
+            val opticaId = sessionManager.opticaId.first()
+            val receta = recetaDe(s.evaluacionId, opticaId)
+            applyMatrizResult(
+                guardarBiseladoDesdeOt(
+                    opticaId = opticaId,
+                    item = itemUi.toEntity(s.generatedId, opticaId),
+                    costoPorPar = costo,
+                    receta = receta,
+                    hoy = s.fecha,
+                ),
+                opticaId,
+                okMessage = "Biselado guardado en Costos y gastos",
+            )
+        }
+    }
+
+    fun persistCostoLenteToMatrix(itemIndex: Int, ojo: ComponenteCosto) {
+        if (ojo != ComponenteCosto.OD && ojo != ComponenteCosto.OI) return
+        viewModelScope.launch {
+            val s = _uiState.value
+            val itemUi = s.items.getOrNull(itemIndex) ?: return@launch
+            val costo = when (ojo) {
+                ComponenteCosto.OD -> itemUi.costoOverrides[ComponenteCosto.OD] ?: itemUi.costoRealOd
+                ComponenteCosto.OI -> itemUi.costoOverrides[ComponenteCosto.OI] ?: itemUi.costoRealOi
+                else -> null
+            } ?: return@launch
+            val opticaId = sessionManager.opticaId.first()
+            val receta = recetaDe(s.evaluacionId, opticaId)
+            val label = if (ojo == ComponenteCosto.OD) "OD" else "OI"
+            applyMatrizResult(
+                guardarCostoLenteDesdeOt(
+                    opticaId = opticaId,
+                    item = itemUi.toEntity(s.generatedId, opticaId),
+                    ojo = ojo,
+                    costoUnitario = costo,
+                    receta = receta,
+                    hoy = s.fecha,
+                ),
+                opticaId,
+                okMessage = "Costo lente $label guardado en Costos y gastos",
+            )
+        }
+    }
+
+    private fun applyMatrizResult(
+        result: com.example.optoapp.domain.ResultadoCostoMatriz,
+        opticaId: String,
+        okMessage: String,
+    ) {
+        when (result) {
+            is com.example.optoapp.domain.ResultadoCostoMatriz.Creado,
+            is com.example.optoapp.domain.ResultadoCostoMatriz.Versionado,
+            -> {
+                _uiState.update { it.copy(infoMessage = okMessage, error = null) }
+                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            }
+            is com.example.optoapp.domain.ResultadoCostoMatriz.Rechazado -> {
+                _uiState.update { it.copy(error = result.motivo) }
+            }
+        }
     }
 
     // Re-runs the preview because clearing must show the same fallback (lookup or persisted snapshot) the save applies.

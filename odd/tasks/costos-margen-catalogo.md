@@ -21,7 +21,7 @@ S6. User (verbatim): `olvide agregar que otra variable es la serie del lente, lo
 
 S7. User: alto indice / IR manual costs (1.6/1.7 resina; 1.7/1.7 rose/1.8 cristal); Solar needs curva base 4-6-8; discromatopsia requires tipo when selected.
 
-S8. User: biselado costs variable; enter manually; save to CostosYGastos biselado from OT paso 4 or from CostosYGastos UI.
+S8. User: biselado costs variable; enter manually; save to CostosYGastos biselado from OT paso 4 or from CostosYGastos UI. User (verbatim): `biselado bidireccional esto tambien deberia hacerse con los costos de los lente OD y OI` — same OT→matriz writeback for OD/OI into costos_productos.
 
 S9. Regalos: include in OT margen (Σ cantidad×costoUnitario); edit in InformacionFinanciera; cost at registration not physical delivery.
 
@@ -30,11 +30,8 @@ S10. Out of scope: MarginFacts RPC reopen; web UI; historical re-snapshot; per-g
 ## Tasks
 
 - [x] T1 S3-S7 — LensCatalogRules + tests (WU1) — route: inline — commit: `d2037261`
-- [x] T2 S6 — Schema matrices + sync keys (WU2) — route: inline — commit: pending
-- [x] T3 S1,S6,S7 — CalcularCostoItemUseCase via rules (WU3) — route: inline — commit: pending
-- [x] T4 S2,S9 — Wizard 4 steps + margen regalos (WU4) — route: inline — commit: pending
-- [x] T5 S3,S4 — LenteForm cascade (WU5) — route: inline — commit: pending
-- [ ] T6 S8 — Biselado bidirectional (WU6) — route: inline — commit:
+- [x] T2–T5 S1–S9 — schema+resolver+wizard4+LenteForm (WU2–5) — route: inline — commit: `a7691c85`
+- [x] T6 S8 — Biselado + OD/OI bidirectional OT→matriz (WU6) — route: inline — commit: pending
 - [ ] T7 — Sync, GGA, JD, stacked PRs (WU7) — route: inline — commit:
 
 ## Log
@@ -43,4 +40,5 @@ L1. User authorized: `empezamos con ciclo gentle ai completo, si hay dudas consu
 L2. Feature doc created; branch `feat/costos-margen-catalogo` from main; starting T1/WU1.
 L3. T1 done: `d2037261` — LensCatalogRulesTest 15/15 green; GGA PASSED on commit.
 L4. User: `hazlo todo, si tienes que mejorar elo uxui hazlo` — authorized full remaining WUs + UX.
-L5. T2–T5 implemented: Room 59 + supabase keys; resolver wired; wizard 4 steps; LenteForm cascade; regalos in margen. WU6 biselado writeback still open.
+L5. T2–T5 done in `a7691c85` (GGA PASSED). WU6 biselado OT→matriz writeback + WU7 suite/JD/PR still open.
+L6. User: `biselado bidireccional esto tambien deberia hacerse con los costos de los lente OD y OI` — extended S8 to OD/OI; GuardarCostoLenteDesdeOtUseCase + UI wired; focused Guardar* + DispensacionViewModel* green.

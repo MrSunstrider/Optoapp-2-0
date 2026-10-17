@@ -537,6 +537,9 @@
     <string name="disp_paso_gestion">Gestión</string>
     <string name="disp_paso_costos_margen">Costos y margen</string>
     <string name="ot_costo_regalos">Regalos</string>
+    <string name="ot_costo_guardar_biselado_matriz">Guardar biselado en matriz de costos</string>
+    <string name="ot_costo_guardar_od_matriz">Guardar OD en matriz de costos</string>
+    <string name="ot_costo_guardar_oi_matriz">Guardar OI en matriz de costos</string>
     <string name="disp_prisma_valor_base">%1$sΔ base %2$s</string>
     <string name="disp_prisma_valor">%1$sΔ</string>
     <string name="disp_prisma_vacio">—</string>

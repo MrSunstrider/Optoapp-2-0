@@ -490,6 +490,8 @@ private fun StepCostosMargen(
         onRestablecer = viewModel::clearCostoOverride,
         editable = editable,
         modifier = Modifier.bringIntoViewRequester(seccionCosto),
+        onGuardarBiseladoMatriz = if (editable) viewModel::persistBiseladoToMatrix else null,
+        onGuardarCostoLenteMatriz = if (editable) viewModel::persistCostoLenteToMatrix else null,
     )
 }
 

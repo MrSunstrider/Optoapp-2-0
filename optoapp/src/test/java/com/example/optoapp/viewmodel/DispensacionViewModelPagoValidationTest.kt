@@ -78,9 +78,7 @@ class DispensacionViewModelPagoValidationTest {
             mockk<CalcularMontoPagadoUseCase>(relaxed = true),
             mockk<AnularDispensacionUseCase>(relaxed = true),
             mockk<ReclamarDispensacionUseCase>(relaxed = true),
-            mockk<CalcularCostoItemUseCase>(relaxed = true),
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            mockk<CalcularCostoItemUseCase>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true))
     }
 

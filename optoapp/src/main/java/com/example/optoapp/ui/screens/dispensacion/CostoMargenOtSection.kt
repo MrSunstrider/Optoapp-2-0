@@ -146,6 +146,8 @@ fun CostoMargenOtSection(
     onRestablecer: (itemIndex: Int, componente: ComponenteCosto) -> Unit,
     editable: Boolean,
     modifier: Modifier = Modifier,
+    onGuardarBiseladoMatriz: ((itemIndex: Int) -> Unit)? = null,
+    onGuardarCostoLenteMatriz: ((itemIndex: Int, ComponenteCosto) -> Unit)? = null,
 ) {
     var edicion by remember { mutableStateOf<Pair<Int, FilaCostoOt?>?>(null) }
     var componenteNuevo by remember { mutableStateOf<ComponenteCosto?>(null) }
@@ -165,6 +167,26 @@ fun CostoMargenOtSection(
                     },
                     onRestablecer = { componente -> onRestablecer(index, componente) },
                 )
+                if (editable && onGuardarCostoLenteMatriz != null) {
+                    val od = item.filas.find { it.componente == ComponenteCosto.OD }
+                    val oi = item.filas.find { it.componente == ComponenteCosto.OI }
+                    if (od != null && od.valor > 0.0) {
+                        TextButton(onClick = { onGuardarCostoLenteMatriz(index, ComponenteCosto.OD) }) {
+                            Text(stringResource(R.string.ot_costo_guardar_od_matriz))
+                        }
+                    }
+                    if (oi != null && oi.valor > 0.0) {
+                        TextButton(onClick = { onGuardarCostoLenteMatriz(index, ComponenteCosto.OI) }) {
+                            Text(stringResource(R.string.ot_costo_guardar_oi_matriz))
+                        }
+                    }
+                }
+                val biselado = item.filas.find { it.componente == ComponenteCosto.BISELADO }
+                if (editable && onGuardarBiseladoMatriz != null && biselado != null && biselado.valor > 0.0) {
+                    TextButton(onClick = { onGuardarBiseladoMatriz(index) }) {
+                        Text(stringResource(R.string.ot_costo_guardar_biselado_matriz))
+                    }
+                }
                 HorizontalDivider()
             }
             if (modelo.costoRegalos > 0.0) {

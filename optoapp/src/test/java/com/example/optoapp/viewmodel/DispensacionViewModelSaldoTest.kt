@@ -76,7 +76,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true),
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true))
         advanceUntilIdle()
 
@@ -95,7 +95,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true),
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true))
         advanceUntilIdle()
 
@@ -114,7 +114,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true),
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true))
         advanceUntilIdle()
 
@@ -133,7 +133,7 @@ class DispensacionViewModelSaldoTest {
 
         val viewModel = DispensacionViewModel(
             repository, sessionManager, postSaveSyncScheduler, stockHelper,
-            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true),
+            calcularMontoPagadoUseCase, mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true), mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true), calcularCostoItem, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
         mockk(relaxed = true))
         advanceUntilIdle()
 
