@@ -108,7 +108,6 @@ class CalcularCostoItemUseCase @Inject constructor(
         fecha: String,
     ): Double? {
         val resolution = resolveForEye(item, ojo, adicion)
-        if (resolution.requiresManualIrCost) return null
         return costoProductoDao.lookupVigente(
             opticaId = opticaId,
             material = resolution.matrixFamilia,
@@ -119,6 +118,7 @@ class CalcularCostoItemUseCase @Inject constructor(
             fecha = fecha,
             subtipoBifocal = item.subTipoBifocal.takeIf { it.isNotBlank() },
             // altoIndice on the item is also used for biselado; only matrix IR rows need it here.
+            // Missing IR keeps the lookup key null → faltante when no row matches.
             indiceRefraccion = if (resolution.requiresManualIrCost) {
                 item.altoIndice?.takeIf { it.isNotBlank() }
             } else {

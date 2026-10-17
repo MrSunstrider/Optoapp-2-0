@@ -38,6 +38,7 @@ import com.example.optoapp.domain.costo.LensCatalogRules
 import com.example.optoapp.domain.costo.LensCatalogSelection
 import com.example.optoapp.domain.costo.LensProductCatalog
 import com.example.optoapp.domain.costo.LensTreatments
+import com.example.optoapp.domain.costo.StockPolicy
 import com.example.optoapp.ui.components.MonturaSearchField
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
@@ -79,6 +80,16 @@ fun LenteForm(
             item.subTipoBifocal.takeIf { it.isNotBlank() },
         )
     }
+    val stockPolicy = remember(item.tipoLente, item.materialLente, item.distanciaLente, item.subTipoBifocal) {
+        LensProductCatalog.findFamily(
+            item.tipoLente,
+            item.materialLente,
+            item.distanciaLente.takeIf { it.isNotBlank() },
+            item.subTipoBifocal.takeIf { it.isNotBlank() },
+        )?.stockPolicy
+    }
+    val puedeForzarStock = stockPolicy == StockPolicy.BIFOCAL_FLAPTOP_RESINA ||
+        stockPolicy == StockPolicy.BIFOCAL_PLUS_WINDOW
     val preview = remember(item) {
         if (item.tipoLente.isBlank() || item.materialLente.isBlank()) {
             null
@@ -272,7 +283,7 @@ fun LenteForm(
                     )
                 }
 
-                if (item.tipoLente in setOf(LensProductCatalog.TIPO_BIFOCAL, LensProductCatalog.TIPO_MULTIFOCAL)) {
+                if (puedeForzarStock) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

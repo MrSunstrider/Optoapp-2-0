@@ -299,4 +299,60 @@ class CalcularCostoItemUseCaseTest {
 
         assertEquals(mapOf(LC to 45.0), result.componentes)
     }
+
+    @Test
+    fun manualIrLensLooksUpWithItemAltoIndice() = runTest {
+        val fila = CostoProductoEntity(
+            id = "ir1",
+            opticaId = opticaId,
+            material = "Resina antireflejo alto indice",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "fabricacion",
+            tratamiento = null,
+            serie = null,
+            indiceRefraccion = "1.7",
+            costoUnitario = 55.0,
+            vigenteDesde = "2026-01-01",
+        )
+        coEvery {
+            costoProductoDao.lookupVigente(
+                opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",
+                null, null, fechaIso, null, "1.7", null,
+            )
+        } returns fila
+
+        val result = useCase(
+            opticaId,
+            item(tratamientos = emptyList(), altoIndice = "1.7").copy(materialLente = "Resina antireflejo alto indice"),
+            RecetaCosto(odEsf = -2.0, odCil = null, oiEsf = null, oiCil = null),
+            fecha,
+        )
+
+        assertEquals(mapOf(OD to 55.0), result.componentes)
+    }
+
+    @Test
+    fun manualIrLensWithoutAltoIndiceIsFaltante() = runTest {
+        coEvery {
+            costoProductoDao.lookupVigente(
+                opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",
+                null, null, fechaIso, null, null, null,
+            )
+        } returns null
+
+        val result = useCase(
+            opticaId,
+            item(tratamientos = emptyList()).copy(materialLente = "Resina antireflejo alto indice"),
+            RecetaCosto(odEsf = -2.0, odCil = null, oiEsf = null, oiCil = null),
+            fecha,
+        )
+
+        assertEquals(mapOf(OD to null), result.componentes)
+        coVerify {
+            costoProductoDao.lookupVigente(
+                opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",
+                null, null, fechaIso, null, null, null,
+            )
+        }
+    }
 }

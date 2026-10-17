@@ -382,6 +382,7 @@ class CostosYGastosViewModel @Inject constructor(
             costoProductoDao.getHistorial(
                 costo.opticaId, costo.material, costo.tipoLente, costo.stockOFabricacion,
                 costo.tratamiento, costo.serie, costo.laboratorioId,
+                costo.subtipoBifocal, costo.indiceRefraccion, costo.curvaBase,
             ).map { VersionPrecio(it.id, it.costoUnitario, it.vigenteDesde, it.vigenteHasta) }
         }
     }

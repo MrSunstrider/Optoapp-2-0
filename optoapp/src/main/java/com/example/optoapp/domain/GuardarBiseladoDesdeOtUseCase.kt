@@ -34,30 +34,38 @@ class GuardarBiseladoDesdeOtUseCase @Inject constructor(
         if (costoPorPar < 0.0) return ResultadoCostoMatriz.Rechazado("El costo no puede ser negativo")
         if (item.tipoAro.isBlank()) return ResultadoCostoMatriz.Rechazado("Falta el tipo de aro")
 
-        val ojo = listOfNotNull(
+        // Same dual-eye aggregation as CalcularCostoItemUseCase.costoBiselado: any-eye fabricacion,
+        // otherwise the higher serie of both eyes — so writeback keys match lookup keys.
+        val ojos = listOfNotNull(
             receta?.odEsf?.let { LensRecetaInput(it, receta.odCil, receta.adicion) },
             receta?.oiEsf?.let { LensRecetaInput(it, receta.oiCil, receta.adicion) },
-        ).firstOrNull() ?: LensRecetaInput(esfera = 0.0, cilindro = 0.0, adicion = receta?.adicion)
+        ).ifEmpty {
+            listOf(LensRecetaInput(esfera = 0.0, cilindro = 0.0, adicion = receta?.adicion))
+        }
 
-        val resolution = LensCatalogRules.resolve(
-            LensCatalogSelection(
-                tipoLente = item.tipoLente,
-                distancia = item.distanciaLente.takeIf { it.isNotBlank() },
-                subTipoBifocal = item.subTipoBifocal.takeIf { it.isNotBlank() },
-                familia = item.materialLente,
-                tratamientos = item.tratamientos,
-                discromatopsiaTipo = item.filtroDiscromatopsiaTipo.takeIf { it.isNotBlank() },
-                curvaBase = item.curvaBase?.takeIf { it.isNotBlank() },
-                indiceRefraccion = item.altoIndice?.takeIf { it.isNotBlank() },
-                forzarStockIgnorandoAstigmatismo = item.forzarStockIgnorandoAstigmatismo,
-            ),
-            ojo,
+        val selection = LensCatalogSelection(
+            tipoLente = item.tipoLente,
+            distancia = item.distanciaLente.takeIf { it.isNotBlank() },
+            subTipoBifocal = item.subTipoBifocal.takeIf { it.isNotBlank() },
+            familia = item.materialLente,
+            tratamientos = item.tratamientos,
+            discromatopsiaTipo = item.filtroDiscromatopsiaTipo.takeIf { it.isNotBlank() },
+            curvaBase = item.curvaBase?.takeIf { it.isNotBlank() },
+            indiceRefraccion = item.altoIndice?.takeIf { it.isNotBlank() },
+            forzarStockIgnorandoAstigmatismo = item.forzarStockIgnorandoAstigmatismo,
         )
+        val resolutions = ojos.map { LensCatalogRules.resolve(selection, it) }
+        val fabricacion = resolutions.any { it.stockOFabricacion == LensCatalogRules.FABRICACION }
+        val stockFab = if (fabricacion) LensCatalogRules.FABRICACION else LensCatalogRules.STOCK
+        val serie = if (fabricacion) {
+            null
+        } else {
+            resolutions.mapNotNull { it.serie }.maxOrNull()
+                ?: LensCatalogRules.seriePorCilindro(null)
+        }
 
         val material = CalcularCostoItemUseCase.biseladoMaterialKey(item.materialLente)
         val tipoAro = CalcularCostoItemUseCase.tipoAroMatriz(item.tipoAro)
-        val stockFab = resolution.stockOFabricacion
-        val serie = if (stockFab == LensCatalogRules.FABRICACION) null else resolution.serie
         val altoIndice = AltoIndiceNormalizer.normalize(item.altoIndice)
             ?: AltoIndiceNormalizer.fromTratamientos(item.tratamientos)
         val fechaIso = hoy.toString()

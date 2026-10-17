@@ -69,6 +69,9 @@ interface CostoProductoDao {
           AND stock_o_fabricacion = :stockOFabricacion
           AND tratamiento IS :tratamiento
           AND serie IS :serie
+          AND subtipo_bifocal IS :subtipoBifocal
+          AND indice_refraccion IS :indiceRefraccion
+          AND curva_base IS :curvaBase
           AND laboratorio_id IS :laboratorioId
         ORDER BY vigente_desde DESC
     """,
@@ -81,6 +84,9 @@ interface CostoProductoDao {
         tratamiento: String?,
         serie: Int?,
         laboratorioId: String?,
+        subtipoBifocal: String? = null,
+        indiceRefraccion: String? = null,
+        curvaBase: String? = null,
     ): List<CostoProductoEntity>
 
     // Closed versions are included because closing a row is itself an edit the server must receive.

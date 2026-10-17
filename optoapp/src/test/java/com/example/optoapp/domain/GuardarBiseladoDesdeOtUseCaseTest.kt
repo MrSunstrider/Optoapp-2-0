@@ -108,4 +108,50 @@ class GuardarBiseladoDesdeOtUseCaseTest {
         )
         assertTrue(result is ResultadoCostoMatriz.Rechazado)
     }
+
+    @Test
+    fun writebackUsesTheHigherSerieOfBothEyes() = runTest {
+        coEvery { dao.lookupVigente(any(), any(), any(), any(), any(), any()) } returns emptyList()
+        val saved = slot<List<CostoBiseladoEntity>>()
+        coEvery { dao.upsertAll(capture(saved)) } just Runs
+
+        // OD cil -1 → serie 1; OI cil -5 → serie 3 (mirrors CalcularCostoItemUseCaseTest)
+        val result = useCase(
+            opticaId,
+            item(),
+            costoPorPar = 14.0,
+            receta = RecetaCosto(odEsf = -1.0, odCil = -1.0, oiEsf = -1.0, oiCil = -5.0),
+            hoy = hoy,
+        )
+
+        assertTrue(result is ResultadoCostoMatriz.Creado)
+        assertEquals("stock", saved.captured.single().stockOFabricacion)
+        assertEquals(3, saved.captured.single().serie)
+        coVerify {
+            dao.lookupVigente(opticaId, "Resina", "aro_completo", "stock", 3, hoy.toString())
+        }
+    }
+
+    @Test
+    fun writebackForAnyEyeFabricacionUsesNullSerie() = runTest {
+        coEvery { dao.lookupVigente(any(), any(), any(), any(), any(), any()) } returns emptyList()
+        val saved = slot<List<CostoBiseladoEntity>>()
+        coEvery { dao.upsertAll(capture(saved)) } just Runs
+
+        // OD |esf|>6 → fabricacion; OI is stock — writeback must still be fabricacion/null
+        val result = useCase(
+            opticaId,
+            item(),
+            costoPorPar = 25.0,
+            receta = RecetaCosto(odEsf = -7.0, odCil = null, oiEsf = -2.0, oiCil = null),
+            hoy = hoy,
+        )
+
+        assertTrue(result is ResultadoCostoMatriz.Creado)
+        assertEquals("fabricacion", saved.captured.single().stockOFabricacion)
+        assertEquals(null, saved.captured.single().serie)
+        coVerify {
+            dao.lookupVigente(opticaId, "Resina", "aro_completo", "fabricacion", null, hoy.toString())
+        }
+    }
 }
