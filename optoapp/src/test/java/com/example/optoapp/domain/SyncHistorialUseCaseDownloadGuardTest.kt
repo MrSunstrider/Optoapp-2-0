@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.domain
+package com.example.optoapp.domain
 
 import com.example.optoapp.data.FakeConflictDao
 import com.example.optoapp.data.OptoDatabase
@@ -14,10 +14,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
-@RunWith(RobolectricTestRunner::class)
 class SyncHistorialUseCaseDownloadGuardTest {
 
     private val opticaId = "optica-historial-guard"
@@ -40,6 +37,7 @@ class SyncHistorialUseCaseDownloadGuardTest {
         conflictDao.returnEntityIds = emptyList()
         coEvery { syncStateTracker.markSynced(any(), any(), any()) } just Runs
         coEvery { syncStateTracker.markError(any(), any(), any(), any()) } just Runs
+        coEvery { syncStateTracker.dao.getPendingDeletions(any()) } returns emptyList()
 
         useCase = SyncHistorialUseCase(
             repository = repository,
@@ -100,5 +98,12 @@ class SyncHistorialUseCaseDownloadGuardTest {
             "getConflictEntityIds should have been called",
             conflictDao.getConflictEntityIdsCalled.get(),
         )
+    }
+
+    @Test
+    fun downloadEvaluaciones_queriesPendingDeletions() = runBlocking {
+        runCatching { useCase.invoke(opticaId, downloadAfterUpload = true, skipUpload = true) }
+
+        io.mockk.coVerify(atLeast = 1) { syncStateTracker.dao.getPendingDeletions(opticaId) }
     }
 }
