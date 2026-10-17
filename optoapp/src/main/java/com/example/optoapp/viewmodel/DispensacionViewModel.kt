@@ -626,8 +626,8 @@ class DispensacionViewModel @Inject constructor(
             }
 
             postSaveSyncScheduler.scheduleFinanzasSync(currentOpticaId)
-            _uiState.update { it.copy(isLoading = false) }
             onComplete()
+            _uiState.update { it.copy(isLoading = false) }
         }
     }
 
