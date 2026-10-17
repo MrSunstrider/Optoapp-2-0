@@ -32,7 +32,8 @@ S10. Out of scope: MarginFacts RPC reopen; web UI; historical re-snapshot; per-g
 - [x] T1 S3-S7 — LensCatalogRules + tests (WU1) — route: inline — commit: `d2037261`
 - [x] T2–T5 S1–S9 — schema+resolver+wizard4+LenteForm (WU2–5) — route: inline — commit: `a7691c85`
 - [x] T6 S8 — Biselado + OD/OI bidirectional OT→matriz (WU6) — route: inline — commit: `b4def2dd`
-- [ ] T7 — Sync, GGA, JD, stacked PRs (WU7) — route: inline — commit:
+- [x] T7a — Suite + GGA + Judgment Day (WU7) — route: inline — commit: `7656e53b` (JD APPROVED)
+- [ ] T7b — Stacked PRs + remote migrate (WU7) — route: inline — commit:
 
 ## Log
 
@@ -43,3 +44,4 @@ L4. User: `hazlo todo, si tienes que mejorar elo uxui hazlo` — authorized full
 L5. T2–T5 done in `a7691c85` (GGA PASSED). WU6 biselado OT→matriz writeback + WU7 suite/JD/PR still open.
 L6. User: `biselado bidireccional esto tambien deberia hacerse con los costos de los lente OD y OI` — extended S8 to OD/OI; GuardarCostoLenteDesdeOtUseCase + UI wired; focused Guardar* + DispensacionViewModel* green.
 L7. T6 committed `b4def2dd` (GGA PASSED). User also asked JD on all work — launching Judgment Day on branch tip vs main.
+L8. Suite green after hygiene/route fixes `096d903e`. JD R1: both judges CRITICAL biselado first-eye; IR early-return + getHistorial + forzar Switch. Fix `7656e53b`. Scoped R2 both empty → JUDGMENT APPROVED. JD-W4 (LenteForm preview sin receta) deferred. T7b PR/migrate pending.
