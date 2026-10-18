@@ -23,10 +23,10 @@ S7. Analysis assumptions locked in plan review (2026-10-18): do not use `tipoGas
 
 ## Tasks
 
-- [x] T1 S1 S2 S3 S7 — Schema Room 61 + Supabase: item.origen_biselado, config defaults/rate, gasto.origen_dispensacion_item_id — route: inline — commit: (bundled T1–T4)
-- [x] T2 S1 S3 S4 — Calc/Captura/CostoMargen/LenteForm + ViewModel seed from config — route: inline — commit: (bundled T1–T4)
-- [x] T3 S2 S3 S7 — Config financiera edit UI + sync DTO — route: inline — commit: (bundled T1–T4)
-- [x] T4 S5 S6 — Auto-gasto upsert on saveDispensacion + exclude linked from analisis neto — route: inline — commit: (bundled T1–T4)
+- [x] T1 S1 S2 S3 S7 — Schema Room 61 + Supabase: item.origen_biselado, config defaults/rate, gasto.origen_dispensacion_item_id — route: inline — commit: `7f8eed56`
+- [x] T2 S1 S3 S4 — Calc/Captura/CostoMargen/LenteForm + ViewModel seed from config — route: inline — commit: `7f8eed56`
+- [x] T3 S2 S3 S7 — Config financiera edit UI + sync DTO — route: inline — commit: `7f8eed56`
+- [x] T4 S5 S6 — Auto-gasto upsert on saveDispensacion + exclude linked from analisis neto — route: inline — commit: `7f8eed56`
 - [ ] T5 — Focused + full suite, GGA, remote migrate when authorized, JD (money), PR — route: inline — commit:
 
 ## Log
@@ -43,3 +43,5 @@ L2. Plan review findings (blocking corrections before apply):
 - Risk: high (schema, sync contracts, money/analisis). JD mandatory before merge. Remote migrate needs explicit OK.
 
 L3. T1–T4 implemented on `feat/biselado-propio-tercero` (2026-10-18): Room 61 + Supabase migration, OrigenBiselado, Propio rate in calc, LenteForm dropdown, config UI section, SyncBiseladoGastosDerivados + analisis filter. Focused + full `testDebugUnitTest` BUILD SUCCESSFUL. Pending: work-unit commit, remote migrate OK, GGA/JD, PR.
+
+L4. Work-unit commit `7f8eed56` (GGA PASSED via temporary mini provider after nano false-positives; restored nano). `.gga` also excludes `*Test.kt`. T5 blocked on explicit OK for remote Supabase migrate `20261018020000_biselado_propio_tercero.sql`, then JD + PR stacked after #189.

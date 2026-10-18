@@ -15,7 +15,7 @@
 #   PROVIDER="lmstudio:qwen2.5-coder-7b-instruct"
 #   PROVIDER="github:gpt-4o"
 #   PROVIDER="github:deepseek-r1"
-PROVIDER="cursor:gpt-5.4-mini-medium"
+PROVIDER="cursor:gpt-5.4-nano-low"
 
 # File patterns to include in review (comma-separated)
 # Default: * (all files)
