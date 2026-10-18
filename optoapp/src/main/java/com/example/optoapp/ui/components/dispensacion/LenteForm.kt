@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.data.Montura
+import com.example.optoapp.domain.OjosLente
 import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.domain.costo.LensCatalogRules
 import com.example.optoapp.domain.costo.LensCatalogSelection
@@ -313,6 +314,18 @@ fun LenteForm(
 
             OptoTextField(value = item.colorLente, onValueChange = { onUpdate(item.copy(colorLente = it)) }, label = "Color del Lente")
             OptoTextField(value = item.notasDiseno, onValueChange = { onUpdate(item.copy(notasDiseno = it)) }, label = "Notas de Diseño")
+
+            OptoDropdownMenuField(
+                label = "Ojos",
+                selected = OjosLente.normalize(item.ojosLente),
+                options = OjosLente.OPTIONS,
+            ) { onUpdate(item.copy(ojosLente = it)) }
+
+            OptoDropdownMenuField(
+                label = "Origen biselado",
+                selected = com.example.optoapp.domain.OrigenBiselado.normalize(item.origenBiselado),
+                options = com.example.optoapp.domain.OrigenBiselado.OPTIONS,
+            ) { onUpdate(item.copy(origenBiselado = it)) }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text("Montura", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

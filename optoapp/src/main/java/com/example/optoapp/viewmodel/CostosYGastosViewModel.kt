@@ -686,6 +686,8 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun editGasto(gasto: GastoOperativoEntity) {
         if (!_uiState.value.puedeEditarGastos) return
+        // Linked OT bevel COGS are managed from the dispensación; editing here desyncs OT vs gasto.
+        if (gasto.origenDispensacionItemId != null) return
         _uiState.update {
             it.copy(
                 isDialogVisible = true,
@@ -785,6 +787,7 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun confirmDeleteGasto(gasto: GastoOperativoEntity) {
         if (!_uiState.value.puedeEditarGastos) return
+        if (gasto.origenDispensacionItemId != null) return
         _uiState.update { it.copy(deletingGasto = gasto, gastoDeleteError = null) }
     }
 
@@ -796,6 +799,10 @@ class CostosYGastosViewModel @Inject constructor(
         val s = _uiState.value
         val gasto = s.deletingGasto ?: return
         if (s.isLoading || !s.puedeEditarGastos) return
+        if (gasto.origenDispensacionItemId != null) {
+            _uiState.update { it.copy(deletingGasto = null) }
+            return
+        }
         _uiState.update { it.copy(isLoading = true, gastoDeleteError = null) }
         viewModelScope.launch {
             try {

@@ -1,7 +1,10 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.domain.AnularDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.util.DispensacionStockHelper
@@ -25,6 +28,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.math.BigDecimal
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DispensacionViewModelAnulacionTest {
@@ -35,6 +40,7 @@ class DispensacionViewModelAnulacionTest {
     private lateinit var repository: OptoRepository
     private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var anular: AnularDispensacionUseCase
+    private lateinit var gastoOperativoDao: GastoOperativoDao
     private lateinit var viewModel: DispensacionViewModel
 
     @Before
@@ -45,6 +51,7 @@ class DispensacionViewModelAnulacionTest {
         repository = mockk(relaxed = true)
         stockHelper = mockk(relaxed = true)
         anular = mockk()
+        gastoOperativoDao = mockk(relaxed = true)
         val sessionManager = mockk<SessionManager>()
         every { sessionManager.opticaId } returns MutableStateFlow(opticaId)
         every { sessionManager.opticaRol } returns rolFlow
@@ -61,7 +68,10 @@ class DispensacionViewModelAnulacionTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-        mockk(relaxed = true))
+            mockk(relaxed = true),
+            mockk(relaxed = true),
+            gastoOperativoDao,
+        )
         testDispatcher.scheduler.advanceUntilIdle()
     }
 
@@ -132,6 +142,35 @@ class DispensacionViewModelAnulacionTest {
         anularAndAwait()
 
         assertNull(viewModel.uiState.value.infoMessage)
+    }
+
+    @Test
+    fun `applied cancel deletes linked biselado gastos for OT items`() = runTest {
+        val item = DispensacionItem(
+            id = "item-linked",
+            dispensacionId = dispId,
+            tipoLente = "Monofocal",
+            materialLente = "Resina",
+            tratamientos = emptyList(),
+            origenMontura = "Paciente",
+            opticaId = opticaId,
+        )
+        val linked = GastoOperativoEntity(
+            id = "gb_item-linked",
+            opticaId = opticaId,
+            categoria = "Biselado",
+            monto = BigDecimal("20"),
+            fecha = LocalDate.of(2026, 10, 18),
+            origenDispensacionItemId = "item-linked",
+        )
+        coEvery { anular(dispId, opticaId, any()) } returns LifecycleOutcome.Applied
+        coEvery { repository.getDispensacionItemsByDispensacion(dispId, opticaId) } returns listOf(item)
+        coEvery { gastoOperativoDao.getByOrigenDispensacionItemId(opticaId, "item-linked") } returns linked
+
+        anularAndAwait()
+
+        coVerify(exactly = 1) { repository.deleteGastoOperativo(linked) }
+        coVerify(exactly = 0) { gastoOperativoDao.delete(any(), any()) }
     }
 
     @Test

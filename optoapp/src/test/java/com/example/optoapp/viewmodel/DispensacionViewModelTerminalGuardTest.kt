@@ -78,7 +78,10 @@ class DispensacionViewModelTerminalGuardTest {
             repository, sessionManager, mockk<PostSaveSyncScheduler>(relaxed = true), stockHelper, calcularMontoPagado,
             mockk<AnularDispensacionUseCase>(relaxed = true), mockk<ReclamarDispensacionUseCase>(relaxed = true),
             mockk<CalcularCostoItemUseCase>(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
-        mockk(relaxed = true))
+        mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true)
+        )
     }
 
     private suspend fun saveEdit(viewModel: DispensacionViewModel, monturaId: String, estado: String): Boolean {

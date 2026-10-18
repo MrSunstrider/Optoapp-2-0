@@ -42,6 +42,7 @@ class SyncFinanzasUseCaseKtTest {
         coEvery { downloadCoordinator.downloadServicioTipos(any()) } returns 0
         coEvery { downloadCoordinator.downloadServicioExtraItems(any()) } returns 0
         coEvery { downloadCoordinator.downloadRegalosServicioExtra(any()) } returns 0
+        coEvery { downloadCoordinator.uploadConfiguracionFinanciera(any()) } returns 0
     }
 
     private fun makeServicioRemoto(
@@ -208,6 +209,42 @@ class SyncFinanzasUseCaseKtTest {
         useCase("optica-test")
 
         coVerify(exactly = 1) { downloadCoordinator.downloadConfiguracionFinanciera("optica-test") }
+    }
+
+    @Test
+    fun syncFinanzas_uploads_configuracionFinanciera_before_download() = runTest {
+        val uploadCoordinator = mockk<UploadSyncCoordinator>(relaxed = true)
+        val downloadCoordinator = mockk<DownloadSyncCoordinator>()
+        val deletionSyncHelper = mockk<DeletionSyncHelper>()
+        coEvery { deletionSyncHelper.pushPendingDeletions(any()) } just Runs
+        coEvery { downloadCoordinator.downloadDispensaciones(any()) } returns 0
+        coEvery { downloadCoordinator.downloadDispensacionItems(any()) } returns 0
+        coEvery { downloadCoordinator.downloadServicios(any()) } returns 0
+        stubServicioCatalogAndChildDownloads(downloadCoordinator)
+        coEvery { downloadCoordinator.uploadConfiguracionFinanciera(any()) } returns 1
+        coEvery { downloadCoordinator.downloadResumenDiario(any()) } returns 0
+        coEvery { downloadCoordinator.downloadConfiguracionFinanciera(any()) } returns 1
+        coEvery { downloadCoordinator.downloadCostosProductos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosBiselado(any()) } returns 0
+        coEvery { downloadCoordinator.downloadCostosLc(any()) } returns 0
+        coEvery { downloadCoordinator.downloadPagos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadRegalos(any()) } returns 0
+        coEvery { downloadCoordinator.downloadGastosOperativos(any()) } returns 0
+
+        val useCase = SyncFinanzasUseCase(
+            deletionSyncHelper = deletionSyncHelper,
+            uploadSyncCoordinator = uploadCoordinator,
+            downloadSyncCoordinator = downloadCoordinator,
+            discardLosingClaim = mockk(relaxed = true),
+            resumenRecalcCoordinator = mockk(relaxed = true),
+        )
+
+        useCase("optica-test")
+
+        coVerifyOrder {
+            downloadCoordinator.uploadConfiguracionFinanciera("optica-test")
+            downloadCoordinator.downloadConfiguracionFinanciera("optica-test")
+        }
     }
 
     @Test

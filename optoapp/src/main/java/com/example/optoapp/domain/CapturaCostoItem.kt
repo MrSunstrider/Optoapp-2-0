@@ -24,13 +24,14 @@ object CapturaCostoItem {
         calcular: suspend (DispensacionItem) -> CostoItemCalculado,
     ): CapturaCosto {
         val actual = item.copy(altoIndice = altoIndice(item, previo))
-        val pendientes = ComponenteCosto.entries.filter {
+        val aplicables = componentesAplicables(actual)
+        val pendientes = aplicables.filter {
             it !in overrides && requiereLookup(it, actual, previo, receta, recetaPrevia)
         }
         val calculado = if (pendientes.isEmpty()) emptyMap() else calcular(actual).componentes
         val costos = mutableMapOf<ComponenteCosto, Double>()
         val origenes = linkedMapOf<ComponenteCosto, OrigenComponente>()
-        ComponenteCosto.entries.forEach { componente ->
+        aplicables.forEach { componente ->
             val override = overrides[componente]
             val persistido = previo?.costo(componente)
             when {
@@ -81,8 +82,18 @@ object CapturaCostoItem {
         return sinOrigenConfiable && (previo.costo(componente) ?: 0.0) <= 0.0
     }
 
+    private fun componentesAplicables(item: DispensacionItem): List<ComponenteCosto> {
+        if (CalcularCostoItemUseCase.esLenteDeContacto(item)) return listOf(ComponenteCosto.LC)
+        return buildList {
+            if (OjosLente.includesOd(item.ojosLente)) add(ComponenteCosto.OD)
+            if (OjosLente.includesOi(item.ojosLente)) add(ComponenteCosto.OI)
+            add(ComponenteCosto.MONTURA)
+            add(ComponenteCosto.BISELADO)
+        }
+    }
+
     private fun entradas(componente: ComponenteCosto, item: DispensacionItem, receta: RecetaCosto?): List<Any?> {
-        val lente = listOf(item.tipoLente, item.materialLente, item.tratamientos.sorted())
+        val lente = listOf(item.tipoLente, item.materialLente, item.tratamientos.sorted(), item.ojosLente)
         return when (componente) {
             ComponenteCosto.OD -> lente + listOf(receta?.odEsf, receta?.odCil)
             ComponenteCosto.OI -> lente + listOf(receta?.oiEsf, receta?.oiCil)
@@ -90,6 +101,8 @@ object CapturaCostoItem {
             ComponenteCosto.BISELADO -> listOf(
                 item.materialLente,
                 item.tipoAro,
+                item.ojosLente,
+                OrigenBiselado.normalize(item.origenBiselado),
                 AltoIndiceNormalizer.normalize(item.altoIndice),
                 bloqueBiselado(receta?.odEsf, receta?.odCil),
                 bloqueBiselado(receta?.oiEsf, receta?.oiCil),

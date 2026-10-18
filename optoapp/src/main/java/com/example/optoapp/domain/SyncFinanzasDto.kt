@@ -216,6 +216,8 @@ data class DispensacionItemRemota(
     @SerialName("lenticular") val lenticular: String? = null,
     @SerialName("curva_base") val curvaBase: String? = null,
     @SerialName("forzar_stock_astigmatismo") val forzarStockIgnorandoAstigmatismo: Boolean = false,
+    @SerialName("ojos_lente") val ojosLente: String = "Ambos",
+    @SerialName("origen_biselado") val origenBiselado: String = "Tercero",
     @SerialName("costo_real_od") val costoRealOd: Double? = null,
     @SerialName("costo_real_oi") val costoRealOi: Double? = null,
     @SerialName("costo_real_montura") val costoRealMontura: Double? = null,
@@ -238,6 +240,8 @@ data class DispensacionItemRemota(
         altoIndice = altoIndice, reduccionDiametro = reduccionDiametro,
         lenticular = lenticular, curvaBase = curvaBase,
         forzarStockIgnorandoAstigmatismo = forzarStockIgnorandoAstigmatismo,
+        ojosLente = OjosLente.normalize(ojosLente),
+        origenBiselado = OrigenBiselado.normalize(origenBiselado),
         costoRealOd = costoRealOd, costoRealOi = costoRealOi,
         costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
         costoRealLc = costoRealLc, costoOrigen = costoOrigen,
@@ -259,6 +263,7 @@ data class GastoOperativoRemoto(
     val frecuencia: String = "mensual",
     // Null means "decided by category" on both sides; defaulting to fijo would misclassify legacy rows.
     @SerialName("tipo_gasto") val tipoGasto: String? = null,
+    @SerialName("origen_dispensacion_item_id") val origenDispensacionItemId: String? = null,
 )
 
 fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto(
@@ -274,6 +279,7 @@ fun GastoOperativoEntity.toRemoto(): GastoOperativoRemoto = GastoOperativoRemoto
     isRecurring = isRecurring,
     frecuencia = frecuencia,
     tipoGasto = tipoGasto,
+    origenDispensacionItemId = origenDispensacionItemId,
 )
 
 fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity(
@@ -289,6 +295,7 @@ fun GastoOperativoRemoto.toEntity(): GastoOperativoEntity = GastoOperativoEntity
     isRecurring = isRecurring,
     frecuencia = frecuencia,
     tipoGasto = tipoGasto,
+    origenDispensacionItemId = origenDispensacionItemId,
 )
 
 @Serializable
@@ -442,6 +449,8 @@ data class ConfiguracionFinancieraRemoto(
     @SerialName("stock_bajo_alerta_unidades") val stockBajoAlertaUnidades: Int = 2,
     @SerialName("min_ventas_para_recomendar") val minVentasParaRecomendar: Int = 5,
     @SerialName("frecuencia_recalculo_dias") val frecuenciaRecalculoDias: Int = 1,
+    @SerialName("origen_biselado_default") val origenBiseladoDefault: String = "Tercero",
+    @SerialName("costo_biselado_propio") val costoBiseladoPropio: Double = 0.0,
 ) {
     fun toEntity() = ConfiguracionFinancieraEntity(
         opticaId = opticaId,
@@ -454,8 +463,25 @@ data class ConfiguracionFinancieraRemoto(
         stockBajoAlertaUnidades = stockBajoAlertaUnidades,
         minVentasParaRecomendar = minVentasParaRecomendar,
         frecuenciaRecalculoDias = frecuenciaRecalculoDias,
+        origenBiseladoDefault = OrigenBiselado.normalize(origenBiseladoDefault),
+        costoBiseladoPropio = costoBiseladoPropio.coerceAtLeast(0.0),
     )
 }
+
+fun ConfiguracionFinancieraEntity.toRemoto() = ConfiguracionFinancieraRemoto(
+    opticaId = opticaId,
+    margenNetoObjetivo = margenNetoObjetivo,
+    ticketPromedioObjetivo = ticketPromedioObjetivo,
+    caidaVentasAlertaPct = caidaVentasAlertaPct,
+    deudaViejaAlertaDias = deudaViejaAlertaDias,
+    deudaTotalAlertaMonto = deudaTotalAlertaMonto,
+    stockEstancadoAlertaDias = stockEstancadoAlertaDias,
+    stockBajoAlertaUnidades = stockBajoAlertaUnidades,
+    minVentasParaRecomendar = minVentasParaRecomendar,
+    frecuenciaRecalculoDias = frecuenciaRecalculoDias,
+    origenBiseladoDefault = OrigenBiselado.normalize(origenBiseladoDefault),
+    costoBiseladoPropio = costoBiseladoPropio.coerceAtLeast(0.0),
+)
 
 @Serializable
 data class CostoProductoRemoto(
@@ -658,6 +684,8 @@ fun DispensacionItem.toRemoto(): DispensacionItemRemota = DispensacionItemRemota
     altoIndice = altoIndice, reduccionDiametro = reduccionDiametro,
     lenticular = lenticular, curvaBase = curvaBase,
     forzarStockIgnorandoAstigmatismo = forzarStockIgnorandoAstigmatismo,
+    ojosLente = OjosLente.normalize(ojosLente),
+    origenBiselado = OrigenBiselado.normalize(origenBiselado),
     costoRealOd = costoRealOd, costoRealOi = costoRealOi,
     costoRealMontura = costoRealMontura, costoRealBiselado = costoRealBiselado,
     costoRealLc = costoRealLc, costoOrigen = costoOrigen,

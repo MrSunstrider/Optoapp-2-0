@@ -1,4 +1,4 @@
-﻿package com.example.optoapp.data
+package com.example.optoapp.data
 
 import android.content.Context
 import androidx.room.Room
@@ -46,7 +46,7 @@ class Migration57To58Test {
         createV57Database()
 
         val room = Room.databaseBuilder(context, OptoDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_57_58, MIGRATION_58_59)
+            .addMigrations(MIGRATION_57_58, MIGRATION_58_59, MIGRATION_59_60, MIGRATION_60_61)
             .allowMainThreadQueries()
             .build()
         val db = room.openHelper.writableDatabase

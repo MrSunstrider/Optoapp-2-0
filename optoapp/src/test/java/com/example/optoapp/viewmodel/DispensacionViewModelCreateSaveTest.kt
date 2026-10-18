@@ -89,6 +89,8 @@ class DispensacionViewModelCreateSaveTest {
         mockk(relaxed = true),
         mockk(relaxed = true),
         mockk(relaxed = true),
+        mockk(relaxed = true),
+        mockk(relaxed = true),
     )
 
     private fun minimalItem() = DispensacionItemUi(tipoLente = "Monofocal")
