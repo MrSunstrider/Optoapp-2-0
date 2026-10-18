@@ -19,9 +19,9 @@ S5. Assumption (from screenshot evidence): `Origen guardado: faltante` while OD/
 
 ## Tasks
 
-- [x] T1 S5 S2 — CostoOrigenResolver MIXTO + calculateCosts sets costoOrigen — route: inline — commit: pending
-- [x] T2 S4 — Montura inventory cost without takeIf>0 — route: inline — commit: pending
-- [x] T3 S1 S3 — ojosLente OD|OI|Ambos (schema+UI+calc+captura) — route: inline — commit: pending
+- [x] T1 S5 S2 — CostoOrigenResolver MIXTO + calculateCosts sets costoOrigen — route: inline — commit: 418042df
+- [x] T2 S4 — Montura inventory cost without takeIf>0 — route: inline — commit: 418042df
+- [x] T3 S1 S3 — ojosLente OD|OI|Ambos (schema+UI+calc+captura) — route: inline — commit: 418042df
 
 ## Log
 
