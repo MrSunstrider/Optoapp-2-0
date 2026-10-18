@@ -167,6 +167,7 @@ class DispensacionViewModelDeleteTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(completed)
-        coVerify(exactly = 1) { gastoOperativoDao.delete("gb_item-del", "optica-test") }
+        coVerify(exactly = 1) { repository.deleteGastoOperativo(linked) }
+        coVerify(exactly = 0) { gastoOperativoDao.delete(any(), any()) }
     }
 }

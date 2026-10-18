@@ -769,6 +769,10 @@ class DispensacionViewModel @Inject constructor(
                 val opticaId = sessionManager.opticaId.first()
                 when (val outcome = reclamarDispensacionUseCase(originalDispensacionId, opticaId, motivo, nuevoMontoTotal, metodoReembolso)) {
                     is ReclamoOutcome.Created -> {
+                        // Original OT is terminal; drop linked Tercero bevel gastos so they cannot resurface.
+                        val originalItemIds = repository.getDispensacionItemsByDispensacion(originalDispensacionId, opticaId)
+                            .map { it.id }
+                        clearLinkedBiseladoGastos(opticaId, originalItemIds)
                         _uiState.update { it.copy(isLoading = false) }
                         onCreated(outcome.replacementId)
                     }
@@ -1018,6 +1022,8 @@ class DispensacionViewModel @Inject constructor(
             fecha = fecha,
             items = items,
             deletedItemIds = deletedItemIds,
+            deleteLinked = { repository.deleteGastoOperativo(it) },
+            upsertLinked = { repository.upsertGastoOperativo(it) },
         )
     }
 

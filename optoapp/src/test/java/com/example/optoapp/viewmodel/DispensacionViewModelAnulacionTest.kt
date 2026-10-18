@@ -169,7 +169,8 @@ class DispensacionViewModelAnulacionTest {
 
         anularAndAwait()
 
-        coVerify(exactly = 1) { gastoOperativoDao.delete("gb_item-linked", opticaId) }
+        coVerify(exactly = 1) { repository.deleteGastoOperativo(linked) }
+        coVerify(exactly = 0) { gastoOperativoDao.delete(any(), any()) }
     }
 
     @Test

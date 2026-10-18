@@ -490,9 +490,11 @@ private fun GastosOperativosTab(
                     GrupoGastosHeader(grupo)
                 }
                 items(grupo.filas, key = { it.gasto.id }) { fila ->
+                    val esDerivadoOt = fila.gasto.origenDispensacionItemId != null
                     GastoOperativoCard(
                         fila = fila,
-                        puedeEditar = uiState.puedeEditarGastos,
+                        // Linked OT bevel rows are managed from the dispensación, not here.
+                        puedeEditar = uiState.puedeEditarGastos && !esDerivadoOt,
                         onEdit = { viewModel.editGasto(fila.gasto) },
                         onDelete = { viewModel.confirmDeleteGasto(fila.gasto) },
                     )

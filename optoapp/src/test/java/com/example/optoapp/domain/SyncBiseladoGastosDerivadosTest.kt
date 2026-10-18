@@ -19,11 +19,19 @@ class SyncBiseladoGastosDerivadosTest {
     private val opticaId = "o1"
     private val fecha = LocalDate.of(2026, 10, 18)
     private lateinit var dao: GastoOperativoDao
+    private lateinit var deleteLinked: suspend (GastoOperativoEntity) -> Unit
+    private lateinit var upsertLinked: suspend (GastoOperativoEntity) -> Unit
+    private val deleted = mutableListOf<GastoOperativoEntity>()
+    private val upserted = mutableListOf<GastoOperativoEntity>()
 
     @Before
     fun setUp() {
         dao = mockk(relaxed = true)
         coEvery { dao.getByOrigenDispensacionItemId(any(), any()) } returns null
+        deleted.clear()
+        upserted.clear()
+        deleteLinked = { deleted += it }
+        upsertLinked = { upserted += it }
     }
 
     private fun item(
@@ -42,24 +50,40 @@ class SyncBiseladoGastosDerivadosTest {
         costoRealBiselado = costoBiselado,
     )
 
+    private suspend fun sync(
+        items: List<DispensacionItem>,
+        deletedItemIds: List<String> = emptyList(),
+        ot: String = "OT-1",
+    ) = SyncBiseladoGastosDerivados.sync(
+        gastoOperativoDao = dao,
+        opticaId = opticaId,
+        ot = ot,
+        fecha = fecha,
+        items = items,
+        deletedItemIds = deletedItemIds,
+        deleteLinked = deleteLinked,
+        upsertLinked = upsertLinked,
+    )
+
     @Test
     fun terceroWithPositiveCost_upsertsLinkedVariableGasto() = runTest {
-        val captured = slot<GastoOperativoEntity>()
-        coEvery { dao.upsert(capture(captured)) } returns Unit
+        sync(listOf(item()))
 
-        SyncBiseladoGastosDerivados.sync(dao, opticaId, "OT-1", fecha, listOf(item()), emptyList())
-
-        coVerify(exactly = 1) { dao.upsert(any()) }
-        assertEquals("gb_item-1", captured.captured.id)
-        assertEquals("Biselado", captured.captured.categoria)
-        assertEquals("Biselado OT OT-1", captured.captured.descripcion)
-        assertEquals(BigDecimal.valueOf(25.0), captured.captured.monto)
-        assertEquals(GastoTipoResolver.VARIABLE, captured.captured.tipoGasto)
-        assertEquals("item-1", captured.captured.origenDispensacionItemId)
+        assertEquals(1, upserted.size)
+        assertEquals(0, deleted.size)
+        val captured = upserted.single()
+        assertEquals("gb_item-1", captured.id)
+        assertEquals("Biselado", captured.categoria)
+        assertEquals("Biselado OT OT-1", captured.descripcion)
+        assertEquals(BigDecimal.valueOf(25.0), captured.monto)
+        assertEquals(GastoTipoResolver.VARIABLE, captured.tipoGasto)
+        assertEquals("item-1", captured.origenDispensacionItemId)
+        coVerify(exactly = 0) { dao.delete(any(), any()) }
+        coVerify(exactly = 0) { dao.upsert(any()) }
     }
 
     @Test
-    fun propio_removesExistingLinkedGasto() = runTest {
+    fun propio_removesExistingLinkedGastoViaDeleteCallback() = runTest {
         val existing = GastoOperativoEntity(
             id = "gb_old",
             opticaId = opticaId,
@@ -70,14 +94,10 @@ class SyncBiseladoGastosDerivadosTest {
         )
         coEvery { dao.getByOrigenDispensacionItemId(opticaId, "item-1") } returns existing
 
-        SyncBiseladoGastosDerivados.sync(
-            dao, opticaId, "OT-1", fecha,
-            listOf(item(origen = OrigenBiselado.PROPIO, costoBiselado = 12.0)),
-            emptyList(),
-        )
+        sync(listOf(item(origen = OrigenBiselado.PROPIO, costoBiselado = 12.0)))
 
-        coVerify(exactly = 1) { dao.delete("gb_old", opticaId) }
-        coVerify(exactly = 0) { dao.upsert(any()) }
+        assertEquals(listOf("gb_old"), deleted.map { it.id })
+        assertEquals(0, upserted.size)
     }
 
     @Test
@@ -92,14 +112,10 @@ class SyncBiseladoGastosDerivadosTest {
         )
         coEvery { dao.getByOrigenDispensacionItemId(opticaId, "item-1") } returns existing
 
-        SyncBiseladoGastosDerivados.sync(
-            dao, opticaId, "OT-1", fecha,
-            listOf(item(costoBiselado = 0.0)),
-            emptyList(),
-        )
+        sync(listOf(item(costoBiselado = 0.0)))
 
-        coVerify(exactly = 1) { dao.delete("gb_old", opticaId) }
-        coVerify(exactly = 0) { dao.upsert(any()) }
+        assertEquals(listOf("gb_old"), deleted.map { it.id })
+        assertEquals(0, upserted.size)
     }
 
     @Test
@@ -114,9 +130,9 @@ class SyncBiseladoGastosDerivadosTest {
         )
         coEvery { dao.getByOrigenDispensacionItemId(opticaId, "gone") } returns existing
 
-        SyncBiseladoGastosDerivados.sync(dao, opticaId, "OT-1", fecha, emptyList(), listOf("gone"))
+        sync(emptyList(), deletedItemIds = listOf("gone"))
 
-        coVerify(exactly = 1) { dao.delete("gb_gone", opticaId) }
+        assertEquals(listOf("gb_gone"), deleted.map { it.id })
     }
 
     @Test
@@ -131,17 +147,12 @@ class SyncBiseladoGastosDerivadosTest {
             createdAt = "2026-01-01T00:00:00Z",
         )
         coEvery { dao.getByOrigenDispensacionItemId(opticaId, "item-1") } returns existing
-        val captured = slot<GastoOperativoEntity>()
-        coEvery { dao.upsert(capture(captured)) } returns Unit
 
-        SyncBiseladoGastosDerivados.sync(
-            dao, opticaId, "OT-1", fecha,
-            listOf(item(costoBiselado = 30.0)),
-            emptyList(),
-        )
+        sync(listOf(item(costoBiselado = 30.0)))
 
-        assertEquals("gb_keep", captured.captured.id)
-        assertEquals("2026-01-01T00:00:00Z", captured.captured.createdAt)
-        assertEquals(BigDecimal.valueOf(30.0), captured.captured.monto)
+        val captured = upserted.single()
+        assertEquals("gb_keep", captured.id)
+        assertEquals("2026-01-01T00:00:00Z", captured.createdAt)
+        assertEquals(BigDecimal.valueOf(30.0), captured.monto)
     }
 }

@@ -440,4 +440,20 @@ class CostosYGastosViewModelGastosTest {
 
         assertTrue(viewModel.uiState.value.puedeEditarGastos)
     }
+
+    @Test
+    fun linkedOtBiseladoGastoCannotBeEditedOrDeletedFromGastosUi() = runTest(testDispatcher) {
+        val linked = gasto("gb1", "Biselado", 25.0, hoy).copy(origenDispensacionItemId = "item-1")
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+
+        viewModel.editGasto(linked)
+        viewModel.confirmDeleteGasto(linked)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isDialogVisible)
+        assertNull(viewModel.uiState.value.deletingGasto)
+        assertNull(viewModel.uiState.value.editingGasto)
+        coVerify(exactly = 0) { repository.deleteGastoOperativo(any()) }
+    }
 }
