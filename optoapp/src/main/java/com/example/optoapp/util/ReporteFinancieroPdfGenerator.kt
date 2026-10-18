@@ -123,7 +123,9 @@ object ReporteFinancieroPdfGenerator {
                 ),
             )
         }
-        extras.inventario?.takeIf { it.modelos > 0 }?.let { inv ->
+        extras.inventario?.takeIf { inv ->
+            inv.modelos > 0 || inv.stockTotal > 0 || inv.lowStock > 0 || inv.salidasVentaPeriodo > 0
+        }?.let { inv ->
             pdf.drawSectionTitle("Inventario (resumen)")
             pdf.drawKpis(
                 listOf(
