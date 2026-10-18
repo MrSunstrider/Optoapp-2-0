@@ -19,6 +19,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import java.time.LocalDate
@@ -125,7 +126,7 @@ class CalcularCostoItemUseCaseTest {
 
         val result = useCase(opticaId, item(), RecetaCosto(odEsf = -7.0, odCil = -1.0, oiEsf = null, oiCil = null), fecha)
 
-        assertEquals(mapOf(OD to 30.0), result.componentes)
+        assertEquals(mapOf(OD to 30.0, OI to null), result.componentes)
     }
 
     @Test
@@ -141,21 +142,36 @@ class CalcularCostoItemUseCaseTest {
 
         val result = useCase(opticaId, item(origenMontura = "Tienda", monturaId = "m1"), null, fecha)
 
-        assertEquals(mapOf(MONTURA to 80.0), result.componentes)
+        assertEquals(80.0, result.componentes.getValue(MONTURA))
         coVerify(exactly = 0) {
             costoProductoDao.lookupVigente(any(), any(), "montura", any(), any(), any(), any(), any(), any(), any())
         }
     }
 
     @Test
-    fun monturaWithZeroCostOrMissingRowIsFaltante() = runTest {
+    fun monturaWithZeroCostIsInventoryHitAndMissingRowIsFaltante() = runTest {
         coEvery { monturaDao.getMonturaByIdForOptica("m0", opticaId) } returns Montura(id = "m0", costo = 0.0)
 
         val conCero = useCase(opticaId, item(origenMontura = "Tienda", monturaId = "m0"), null, fecha)
         val inexistente = useCase(opticaId, item(origenMontura = "Tienda", monturaId = "mx"), null, fecha)
 
-        assertEquals(mapOf(MONTURA to null), conCero.componentes)
-        assertEquals(mapOf(MONTURA to null), inexistente.componentes)
+        assertEquals(0.0, conCero.componentes.getValue(MONTURA))
+        assertEquals(null, inexistente.componentes[MONTURA])
+    }
+
+    @Test
+    fun ojOnlySelectionDoesNotEmitOdComponent() = runTest {
+        stubLente("stock", serie = 1, costo = 18.0)
+        val receta = RecetaCosto(odEsf = -1.0, odCil = -1.0, oiEsf = -2.0, oiCil = -1.0)
+        val result = useCase(
+            opticaId,
+            item().copy(ojosLente = com.example.optoapp.domain.OjosLente.OI),
+            receta,
+            fecha,
+        )
+
+        assertFalse(result.componentes.containsKey(OD))
+        assertEquals(18.0, result.componentes.getValue(OI))
     }
 
     @Test
@@ -328,7 +344,7 @@ class CalcularCostoItemUseCaseTest {
             fecha,
         )
 
-        assertEquals(mapOf(OD to 55.0), result.componentes)
+        assertEquals(mapOf(OD to 55.0, OI to null), result.componentes)
     }
 
     @Test
@@ -347,7 +363,7 @@ class CalcularCostoItemUseCaseTest {
             fecha,
         )
 
-        assertEquals(mapOf(OD to null), result.componentes)
+        assertEquals(mapOf(OD to null, OI to null), result.componentes)
         coVerify {
             costoProductoDao.lookupVigente(
                 opticaId, "Resina antireflejo alto indice", "Monofocal", "fabricacion",

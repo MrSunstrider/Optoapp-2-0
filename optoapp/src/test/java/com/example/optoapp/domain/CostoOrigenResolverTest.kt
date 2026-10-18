@@ -10,8 +10,14 @@ import org.junit.Test
 class CostoOrigenResolverTest {
 
     @Test
-    fun `any missing component makes the item faltante even next to manual ones`() {
-        assertEquals("faltante", CostoOrigenResolver.resolver(listOf(MANUAL, FALTANTE, MATRIZ), origenPrevio = null))
+    fun `a partial gap next to matrix or manual resolves to mixto not faltante`() {
+        assertEquals("mixto", CostoOrigenResolver.resolver(listOf(MANUAL, FALTANTE, MATRIZ), origenPrevio = null))
+        assertEquals("mixto", CostoOrigenResolver.resolver(listOf(MATRIZ, FALTANTE), origenPrevio = null))
+    }
+
+    @Test
+    fun `only missing components resolve to faltante`() {
+        assertEquals("faltante", CostoOrigenResolver.resolver(listOf(FALTANTE, FALTANTE), origenPrevio = null))
     }
 
     @Test

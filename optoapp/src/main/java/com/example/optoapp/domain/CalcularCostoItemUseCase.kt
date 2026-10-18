@@ -60,26 +60,36 @@ class CalcularCostoItemUseCase @Inject constructor(
             return CostoItemCalculado(mapOf(ComponenteCosto.LC to costoLc(opticaId, item, receta, fechaIso)))
         }
         val componentes = linkedMapOf<ComponenteCosto, Double?>()
-        val ojos = ojosConEsfera(receta)
-        ojos.forEach { (componente, ojo) ->
-            componentes[componente] = costoLente(opticaId, item, ojo, receta?.adicion, fechaIso)
+        // Always emit selected eyes (null when refraction is missing) so captura can mark faltante / allow manual.
+        if (OjosLente.includesOd(item.ojosLente)) {
+            val ojo = receta?.odEsf?.let { Ojo(it, receta.odCil) }
+            componentes[ComponenteCosto.OD] = ojo?.let { costoLente(opticaId, item, it, receta?.adicion, fechaIso) }
+        }
+        if (OjosLente.includesOi(item.ojosLente)) {
+            val ojo = receta?.oiEsf?.let { Ojo(it, receta.oiCil) }
+            componentes[ComponenteCosto.OI] = ojo?.let { costoLente(opticaId, item, it, receta?.adicion, fechaIso) }
+        }
+        val ojosParaBiselado = buildList {
+            if (OjosLente.includesOd(item.ojosLente)) {
+                receta?.odEsf?.let { add(Ojo(it, receta.odCil)) }
+            }
+            if (OjosLente.includesOi(item.ojosLente)) {
+                receta?.oiEsf?.let { add(Ojo(it, receta.oiCil)) }
+            }
         }
         if (item.origenMontura == ORIGEN_TIENDA && item.monturaId.isNotBlank()) {
-            componentes[ComponenteCosto.MONTURA] = monturaDao.getMonturaByIdForOptica(item.monturaId, opticaId)
-                ?.costo?.takeIf { it > 0.0 }
+            // Zero is a valid inventory cost; only a missing montura row is a lookup miss.
+            componentes[ComponenteCosto.MONTURA] = monturaDao.getMonturaByIdForOptica(item.monturaId, opticaId)?.costo
         }
         if (item.tipoAro.isNotBlank()) {
-            componentes[ComponenteCosto.BISELADO] = costoBiselado(opticaId, item, ojos.values, receta?.adicion, fechaIso)
+            componentes[ComponenteCosto.BISELADO] = costoBiselado(
+                opticaId, item, ojosParaBiselado, receta?.adicion, fechaIso,
+            )
         }
         return CostoItemCalculado(componentes)
     }
 
     private data class Ojo(val esfera: Double, val cilindro: Double?)
-
-    private fun ojosConEsfera(receta: RecetaCosto?): Map<ComponenteCosto, Ojo> = buildMap {
-        receta?.odEsf?.let { put(ComponenteCosto.OD, Ojo(it, receta.odCil)) }
-        receta?.oiEsf?.let { put(ComponenteCosto.OI, Ojo(it, receta.oiCil)) }
-    }
 
     private fun resolveForEye(
         item: DispensacionItem,

@@ -92,6 +92,10 @@ data class DispensacionItem(
     @SerialName("forzar_stock_astigmatismo")
     @ColumnInfo(name = "forzar_stock_astigmatismo")
     val forzarStockIgnorandoAstigmatismo: Boolean = false,
+    /** Ambos | OD | OI — which eyes are dispensed on this product line. */
+    @SerialName("ojos_lente")
+    @ColumnInfo(name = "ojos_lente")
+    val ojosLente: String = "Ambos",
     @SerialName("costo_real_od")
     @ColumnInfo(name = "costo_real_od")
     val costoRealOd: Double? = null,

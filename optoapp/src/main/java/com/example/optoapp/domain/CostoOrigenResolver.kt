@@ -11,7 +11,9 @@ object CostoOrigenResolver {
     fun resolver(componentes: Collection<OrigenComponente>, origenPrevio: String?): String {
         val origenes = componentes.map { origen(it, origenPrevio) }
         return when {
-            origenes.isEmpty() || FALTANTE in origenes -> FALTANTE
+            origenes.isEmpty() -> FALTANTE
+            // Partial gaps stay mixto so a successful OD/OI matrix hit is not wiped by a missing bevel/montura.
+            origenes.all { it == FALTANTE } -> FALTANTE
             origenes.all { it == MANUAL } -> MANUAL
             origenes.all { it == MATRIZ } -> MATRIZ
             else -> MIXTO

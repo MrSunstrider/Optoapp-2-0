@@ -1571,6 +1571,14 @@ val MIGRATION_58_59 = object : Migration(58, 59) {
     }
 }
 
+val MIGRATION_59_60 = object : Migration(59, 60) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE dispensacion_items ADD COLUMN ojos_lente TEXT NOT NULL DEFAULT 'Ambos'",
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """

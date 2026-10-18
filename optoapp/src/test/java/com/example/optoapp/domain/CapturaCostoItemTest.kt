@@ -66,11 +66,12 @@ class CapturaCostoItemTest {
     }
 
     @Test
-    fun `a missing lookup persists zero with faltante origin`() = runTest {
+    fun `a missing lookup persists zero with mixto origin when other components hit`() = runTest {
         val guardado = capturar(resultado = mapOf(OD to 22.0, OI to null))
 
         assertEquals(0.0, guardado.costoRealOi!!, 0.001)
-        assertEquals("faltante", guardado.costoOrigen)
+        assertEquals(22.0, guardado.costoRealOd!!, 0.001)
+        assertEquals("mixto", guardado.costoOrigen)
     }
 
     @Test
@@ -253,6 +254,6 @@ class CapturaCostoItemTest {
         assertEquals(OrigenComponente.PRESERVADA, detalle.origenes[MONTURA])
         assertEquals(OrigenComponente.FALTANTE, detalle.origenes[BISELADO])
         assertEquals(25.0, detalle.item.costoRealOd!!, 0.001)
-        assertEquals("faltante", detalle.item.costoOrigen)
+        assertEquals("mixto", detalle.item.costoOrigen)
     }
 }

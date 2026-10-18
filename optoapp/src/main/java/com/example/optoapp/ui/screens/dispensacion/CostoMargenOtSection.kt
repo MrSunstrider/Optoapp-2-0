@@ -64,6 +64,7 @@ data class ItemCostoOt(
     val filas: List<FilaCostoOt>,
     val origenGuardado: String?,
     val incompleto: Boolean,
+    val ojosLente: String = com.example.optoapp.domain.OjosLente.AMBOS,
 )
 
 data class CostoMargenOtModel(
@@ -112,7 +113,12 @@ data class CostoMargenOtModel(
             } else {
                 CoberturaCostoClassifier.claseItem(item.costoOrigen, filas.sumOf { it.valor }) == ClaseCobertura.FALTANTE
             }
-            return ItemCostoOt(filas = filas, origenGuardado = item.costoOrigen, incompleto = incompleto)
+            return ItemCostoOt(
+                filas = filas,
+                origenGuardado = item.costoOrigen,
+                incompleto = incompleto,
+                ojosLente = com.example.optoapp.domain.OjosLente.normalize(item.ojosLente),
+            )
         }
 
         private fun fila(item: DispensacionItemUi, componente: ComponenteCosto): FilaCostoOt? {
@@ -271,7 +277,13 @@ private fun ItemCosto(
             }
         }
     }
-    val faltantes = ComponenteCosto.entries.filter { componente -> item.filas.none { it.componente == componente } }
+    val faltantes = ComponenteCosto.entries.filter { componente ->
+        item.filas.none { it.componente == componente } && when (componente) {
+            ComponenteCosto.OD -> com.example.optoapp.domain.OjosLente.includesOd(item.ojosLente)
+            ComponenteCosto.OI -> com.example.optoapp.domain.OjosLente.includesOi(item.ojosLente)
+            else -> true
+        }
+    }
     if (editable && faltantes.isNotEmpty()) {
         var menuAbierto by remember { mutableStateOf(false) }
         Box {
