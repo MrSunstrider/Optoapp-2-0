@@ -29,4 +29,6 @@ L1. User: `Por defecto no aparecen od y oi, solo aparece oi, y no guarda correct
 
 L2. Implemented T1–T3 inline: MIXTO origin, montura inventory cost (incl. 0), ojosLente Ambos|OD|OI (Room 60 + supabase migration + LenteForm + calc/captura). Focused + full `testDebugUnitTest` GREEN (3293 tests). Risk: item 1 (Room/schema + supabase column) and item 3 (sync DTO). Pending remote `ojos_lente` migrate until authorized.
 
-L3. JD round 1 (2026-10-18): confirmed CRITICAL upload without remote column + BISELADO entradas missing ojosLente. User OK: applied remote migration `dispensacion_items_ojos_lente` on sflhtihqdhrlryeyrzdo (column verified); fixed CapturaCostoItem BISELADO entradas + tests.
+L3. JD round 1 (2026-10-18): confirmed CRITICAL upload without remote column + BISELADO entradas missing ojosLente. User OK: applied remote migration `dispensacion_items_ojos_lente` on sflhtihqdhrlryeyrzdo (column verified); fixed CapturaCostoItem BISELADO entradas + tests (`de5e30ad`).
+
+L4. JD scoped re-judgment round 2: both judges empty findings → JUDGMENT APPROVED.
