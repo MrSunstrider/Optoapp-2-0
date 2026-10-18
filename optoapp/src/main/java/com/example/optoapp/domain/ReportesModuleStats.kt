@@ -15,11 +15,18 @@ data class PacientesReporte(
     val sinSexo: Int,
 )
 
+data class InventarioCritico(
+    val label: String,
+    val stockActual: Int,
+    val stockMinimo: Int,
+)
+
 data class InventarioReporte(
     val modelos: Int,
     val stockTotal: Int,
     val lowStock: Int,
     val salidasVentaPeriodo: Int,
+    val criticos: List<InventarioCritico> = emptyList(),
 )
 
 data class ClinicoReporte(
@@ -60,15 +67,26 @@ object ReportesModuleStats {
         movimientos: List<MonturaMovimiento>,
         start: LocalDate,
         end: LocalDate,
+        criticosLimit: Int = 8,
     ): InventarioReporte {
         val salidas = movimientos.count {
             it.tipo == "SALIDA_VENTA" && !it.fecha.isBefore(start) && !it.fecha.isAfter(end)
         }
+        val bajos = monturas.filter { it.stockActual <= it.stockMinimo }
+        val criticos = bajos
+            .sortedWith(compareBy({ it.stockActual }, { it.marca }, { it.modelo }))
+            .take(criticosLimit)
+            .map { m ->
+                val label = listOf(m.marca, m.modelo).filter { it.isNotBlank() }.joinToString(" ")
+                    .ifBlank { m.sku.ifBlank { m.id.take(8) } }
+                InventarioCritico(label = label, stockActual = m.stockActual, stockMinimo = m.stockMinimo)
+            }
         return InventarioReporte(
             modelos = monturas.size,
             stockTotal = monturas.sumOf { it.stockActual },
-            lowStock = monturas.count { it.stockActual <= it.stockMinimo },
+            lowStock = bajos.size,
             salidasVentaPeriodo = salidas,
+            criticos = criticos,
         )
     }
 
