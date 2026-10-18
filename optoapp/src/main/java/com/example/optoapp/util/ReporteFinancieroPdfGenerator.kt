@@ -110,7 +110,9 @@ object ReporteFinancieroPdfGenerator {
             pdf.drawBodyLine("Margen delta: S/ ${cmp.margenDelta.toMoney()} ($margenPct)")
             pdf.drawBodyLine("Transacciones delta: ${cmp.transaccionesDelta}")
         }
-        extras.pacientes?.let { p ->
+        extras.pacientes?.takeIf { p ->
+            p.altas != 0 || p.hombres != 0 || p.mujeres != 0 || p.sinSexo != 0
+        }?.let { p ->
             pdf.drawSectionTitle("Pacientes")
             pdf.drawKpis(
                 listOf(
@@ -121,7 +123,7 @@ object ReporteFinancieroPdfGenerator {
                 ),
             )
         }
-        extras.inventario?.let { inv ->
+        extras.inventario?.takeIf { it.modelos > 0 }?.let { inv ->
             pdf.drawSectionTitle("Inventario (resumen)")
             pdf.drawKpis(
                 listOf(
@@ -132,44 +134,40 @@ object ReporteFinancieroPdfGenerator {
                 ),
             )
         }
-        extras.clinico?.let { c ->
+        extras.clinico?.takeIf { it.evaluaciones > 0 }?.let { c ->
             pdf.drawSectionTitle("Clínico")
             pdf.drawBodyLine("Evaluaciones: ${c.evaluaciones}")
             c.porDiagnostico.take(12).forEach { (label, count) ->
                 pdf.drawBodyLine("$label: $count")
             }
         }
-        extras.equipo?.let { e ->
+        extras.equipo?.takeIf { it.filas.isNotEmpty() || it.sinAtribuirCount > 0 }?.let { e ->
             pdf.drawSectionTitle("Equipo")
             pdf.drawMutedLine("Comisión: ${String.format(Locale.US, "%.1f", e.comisionPct)}%")
-            if (e.filas.isEmpty() && e.sinAtribuirCount == 0) {
-                pdf.drawMutedLine("Sin ventas atribuidas")
-            } else {
-                val cols = listOf(
-                    ReportPdfColumn("Vendedor", ReportPdfTheme.MARGIN, 180f),
-                    ReportPdfColumn("Vendido", ReportPdfTheme.MARGIN + 200f, 100f),
-                    ReportPdfColumn("Tx", ReportPdfTheme.MARGIN + 320f, 50f),
-                    ReportPdfColumn("Comisión", ReportPdfTheme.MARGIN + 390f, 100f),
+            val cols = listOf(
+                ReportPdfColumn("Vendedor", ReportPdfTheme.MARGIN, 180f),
+                ReportPdfColumn("Vendido", ReportPdfTheme.MARGIN + 200f, 100f),
+                ReportPdfColumn("Tx", ReportPdfTheme.MARGIN + 320f, 50f),
+                ReportPdfColumn("Comisión", ReportPdfTheme.MARGIN + 390f, 100f),
+            )
+            pdf.drawTableHeader(cols)
+            e.filas.forEachIndexed { index, row ->
+                pdf.drawTableRow(
+                    cols,
+                    listOf(
+                        row.displayName,
+                        "S/ ${row.vendido.toMoney()}",
+                        row.transacciones.toString(),
+                        "S/ ${row.comision.toMoney()}",
+                    ),
+                    rowIndex = index,
                 )
-                pdf.drawTableHeader(cols)
-                e.filas.forEachIndexed { index, row ->
-                    pdf.drawTableRow(
-                        cols,
-                        listOf(
-                            row.displayName,
-                            "S/ ${row.vendido.toMoney()}",
-                            row.transacciones.toString(),
-                            "S/ ${row.comision.toMoney()}",
-                        ),
-                        rowIndex = index,
-                    )
-                }
-                if (e.sinAtribuirCount > 0) {
-                    pdf.drawBodyLine(
-                        "Sin atribuir: S/ ${e.sinAtribuirVendido.toMoney()} (${e.sinAtribuirCount})",
-                        warn = true,
-                    )
-                }
+            }
+            if (e.sinAtribuirCount > 0) {
+                pdf.drawBodyLine(
+                    "Sin atribuir: S/ ${e.sinAtribuirVendido.toMoney()} (${e.sinAtribuirCount})",
+                    warn = true,
+                )
             }
         }
     }

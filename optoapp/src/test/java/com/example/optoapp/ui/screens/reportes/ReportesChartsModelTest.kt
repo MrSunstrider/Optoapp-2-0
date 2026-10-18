@@ -25,7 +25,6 @@ class ReportesChartsModelTest {
 
     @Test
     fun clinicoDiagnosticos_bucketsOthers() {
-        // porDiagnostico is expected already sorted descending by count.
         val reporte = ClinicoReporte(
             evaluaciones = 10,
             porDiagnostico = (8 downTo 1).map { "D$it" to it },

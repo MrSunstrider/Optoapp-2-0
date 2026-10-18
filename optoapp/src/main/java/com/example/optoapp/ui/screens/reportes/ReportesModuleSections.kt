@@ -42,6 +42,7 @@ import com.example.optoapp.ui.components.charts.OptoBarChart
 import com.example.optoapp.ui.components.charts.OptoDonutChart
 import com.example.optoapp.ui.theme.warningAmber
 import com.example.optoapp.util.MoneyFormatter
+import java.util.Locale
 
 @Composable
 private fun ReportesEmptyBlock(
@@ -99,8 +100,8 @@ fun ReportesVentasVisuals(
             ) {
                 Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(stringResource(R.string.reportes_vs_periodo_anterior), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format("%.1f%%", it) } ?: "—"
-                    val margenPct = cmp.margenDeltaPct()?.let { String.format("%.1f%%", it) } ?: "—"
+                    val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
+                    val margenPct = cmp.margenDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
                     Text(stringResource(R.string.reportes_delta_vendido, MoneyFormatter.format(cmp.vendidoDelta), vendidoPct), fontSize = 13.sp)
                     Text(stringResource(R.string.reportes_delta_margen, MoneyFormatter.format(cmp.margenDelta), margenPct), fontSize = 13.sp)
                     Text(stringResource(R.string.reportes_delta_tx, cmp.transaccionesDelta), fontSize = 13.sp)

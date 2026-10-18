@@ -69,21 +69,26 @@ object ReportesModuleStats {
         end: LocalDate,
         criticosLimit: Int = 8,
     ): InventarioReporte {
+        val activas = monturas.filter { it.activo }
         val salidas = movimientos.count {
             it.tipo == "SALIDA_VENTA" && !it.fecha.isBefore(start) && !it.fecha.isAfter(end)
         }
-        val bajos = monturas.filter { it.stockActual <= it.stockMinimo }
+        val bajos = activas.filter { m ->
+            val threshold = m.stockMinimo.takeIf { it > 0 } ?: 2
+            m.stockActual <= threshold
+        }
         val criticos = bajos
             .sortedWith(compareBy({ it.stockActual }, { it.marca }, { it.modelo }))
             .take(criticosLimit)
             .map { m ->
                 val label = listOf(m.marca, m.modelo).filter { it.isNotBlank() }.joinToString(" ")
                     .ifBlank { m.sku.ifBlank { m.id.take(8) } }
-                InventarioCritico(label = label, stockActual = m.stockActual, stockMinimo = m.stockMinimo)
+                val threshold = m.stockMinimo.takeIf { it > 0 } ?: 2
+                InventarioCritico(label = label, stockActual = m.stockActual, stockMinimo = threshold)
             }
         return InventarioReporte(
-            modelos = monturas.size,
-            stockTotal = monturas.sumOf { it.stockActual },
+            modelos = activas.size,
+            stockTotal = activas.sumOf { it.stockActual },
             lowStock = bajos.size,
             salidasVentaPeriodo = salidas,
             criticos = criticos,
@@ -99,7 +104,7 @@ object ReportesModuleStats {
                 ev.diagnosticoOd.orEmpty().map { it.trim() }.filter { it.isNotBlank() }.forEach(::add)
                 ev.diagnosticoOi.orEmpty().map { it.trim() }.filter { it.isNotBlank() }.forEach(::add)
                 ev.diagnosticoOtros.orEmpty().map { it.trim() }.filter { it.isNotBlank() }.forEach(::add)
-            }.ifEmpty { listOf("Sin diagnóstico") }
+            }.ifEmpty { listOf("Sin diagnóstico") }.distinct()
             labels.forEach { label -> counts[label] = (counts[label] ?: 0) + 1 }
         }
         return ClinicoReporte(

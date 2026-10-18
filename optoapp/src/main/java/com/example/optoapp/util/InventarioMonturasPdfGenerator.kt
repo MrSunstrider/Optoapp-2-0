@@ -32,11 +32,11 @@ object InventarioMonturasPdfGenerator {
         pdf.drawMutedLine("Valor costo: S/ ${valorCosto.toMoney()}  ·  Valor venta: S/ ${valorPrecio.toMoney()}")
 
         val cols = listOf(
-            ReportPdfColumn("SKU", ReportPdfTheme.MARGIN, 80f),
-            ReportPdfColumn("Marca / producto", ReportPdfTheme.MARGIN + 85f, 190f),
-            ReportPdfColumn("Color/Talla", ReportPdfTheme.MARGIN + 290f, 100f),
-            ReportPdfColumn("Stock", ReportPdfTheme.MARGIN + 405f, 45f),
-            ReportPdfColumn("Precio", ReportPdfTheme.MARGIN + 460f, 70f),
+            ReportPdfColumn("SKU", ReportPdfTheme.MARGIN, 72f),
+            ReportPdfColumn("Marca / producto", ReportPdfTheme.MARGIN + 76f, 175f),
+            ReportPdfColumn("Color/Talla", ReportPdfTheme.MARGIN + 258f, 90f),
+            ReportPdfColumn("Stock", ReportPdfTheme.MARGIN + 356f, 42f),
+            ReportPdfColumn("Precio", ReportPdfTheme.MARGIN + 406f, 70f),
         )
         pdf.drawSectionTitle("Detalle")
         if (monturas.isEmpty()) {

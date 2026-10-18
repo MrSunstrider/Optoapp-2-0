@@ -18,6 +18,7 @@ class ReportPdfCanvas {
     private lateinit var canvas: Canvas
     private var y = 0f
     private var documentTitle = ""
+    private var activeTableColumns: List<ReportPdfColumn>? = null
 
     val contentWidth: Float
         get() = ReportPdfTheme.PAGE_W - (ReportPdfTheme.MARGIN * 2)
@@ -79,6 +80,7 @@ class ReportPdfCanvas {
     }
 
     fun drawTableHeader(columns: List<ReportPdfColumn>) {
+        activeTableColumns = columns
         ensureSpace(ReportPdfTheme.TABLE_HEADER_H + 4f)
         val top = y
         val bottom = y + ReportPdfTheme.TABLE_HEADER_H
@@ -101,7 +103,12 @@ class ReportPdfCanvas {
         rowIndex: Int,
         warn: Boolean = false,
     ) {
-        ensureSpace(ReportPdfTheme.ROW_H + 2f)
+        val need = ReportPdfTheme.ROW_H + 2f
+        val willBreak = y + need > ReportPdfTheme.PAGE_H - ReportPdfTheme.BOTTOM_SAFE
+        ensureSpace(need)
+        if (willBreak) {
+            activeTableColumns?.let { drawTableHeader(it) }
+        }
         val top = y
         val bottom = y + ReportPdfTheme.ROW_H
         if (rowIndex % 2 == 1) {
