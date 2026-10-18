@@ -468,6 +468,21 @@ data class ConfiguracionFinancieraRemoto(
     )
 }
 
+fun ConfiguracionFinancieraEntity.toRemoto() = ConfiguracionFinancieraRemoto(
+    opticaId = opticaId,
+    margenNetoObjetivo = margenNetoObjetivo,
+    ticketPromedioObjetivo = ticketPromedioObjetivo,
+    caidaVentasAlertaPct = caidaVentasAlertaPct,
+    deudaViejaAlertaDias = deudaViejaAlertaDias,
+    deudaTotalAlertaMonto = deudaTotalAlertaMonto,
+    stockEstancadoAlertaDias = stockEstancadoAlertaDias,
+    stockBajoAlertaUnidades = stockBajoAlertaUnidades,
+    minVentasParaRecomendar = minVentasParaRecomendar,
+    frecuenciaRecalculoDias = frecuenciaRecalculoDias,
+    origenBiseladoDefault = OrigenBiselado.normalize(origenBiseladoDefault),
+    costoBiseladoPropio = costoBiseladoPropio.coerceAtLeast(0.0),
+)
+
 @Serializable
 data class CostoProductoRemoto(
     val id: String,

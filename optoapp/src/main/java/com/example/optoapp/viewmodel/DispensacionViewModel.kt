@@ -179,8 +179,10 @@ class DispensacionViewModel @Inject constructor(
             origenBiseladoDefault = com.example.optoapp.domain.OrigenBiselado.normalize(
                 configuracionFinancieraDao.getByOpticaIdOnce(opticaId)?.origenBiseladoDefault,
             )
+            // WHY: DispensacionItemUi.id defaults to a UUID, so id.isEmpty() never fires; reseed
+            // the single pristine first line after config loads so origenBiseladoDefault applies.
             _uiState.update { state ->
-                if (state.items.size == 1 && state.items.first().id.isEmpty()) {
+                if (state.items.size == 1 && isPristineBlankFirstLine(state.items.first())) {
                     state.copy(items = listOf(blankItem()))
                 } else {
                     state
@@ -260,7 +262,7 @@ class DispensacionViewModel @Inject constructor(
                         loadedItems.map { it.toUi() }
                     } else {
                         listOf(
-                            DispensacionItemUi(
+                            blankItem().copy(
                                 tipoLente = d.tipoLente,
                                 distanciaLente = d.distanciaLente,
                                 altura = d.altura,
@@ -383,6 +385,29 @@ class DispensacionViewModel @Inject constructor(
     }
 
     private fun blankItem() = DispensacionItemUi(origenBiselado = origenBiseladoDefault)
+
+    private fun isPristineBlankFirstLine(item: DispensacionItemUi): Boolean =
+        item.tipoLente.isBlank() &&
+            item.materialLente.isBlank() &&
+            item.monturaId.isBlank() &&
+            item.distanciaLente.isBlank() &&
+            item.tratamientos.isEmpty() &&
+            item.costoRealOd == null &&
+            item.costoRealOi == null &&
+            item.costoRealMontura == null &&
+            item.costoRealBiselado == null &&
+            item.costoRealLc == null
+
+    private suspend fun clearLinkedBiseladoGastos(opticaId: String, deletedItemIds: List<String>) {
+        if (deletedItemIds.isEmpty()) return
+        syncBiseladoGastosDerivados(
+            opticaId = opticaId,
+            ot = "",
+            fecha = LocalDate.now(),
+            items = emptyList(),
+            deletedItemIds = deletedItemIds,
+        )
+    }
 
     fun updateItem(index: Int, item: DispensacionItemUi) {
         _uiState.update { s ->
@@ -711,7 +736,12 @@ class DispensacionViewModel @Inject constructor(
             try {
                 val role = sessionManager.opticaRol.first()
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "eliminar dispensación")
-                eliminarDispensacionUseCase(dispensacionId, sessionManager.opticaId.first())
+                val opticaId = sessionManager.opticaId.first()
+                // Capture item ids before eliminar cascades them away.
+                val deletedItemIds = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
+                    .map { it.id }
+                eliminarDispensacionUseCase(dispensacionId, opticaId)
+                clearLinkedBiseladoGastos(opticaId, deletedItemIds)
                 _uiState.update { it.copy(isLoading = false) }
                 onComplete()
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -771,7 +801,12 @@ class DispensacionViewModel @Inject constructor(
                 AuthorizationGuard.requireRole(role, setOf("admin", "gerente"), "anular dispensación")
                 val opticaId = sessionManager.opticaId.first()
                 when (val outcome = anularDispensacionUseCase(dispensacionId, opticaId, motivo)) {
-                    LifecycleOutcome.Applied -> _uiState.update { it.copy(isLoading = false) }
+                    LifecycleOutcome.Applied -> {
+                        val deletedItemIds = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
+                            .map { it.id }
+                        clearLinkedBiseladoGastos(opticaId, deletedItemIds)
+                        _uiState.update { it.copy(isLoading = false) }
+                    }
                     is LifecycleOutcome.AlreadyTerminal -> {
                         if (outcome.estado == OrderStatusPolicy.RECLAMADA) {
                             _uiState.update { it.copy(isLoading = false, error = "No se puede anular una orden reclamada") }

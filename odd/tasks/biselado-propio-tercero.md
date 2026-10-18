@@ -45,3 +45,5 @@ L2. Plan review findings (blocking corrections before apply):
 L3. T1–T4 implemented on `feat/biselado-propio-tercero` (2026-10-18): Room 61 + Supabase migration, OrigenBiselado, Propio rate in calc, LenteForm dropdown, config UI section, SyncBiseladoGastosDerivados + analisis filter. Focused + full `testDebugUnitTest` BUILD SUCCESSFUL. Pending: work-unit commit, remote migrate OK, GGA/JD, PR.
 
 L4. Work-unit commit `7f8eed56` (GGA PASSED via temporary mini provider after nano false-positives; restored nano). `.gga` also excludes `*Test.kt`. T5 blocked on explicit OK for remote Supabase migrate `20261018020000_biselado_propio_tercero.sql`, then JD + PR stacked after #189.
+
+L5. JD fix round (2026-10-18): C1 rpc_analisis exclude `origen_dispensacion_item_id IS NOT NULL` (migration `20261018030000`); C2 config financiera upload before download; S1 reseed pristine first OT line from origenBiseladoDefault; W1 clear linked gastos on anulación Applied + delete.

@@ -1,8 +1,11 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.domain.CalcularMontoPagadoUseCase
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
@@ -26,6 +29,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.math.BigDecimal
+import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DispensacionViewModelDeleteTest {
@@ -36,6 +41,7 @@ class DispensacionViewModelDeleteTest {
     private lateinit var stockHelper: DispensacionStockHelper
     private lateinit var calcularMontoPagadoUseCase: CalcularMontoPagadoUseCase
     private lateinit var eliminar: EliminarDispensacionUseCase
+    private lateinit var gastoOperativoDao: GastoOperativoDao
     private lateinit var viewModel: DispensacionViewModel
 
     private val opticaIdFlow = MutableStateFlow("optica-test")
@@ -59,6 +65,7 @@ class DispensacionViewModelDeleteTest {
         stockHelper = mockk(relaxed = true)
         calcularMontoPagadoUseCase = mockk()
         eliminar = mockk(relaxed = true)
+        gastoOperativoDao = mockk(relaxed = true)
 
         every { sessionManager.opticaId } returns opticaIdFlow
         every { sessionManager.opticaRol } returns opticaRolFlow
@@ -75,17 +82,17 @@ class DispensacionViewModelDeleteTest {
         postSaveSyncScheduler,
         stockHelper,
         calcularMontoPagadoUseCase,
-        mockk<com.example.optoapp.domain.AnularDispensacionUseCase>(relaxed = true),
-        mockk<com.example.optoapp.domain.ReclamarDispensacionUseCase>(relaxed = true),
-        mockk(relaxed = true),  // calcularCostoItem
-        mockk(relaxed = true),  // guardarBiselado
-        mockk(relaxed = true),  // guardarCostoLente
+        mockk(relaxed = true),
+        mockk(relaxed = true),
+        mockk(relaxed = true),
+        mockk(relaxed = true),
+        mockk(relaxed = true),
         eliminar,
         mockk(relaxed = true),
         mockk(relaxed = true),
-            mockk(relaxed = true),
-            mockk(relaxed = true)
-        ).also { testDispatcher.scheduler.advanceUntilIdle() }
+        mockk(relaxed = true),
+        gastoOperativoDao,
+    ).also { testDispatcher.scheduler.advanceUntilIdle() }
 
     @Test
     fun `deleteDispensacion delegates to the eliminar use case without restocking`() = runTest(testDispatcher) {
@@ -130,5 +137,36 @@ class DispensacionViewModelDeleteTest {
         assertFalse(completed)
         assertEquals("La orden tiene pagos o movimientos de stock. Usa Anular.", viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `deleteDispensacion clears linked biselado gastos before eliminar cascades items`() = runTest(testDispatcher) {
+        val item = DispensacionItem(
+            id = "item-del",
+            dispensacionId = dispId,
+            tipoLente = "Monofocal",
+            materialLente = "Resina",
+            tratamientos = emptyList(),
+            origenMontura = "Paciente",
+            opticaId = "optica-test",
+        )
+        val linked = GastoOperativoEntity(
+            id = "gb_item-del",
+            opticaId = "optica-test",
+            categoria = "Biselado",
+            monto = BigDecimal("15"),
+            fecha = LocalDate.of(2026, 10, 18),
+            origenDispensacionItemId = "item-del",
+        )
+        coEvery { repository.getDispensacionItemsByDispensacion(dispId, "optica-test") } returns listOf(item)
+        coEvery { gastoOperativoDao.getByOrigenDispensacionItemId("optica-test", "item-del") } returns linked
+        viewModel = createViewModel()
+
+        var completed = false
+        viewModel.deleteDispensacion(dispId) { completed = true }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(completed)
+        coVerify(exactly = 1) { gastoOperativoDao.delete("gb_item-del", "optica-test") }
     }
 }

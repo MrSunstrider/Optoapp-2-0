@@ -91,6 +91,13 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r8 = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
             regalosUp = r8.count; hadPartialUpload = hadPartialUpload || r8.partial
             AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
+            // WHY: config is Room-edited without a dedicated upload path; push before download
+            // so downloadConfiguracionFinanciera cannot wipe local biselado defaults/rates.
+            val rConfig = safeUpload("configuracion_financiera") {
+                downloadSyncCoordinator.uploadConfiguracionFinanciera(opticaId)
+            }
+            hadPartialUpload = hadPartialUpload || rConfig.partial
+            AppLogger.d(TAG, "Finanzas: upload configuracion_financiera=${rConfig.count}")
         }
 
         // Runs on every sync, even one that uploaded nothing, so days whose RPC failed earlier are retried.
