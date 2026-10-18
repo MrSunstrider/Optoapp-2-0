@@ -96,6 +96,10 @@ data class DispensacionItem(
     @SerialName("ojos_lente")
     @ColumnInfo(name = "ojos_lente")
     val ojosLente: String = "Ambos",
+    /** Propio | Tercero — who performs beveling for this product line. */
+    @SerialName("origen_biselado")
+    @ColumnInfo(name = "origen_biselado")
+    val origenBiselado: String = "Tercero",
     @SerialName("costo_real_od")
     @ColumnInfo(name = "costo_real_od")
     val costoRealOd: Double? = null,

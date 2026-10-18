@@ -102,6 +102,7 @@ object CapturaCostoItem {
                 item.materialLente,
                 item.tipoAro,
                 item.ojosLente,
+                OrigenBiselado.normalize(item.origenBiselado),
                 AltoIndiceNormalizer.normalize(item.altoIndice),
                 bloqueBiselado(receta?.odEsf, receta?.odCil),
                 bloqueBiselado(receta?.oiEsf, receta?.oiCil),

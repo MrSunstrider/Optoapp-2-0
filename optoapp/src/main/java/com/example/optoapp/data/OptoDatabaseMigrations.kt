@@ -1579,6 +1579,27 @@ val MIGRATION_59_60 = object : Migration(59, 60) {
     }
 }
 
+val MIGRATION_60_61 = object : Migration(60, 61) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        // WHY: dispensacion_items uses @ColumnInfo snake_case; config/gastos mirror Kotlin field names (no @ColumnInfo).
+        db.execSQL(
+            "ALTER TABLE dispensacion_items ADD COLUMN origen_biselado TEXT NOT NULL DEFAULT 'Tercero'",
+        )
+        db.execSQL(
+            "ALTER TABLE configuracion_financiera ADD COLUMN origenBiseladoDefault TEXT NOT NULL DEFAULT 'Tercero'",
+        )
+        db.execSQL(
+            "ALTER TABLE configuracion_financiera ADD COLUMN costoBiseladoPropio REAL NOT NULL DEFAULT 0",
+        )
+        db.execSQL(
+            "ALTER TABLE gastos_operativos ADD COLUMN origenDispensacionItemId TEXT",
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_gastos_operativos_origenDispensacionItemId ON gastos_operativos(origenDispensacionItemId)",
+        )
+    }
+}
+
 /** Shared Room backfill: fill null/blank/whitespace updatedAt with LWW-safe sentinel (not wall-clock). */
 internal fun stampNullOrBlankUpdatedAtSql(table: String): String =
     """

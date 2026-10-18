@@ -173,6 +173,20 @@ class ObtenerAnalisisMensualUseCaseTest {
     }
 
     @Test
+    fun offline_excludesLinkedOtBiseladoGastosFromNeto() = runTest {
+        val linked = gasto("gb1", "2000.00").copy(origenDispensacionItemId = "item-1")
+        val useCase = offlineUseCase(
+            resumenes = listOf(resumen("r1", "2026-07-01", ventas = 10000.0, costo = 4000.0)),
+            gastos = listOf(gasto("g1", "1000.00"), linked),
+        )
+
+        val analisis = (useCase("optica1", julio) as Resource.Success).data!!
+
+        assertEquals(1000.0, analisis.gastosMes, 0.001)
+        assertEquals(50.0, analisis.margenNetoPct, 0.001)
+    }
+
+    @Test
     fun offline_withoutSales_returnsZeroPercentagesWithoutDividing() = runTest {
         val useCase = offlineUseCase(resumenes = emptyList(), gastos = listOf(gasto("g1", "500.00")))
 

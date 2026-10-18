@@ -2,6 +2,8 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.Montura
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoEntity
 import com.example.optoapp.data.costolc.CostoLcDao
@@ -34,6 +36,7 @@ class CalcularCostoItemUseCaseTest {
     private lateinit var costoBiseladoDao: CostoBiseladoDao
     private lateinit var monturaDao: MonturaDao
     private lateinit var costoLcDao: CostoLcDao
+    private lateinit var configuracionFinancieraDao: ConfiguracionFinancieraDao
     private lateinit var useCase: CalcularCostoItemUseCase
 
     @Before
@@ -42,13 +45,17 @@ class CalcularCostoItemUseCaseTest {
         costoBiseladoDao = mockk()
         monturaDao = mockk()
         costoLcDao = mockk()
+        configuracionFinancieraDao = mockk()
         coEvery {
             costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
         } returns null
         coEvery { costoBiseladoDao.lookupVigente(any(), any(), any(), any(), any(), any()) } returns emptyList()
         coEvery { monturaDao.getMonturaByIdForOptica(any(), any()) } returns null
         coEvery { costoLcDao.lookupVigente(any(), any(), any(), any(), any()) } returns emptyList()
-        useCase = CalcularCostoItemUseCase(costoProductoDao, costoBiseladoDao, monturaDao, costoLcDao)
+        coEvery { configuracionFinancieraDao.getByOpticaIdOnce(any()) } returns null
+        useCase = CalcularCostoItemUseCase(
+            costoProductoDao, costoBiseladoDao, monturaDao, costoLcDao, configuracionFinancieraDao,
+        )
     }
 
     private fun item(
@@ -172,6 +179,42 @@ class CalcularCostoItemUseCaseTest {
 
         assertFalse(result.componentes.containsKey(OD))
         assertEquals(18.0, result.componentes.getValue(OI))
+    }
+
+    @Test
+    fun propioBiseladoUsesInternalRateAndSkipsMatrix() = runTest {
+        coEvery { configuracionFinancieraDao.getByOpticaIdOnce(opticaId) } returns ConfiguracionFinancieraEntity(
+            opticaId = opticaId,
+            costoBiseladoPropio = 12.0,
+        )
+        stubBiselado(biselado(null, 99.0))
+
+        val result = useCase(
+            opticaId,
+            item(tipoAro = "Aro Completo").copy(origenBiselado = OrigenBiselado.PROPIO),
+            recetaSerie2,
+            fecha,
+        )
+
+        assertEquals(12.0, result.componentes.getValue(BISELADO))
+        coVerify(exactly = 0) { costoBiseladoDao.lookupVigente(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun propioBiseladoWithZeroRateIsZeroNotFaltante() = runTest {
+        coEvery { configuracionFinancieraDao.getByOpticaIdOnce(opticaId) } returns ConfiguracionFinancieraEntity(
+            opticaId = opticaId,
+            costoBiseladoPropio = 0.0,
+        )
+
+        val result = useCase(
+            opticaId,
+            item(tipoAro = "Aro Completo").copy(origenBiselado = OrigenBiselado.PROPIO),
+            recetaSerie2,
+            fecha,
+        )
+
+        assertEquals(0.0, result.componentes.getValue(BISELADO))
     }
 
     @Test

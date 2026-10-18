@@ -57,7 +57,9 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
             inicioSerie.atDay(1).toString(),
             mesActual.atEndOfMonth().toString(),
         )
+        // Linked OT bevel gastos already sit in costoMes; exclude them from neto gastos.
         val gastos = gastoOperativoDao.getByOpticaBetween(opticaId, inicioSerie.atDay(1), mesActual.atEndOfMonth())
+            .filter { it.origenDispensacionItemId == null }
         val rows = resumenes.filter { mesDe(it.fecha) == mesActual }
         val gastosDelMes = gastos.filter { YearMonth.from(it.fecha) == mesActual }
         val gastosMes = gastosDelMes.sumOf { it.monto }.toDouble()

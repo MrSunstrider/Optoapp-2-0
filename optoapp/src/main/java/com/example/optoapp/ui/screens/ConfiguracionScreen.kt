@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.config.BiseladoConfigSection
 import com.example.optoapp.ui.components.config.BusinessHoursSection
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
 import com.example.optoapp.ui.components.config.ConfigProfileSection
@@ -41,6 +42,7 @@ import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.BusinessHoursConfigViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
+import com.example.optoapp.viewmodel.FinanzasBiseladoConfigViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
 import com.example.optoapp.viewmodel.RoleManagementViewModel
@@ -66,9 +68,11 @@ fun ConfiguracionScreen(
     syncDiagVm: SyncDiagnosticsViewModel = hiltViewModel(),
     roleVm: RoleManagementViewModel = hiltViewModel(),
     configVm: ConfiguracionViewModel = hiltViewModel(),
+    biseladoVm: FinanzasBiseladoConfigViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val biseladoUi by biseladoVm.ui.collectAsState()
     val fiscalUi by fiscalVm.uiState.collectAsState()
     val labUi by laboratorioVm.uiState.collectAsState()
     val businessHoursUi by businessHoursVm.uiState.collectAsState()
@@ -221,6 +225,12 @@ fun ConfiguracionScreen(
                 onLabNombreChange = { configVm.labNombre = it },
                 onLabContactoChange = { configVm.labContacto = it },
                 onSave = { laboratorioVm.save(configVm.labNombre, configVm.labContacto) },
+            )
+            BiseladoConfigSection(
+                ui = biseladoUi,
+                onOrigenChange = biseladoVm::cambiarOrigenDefault,
+                onCostoPropioChange = biseladoVm::cambiarCostoPropio,
+                onSave = biseladoVm::guardar,
             )
 
             FiscalDataSection(

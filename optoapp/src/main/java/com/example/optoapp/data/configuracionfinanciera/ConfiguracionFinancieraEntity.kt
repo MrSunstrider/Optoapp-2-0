@@ -15,4 +15,8 @@ data class ConfiguracionFinancieraEntity(
     val stockBajoAlertaUnidades: Int = 2,
     val minVentasParaRecomendar: Int = 5,
     val frecuenciaRecalculoDias: Int = 1,
+    /** Default Propio | Tercero for new OT product lines. */
+    val origenBiseladoDefault: String = "Tercero",
+    /** Internal pair rate when origen biselado is Propio; 0 means no COGS. */
+    val costoBiseladoPropio: Double = 0.0,
 )

@@ -8,7 +8,10 @@ import java.time.LocalDate
 
 @Entity(
     tableName = "gastos_operativos",
-    indices = [Index(value = ["opticaId"])],
+    indices = [
+        Index(value = ["opticaId"]),
+        Index(value = ["origenDispensacionItemId"]),
+    ],
 )
 data class GastoOperativoEntity(
     @PrimaryKey val id: String,
@@ -23,4 +26,6 @@ data class GastoOperativoEntity(
     val frecuencia: String = "mensual",
     val createdAt: String? = null,
     val tipoGasto: String? = null,
+    /** When set, this gasto mirrors OT Tercero bevel COGS and is excluded from analisis neto. */
+    val origenDispensacionItemId: String? = null,
 )

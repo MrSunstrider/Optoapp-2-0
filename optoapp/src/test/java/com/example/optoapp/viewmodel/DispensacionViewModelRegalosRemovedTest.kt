@@ -72,9 +72,11 @@ class DispensacionViewModelRegalosRemovedTest {
         mockk<CalcularCostoItemUseCase>(relaxed = true),
         mockk(relaxed = true),  // guardarBiselado
         mockk(relaxed = true),  // guardarCostoLente
-        mockk(relaxed = true),
-        mockk(relaxed = true),
-        mockk(relaxed = true),
+        mockk(relaxed = true),  // eliminar
+        mockk(relaxed = true),  // resumenRecalcMarker
+        mockk(relaxed = true),  // supabase
+        mockk(relaxed = true),  // configuracionFinancieraDao
+        mockk(relaxed = true),  // gastoOperativoDao
     )
 
     @Test

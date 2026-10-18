@@ -4,6 +4,7 @@ import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costolc.CostoLcDao
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
 import com.example.optoapp.data.montura.MonturaDao
 import com.example.optoapp.domain.costo.LensCatalogRules
@@ -47,6 +48,7 @@ class CalcularCostoItemUseCase @Inject constructor(
     private val costoBiseladoDao: CostoBiseladoDao,
     private val monturaDao: MonturaDao,
     private val costoLcDao: CostoLcDao,
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
 ) {
 
     suspend operator fun invoke(
@@ -82,9 +84,12 @@ class CalcularCostoItemUseCase @Inject constructor(
             componentes[ComponenteCosto.MONTURA] = monturaDao.getMonturaByIdForOptica(item.monturaId, opticaId)?.costo
         }
         if (item.tipoAro.isNotBlank()) {
-            componentes[ComponenteCosto.BISELADO] = costoBiselado(
-                opticaId, item, ojosParaBiselado, receta?.adicion, fechaIso,
-            )
+            componentes[ComponenteCosto.BISELADO] = when {
+                OrigenBiselado.isPropio(item.origenBiselado) ->
+                    (configuracionFinancieraDao.getByOpticaIdOnce(opticaId)?.costoBiseladoPropio ?: 0.0)
+                        .coerceAtLeast(0.0)
+                else -> costoBiselado(opticaId, item, ojosParaBiselado, receta?.adicion, fechaIso)
+            }
         }
         return CostoItemCalculado(componentes)
     }

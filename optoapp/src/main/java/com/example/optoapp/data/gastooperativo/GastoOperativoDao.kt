@@ -27,4 +27,9 @@ interface GastoOperativoDao {
 
     @Query("DELETE FROM gastos_operativos WHERE id = :id AND opticaId = :opticaId")
     suspend fun delete(id: String, opticaId: String)
+
+    @Query(
+        "SELECT * FROM gastos_operativos WHERE opticaId = :opticaId AND origenDispensacionItemId = :itemId LIMIT 1",
+    )
+    suspend fun getByOrigenDispensacionItemId(opticaId: String, itemId: String): GastoOperativoEntity?
 }

@@ -82,7 +82,10 @@ class DispensacionViewModelDeleteTest {
         mockk(relaxed = true),  // guardarCostoLente
         eliminar,
         mockk(relaxed = true),
-        mockk(relaxed = true)).also { testDispatcher.scheduler.advanceUntilIdle() }
+        mockk(relaxed = true),
+            mockk(relaxed = true),
+            mockk(relaxed = true)
+        ).also { testDispatcher.scheduler.advanceUntilIdle() }
 
     @Test
     fun `deleteDispensacion delegates to the eliminar use case without restocking`() = runTest(testDispatcher) {

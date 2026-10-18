@@ -22,6 +22,7 @@ import com.example.optoapp.domain.CostoVentaCalculator
 import com.example.optoapp.domain.EliminarDispensacionUseCase
 import com.example.optoapp.domain.LifecycleOutcome
 import com.example.optoapp.domain.OrderStatusPolicy
+import com.example.optoapp.domain.OrigenBiselado
 import com.example.optoapp.domain.OrigenComponente
 import com.example.optoapp.domain.OrigenMontura
 import com.example.optoapp.domain.PagoEffect
@@ -29,6 +30,7 @@ import com.example.optoapp.domain.RecetaCosto
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
 import com.example.optoapp.domain.ResumenRecalcMarker
+import com.example.optoapp.domain.SyncBiseladoGastosDerivados
 import com.example.optoapp.domain.VendedorAttribution
 import com.example.optoapp.domain.lastCreditMetodo
 import com.example.optoapp.domain.auth.AuthorizationGuard
@@ -123,6 +125,7 @@ data class DispensacionItemUi(
     val curvaBase: String = "",
     val forzarStockIgnorandoAstigmatismo: Boolean = false,
     val ojosLente: String = com.example.optoapp.domain.OjosLente.AMBOS,
+    val origenBiselado: String = com.example.optoapp.domain.OrigenBiselado.TERCERO,
     val monturaId: String = "",
     val origenMontura: String = "",
     val tipoAro: String = "",
@@ -155,6 +158,8 @@ class DispensacionViewModel @Inject constructor(
     private val eliminarDispensacionUseCase: EliminarDispensacionUseCase,
     private val resumenRecalcMarker: ResumenRecalcMarker,
     private val supabase: SupabaseClient,
+    private val configuracionFinancieraDao: com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao,
+    private val gastoOperativoDao: com.example.optoapp.data.gastooperativo.GastoOperativoDao,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DispensacionUiState(generatedId = UUID.randomUUID().toString()))
     val uiState: StateFlow<DispensacionUiState> = _uiState.asStateFlow()
@@ -162,12 +167,26 @@ class DispensacionViewModel @Inject constructor(
     val lifecycle: StateFlow<OrderLifecycleState> = _lifecycle.asStateFlow()
     private val _monturasActivas = MutableStateFlow<List<com.example.optoapp.data.Montura>>(emptyList())
     val monturasActivas: StateFlow<List<com.example.optoapp.data.Montura>> = _monturasActivas.asStateFlow()
+    private var origenBiseladoDefault: String = com.example.optoapp.domain.OrigenBiselado.TERCERO
 
     // WHY: pre-loaded so the optician doesn't need to navigate away from the screen
     private val _ultimaEvaluacionTicket = MutableStateFlow<EvaluacionClinica?>(null)
     val ultimaEvaluacionTicket: StateFlow<EvaluacionClinica?> = _ultimaEvaluacionTicket.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            val opticaId = sessionManager.opticaId.first()
+            origenBiseladoDefault = com.example.optoapp.domain.OrigenBiselado.normalize(
+                configuracionFinancieraDao.getByOpticaIdOnce(opticaId)?.origenBiseladoDefault,
+            )
+            _uiState.update { state ->
+                if (state.items.size == 1 && state.items.first().id.isEmpty()) {
+                    state.copy(items = listOf(blankItem()))
+                } else {
+                    state
+                }
+            }
+        }
         viewModelScope.launch {
             sessionManager.opticaId.collect { opticaId ->
                 repository.getMonturasByOptica(opticaId).collect { items ->
@@ -324,6 +343,7 @@ class DispensacionViewModel @Inject constructor(
         curvaBase = curvaBase.orEmpty(),
         forzarStockIgnorandoAstigmatismo = forzarStockIgnorandoAstigmatismo,
         ojosLente = com.example.optoapp.domain.OjosLente.normalize(ojosLente),
+        origenBiselado = com.example.optoapp.domain.OrigenBiselado.normalize(origenBiselado),
         monturaId = monturaId, origenMontura = origenMontura,
         tipoAro = tipoAro, materialMontura = materialMontura,
         descripcionMontura = descripcionMontura, tipoMontura = tipoMontura,
@@ -358,9 +378,11 @@ class DispensacionViewModel @Inject constructor(
 
     fun addItem() {
         _uiState.update { s ->
-            s.copy(items = s.items + DispensacionItemUi())
+            s.copy(items = s.items + blankItem())
         }
     }
+
+    private fun blankItem() = DispensacionItemUi(origenBiselado = origenBiseladoDefault)
 
     fun updateItem(index: Int, item: DispensacionItemUi) {
         _uiState.update { s ->
@@ -379,7 +401,7 @@ class DispensacionViewModel @Inject constructor(
             // Items without an id were never persisted, so there is no row to delete.
             val toDelete = if (removed.id.isNotEmpty()) s.itemsToDelete + removed.id else s.itemsToDelete
             val updated = s.items.toMutableList().apply { removeAt(index) }
-            val finalItems = if (updated.isEmpty()) listOf(DispensacionItemUi()) else updated
+            val finalItems = if (updated.isEmpty()) listOf(blankItem()) else updated
             s.copy(items = finalItems, itemsToDelete = toDelete)
         }
     }
@@ -590,6 +612,13 @@ class DispensacionViewModel @Inject constructor(
                                 repository.insertDispensacionItem(item)
                                 item
                             }
+                            syncBiseladoGastosDerivados(
+                                opticaId = currentOpticaId,
+                                ot = row.ot,
+                                fecha = row.fecha,
+                                items = itemsGuardados,
+                                deletedItemIds = s.itemsToDelete,
+                            )
                             resumenRecalcMarker.registrar(
                                 currentOpticaId,
                                 ResumenRecalcMarker.CAUSA_DISPENSACION,
@@ -940,6 +969,23 @@ class DispensacionViewModel @Inject constructor(
         return if (previa == evaluacionId?.takeIf { it.isNotBlank() }) receta else recetaDe(previa, opticaId)
     }
 
+    private suspend fun syncBiseladoGastosDerivados(
+        opticaId: String,
+        ot: String,
+        fecha: LocalDate,
+        items: List<DispensacionItem>,
+        deletedItemIds: List<String>,
+    ) {
+        SyncBiseladoGastosDerivados.sync(
+            gastoOperativoDao = gastoOperativoDao,
+            opticaId = opticaId,
+            ot = ot,
+            fecha = fecha,
+            items = items,
+            deletedItemIds = deletedItemIds,
+        )
+    }
+
     private fun DispensacionItemUi.toEntity(dispensacionId: String, opticaId: String): DispensacionItem {
         val requiereAltura = tipoLente in setOf("Bifocal", "Multifocal", "Ocupacional")
         return DispensacionItem(
@@ -965,6 +1011,7 @@ class DispensacionViewModel @Inject constructor(
             curvaBase = curvaBase.takeIf { it.isNotBlank() },
             forzarStockIgnorandoAstigmatismo = forzarStockIgnorandoAstigmatismo,
             ojosLente = com.example.optoapp.domain.OjosLente.normalize(ojosLente),
+            origenBiselado = com.example.optoapp.domain.OrigenBiselado.normalize(origenBiselado),
             costoRealOd = costoRealOd,
             costoRealOi = costoRealOi,
             costoRealMontura = costoRealMontura,

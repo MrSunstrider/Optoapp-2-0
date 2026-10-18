@@ -321,6 +321,12 @@ fun LenteForm(
                 options = OjosLente.OPTIONS,
             ) { onUpdate(item.copy(ojosLente = it)) }
 
+            OptoDropdownMenuField(
+                label = "Origen biselado",
+                selected = com.example.optoapp.domain.OrigenBiselado.normalize(item.origenBiselado),
+                options = com.example.optoapp.domain.OrigenBiselado.OPTIONS,
+            ) { onUpdate(item.copy(origenBiselado = it)) }
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text("Montura", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
