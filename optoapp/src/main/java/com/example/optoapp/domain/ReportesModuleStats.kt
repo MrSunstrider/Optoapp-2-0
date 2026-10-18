@@ -15,11 +15,18 @@ data class PacientesReporte(
     val sinSexo: Int,
 )
 
+data class InventarioCritico(
+    val label: String,
+    val stockActual: Int,
+    val stockMinimo: Int,
+)
+
 data class InventarioReporte(
     val modelos: Int,
     val stockTotal: Int,
     val lowStock: Int,
     val salidasVentaPeriodo: Int,
+    val criticos: List<InventarioCritico> = emptyList(),
 )
 
 data class ClinicoReporte(
@@ -60,15 +67,31 @@ object ReportesModuleStats {
         movimientos: List<MonturaMovimiento>,
         start: LocalDate,
         end: LocalDate,
+        criticosLimit: Int = 8,
     ): InventarioReporte {
+        val activas = monturas.filter { it.activo }
         val salidas = movimientos.count {
             it.tipo == "SALIDA_VENTA" && !it.fecha.isBefore(start) && !it.fecha.isAfter(end)
         }
+        val bajos = activas.filter { m ->
+            val threshold = m.stockMinimo.takeIf { it > 0 } ?: 2
+            m.stockActual <= threshold
+        }
+        val criticos = bajos
+            .sortedWith(compareBy({ it.stockActual }, { it.marca }, { it.modelo }))
+            .take(criticosLimit)
+            .map { m ->
+                val label = listOf(m.marca, m.modelo).filter { it.isNotBlank() }.joinToString(" ")
+                    .ifBlank { m.sku.ifBlank { m.id.take(8) } }
+                val threshold = m.stockMinimo.takeIf { it > 0 } ?: 2
+                InventarioCritico(label = label, stockActual = m.stockActual, stockMinimo = threshold)
+            }
         return InventarioReporte(
-            modelos = monturas.size,
-            stockTotal = monturas.sumOf { it.stockActual },
-            lowStock = monturas.count { it.stockActual <= it.stockMinimo },
+            modelos = activas.size,
+            stockTotal = activas.sumOf { it.stockActual },
+            lowStock = bajos.size,
             salidasVentaPeriodo = salidas,
+            criticos = criticos,
         )
     }
 
@@ -81,7 +104,7 @@ object ReportesModuleStats {
                 ev.diagnosticoOd.orEmpty().map { it.trim() }.filter { it.isNotBlank() }.forEach(::add)
                 ev.diagnosticoOi.orEmpty().map { it.trim() }.filter { it.isNotBlank() }.forEach(::add)
                 ev.diagnosticoOtros.orEmpty().map { it.trim() }.filter { it.isNotBlank() }.forEach(::add)
-            }.ifEmpty { listOf("Sin diagnóstico") }
+            }.ifEmpty { listOf("Sin diagnóstico") }.distinct()
             labels.forEach { label -> counts[label] = (counts[label] ?: 0) + 1 }
         }
         return ClinicoReporte(

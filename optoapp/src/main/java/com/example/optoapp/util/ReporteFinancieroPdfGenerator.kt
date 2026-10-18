@@ -2,8 +2,6 @@ package com.example.optoapp.util
 
 import android.content.Context
 import android.graphics.Paint
-import android.graphics.Typeface
-import android.graphics.pdf.PdfDocument
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.ServicioExtra
 import java.io.File
@@ -11,10 +9,6 @@ import java.io.FileOutputStream
 import java.util.Locale
 
 object ReporteFinancieroPdfGenerator {
-    private const val PAGE_W = 595
-    private const val PAGE_H = 842
-    private const val MARGIN = 32f
-    private const val ROW_H = 18f
 
     fun generate(
         context: Context,
@@ -31,179 +25,157 @@ object ReporteFinancieroPdfGenerator {
         val dir = File(context.cacheDir, "reportes").apply { mkdirs() }
         val file = File(dir, "reporte-financiero-${System.currentTimeMillis()}.pdf")
 
-        val doc = PdfDocument()
-        val titlePaint = Paint().apply {
-            textSize = 16f
-            isFakeBoldText = true
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        }
-        val subtitlePaint = Paint().apply {
-            textSize = 11f
-            isFakeBoldText = true
-        }
-        val textPaint = Paint().apply { textSize = 10f }
-        val headerPaint = Paint().apply {
-            textSize = 10f
-            isFakeBoldText = true
+        val periodLabel = when (periodo) {
+            "Diario" -> "Día de hoy"
+            "Semanal" -> "Esta semana"
+            "Mensual" -> "Mensual"
+            "Anual" -> "Anual"
+            else -> "Total"
         }
 
-        var pageNum = 1
-        var page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNum).create())
-        var canvas = page.canvas
-        var y = MARGIN
+        val pdf = ReportPdfCanvas()
+        pdf.start("Reporte financiero", "Período: $periodLabel")
+        pdf.drawKpis(
+            listOf(
+                ReportPdfKpi("Total vendido", "S/ ${totalVendido.toMoney()}"),
+                ReportPdfKpi("Por cobrar", "S/ ${porCobrar.toMoney()}"),
+                ReportPdfKpi("Ticket prom.", "S/ ${ticketPromedio.toMoney()}"),
+            ),
+        )
 
-        fun drawHeader() {
-            canvas.drawText("Reporte Financiero", MARGIN, y, titlePaint)
-            y += 16f
-            val labelFecha = when (periodo) {
-                "Diario" -> "Día de hoy"
-                "Semanal" -> "Esta semana"
-                "Mensual" -> "Mensual"
-                "Anual" -> "Anual"
-                else -> "Total"
+        val otCols = listOf(
+            ReportPdfColumn("Fecha", ReportPdfTheme.MARGIN, 80f),
+            ReportPdfColumn("Pago", ReportPdfTheme.MARGIN + 90f, 160f),
+            ReportPdfColumn("Total", ReportPdfTheme.MARGIN + 300f, 90f),
+            ReportPdfColumn("Saldo", ReportPdfTheme.MARGIN + 420f, 90f),
+        )
+        pdf.drawSectionTitle("Dispensaciones / OT")
+        if (dispensaciones.isEmpty()) {
+            pdf.drawMutedLine("Sin dispensaciones en el período")
+        } else {
+            pdf.drawTableHeader(otCols)
+            dispensaciones.forEachIndexed { index, disp ->
+                val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
+                val saldo = disp.montoTotal - montoPagado
+                pdf.drawTableRow(
+                    otCols,
+                    listOf(
+                        DateUtils.formatLocalized(disp.fecha),
+                        disp.metodoPago.ifBlank { "—" },
+                        "S/ ${disp.montoTotal.toMoney()}",
+                        "S/ ${saldo.toMoney()}",
+                    ),
+                    rowIndex = index,
+                    warn = saldo > 0.009,
+                )
             }
-            canvas.drawText("Período: $labelFecha", MARGIN, y, subtitlePaint)
-            y += 14f
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 10f
-
-            canvas.drawText("Total Vendido: S/ ${totalVendido.toMoney()}", MARGIN, y, subtitlePaint)
-            y += 13f
-            canvas.drawText("Por Cobrar:    S/ ${porCobrar.toMoney()}", MARGIN, y, subtitlePaint)
-            y += 13f
-            canvas.drawText("Ticket Promedio: S/ ${ticketPromedio.toMoney()}", MARGIN, y, subtitlePaint)
-            y += 16f
-
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 10f
-
-            canvas.drawText("Fecha", MARGIN, y, headerPaint)
-            canvas.drawText("Pago", MARGIN + 120f, y, headerPaint)
-            canvas.drawText("Total", MARGIN + 340f, y, headerPaint)
-            canvas.drawText("Saldo", MARGIN + 450f, y, headerPaint)
-            y += 8f
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 12f
-        }
-
-        fun drawContinuationHeader() {
-            canvas.drawText("Reporte Financiero (cont.)", MARGIN, y, titlePaint)
-            y += 16f
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 12f
-        }
-
-        fun newPage(drawTableHeader: Boolean = true) {
-            doc.finishPage(page)
-            pageNum += 1
-            page = doc.startPage(PdfDocument.PageInfo.Builder(PAGE_W, PAGE_H, pageNum).create())
-            canvas = page.canvas
-            y = MARGIN
-            if (drawTableHeader) {
-                drawHeader()
-            } else {
-                drawContinuationHeader()
-            }
-        }
-
-        drawHeader()
-
-        dispensaciones.forEach { disp ->
-            if (y + ROW_H > PAGE_H - MARGIN) newPage()
-            val date = DateUtils.formatLocalized(disp.fecha)
-            val montoPagado = pagosSumByDispensacion[disp.id] ?: 0.0
-            val saldo = disp.montoTotal - montoPagado
-            canvas.drawText(date.take(12), MARGIN, y, textPaint)
-            canvas.drawText(disp.metodoPago.take(20), MARGIN + 120f, y, textPaint)
-            canvas.drawText("S/ ${disp.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
-            canvas.drawText("S/ ${saldo.toMoney()}", MARGIN + 450f, y, textPaint)
-            y += ROW_H
         }
 
         if (serviciosExtra.isNotEmpty()) {
-            if (y + ROW_H > PAGE_H - MARGIN) newPage()
-            y += 6f
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 10f
-            canvas.drawText("SERVICIOS EXTRA", MARGIN, y, subtitlePaint)
-            y += 14f
-            canvas.drawText("Descripción", MARGIN, y, headerPaint)
-            canvas.drawText("Monto", MARGIN + 340f, y, headerPaint)
-            canvas.drawText("Pagado", MARGIN + 450f, y, headerPaint)
-            y += 8f
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 12f
-
-            serviciosExtra.forEach { serv ->
-                if (y + ROW_H > PAGE_H - MARGIN) newPage()
+            val servCols = listOf(
+                ReportPdfColumn("Descripción", ReportPdfTheme.MARGIN, 260f),
+                ReportPdfColumn("Monto", ReportPdfTheme.MARGIN + 300f, 90f),
+                ReportPdfColumn("Pagado", ReportPdfTheme.MARGIN + 420f, 90f),
+            )
+            pdf.drawSectionTitle("Servicios extra")
+            pdf.drawTableHeader(servCols)
+            serviciosExtra.forEachIndexed { index, serv ->
                 val aCuenta = aCuentaSumByServicio[serv.id] ?: 0.0
-                canvas.drawText(serv.descripcion.take(28), MARGIN, y, textPaint)
-                canvas.drawText("S/ ${serv.montoTotal.toMoney()}", MARGIN + 340f, y, textPaint)
-                canvas.drawText("S/ ${aCuenta.toMoney()}", MARGIN + 450f, y, textPaint)
-                y += ROW_H
+                pdf.drawTableRow(
+                    servCols,
+                    listOf(
+                        serv.descripcion.ifBlank { "Sin descripción" },
+                        "S/ ${serv.montoTotal.toMoney()}",
+                        "S/ ${aCuenta.toMoney()}",
+                    ),
+                    rowIndex = index,
+                )
             }
         }
 
-        val sectionLines = ReportePdfSectionLines.build(extras)
-        if (sectionLines.isNotEmpty()) {
-            if (y + ROW_H > PAGE_H - MARGIN) newPage(drawTableHeader = false)
-            y += 8f
-            canvas.drawLine(MARGIN, y, PAGE_W - MARGIN, y, textPaint)
-            y += 12f
-            val maxSectionWidth = PAGE_W - (MARGIN * 2)
-            sectionLines.forEach { line ->
-                if (line.isEmpty()) {
-                    if (y + 6f > PAGE_H - MARGIN) newPage(drawTableHeader = false)
-                    y += 6f
-                } else {
-                    val paint = if (line == line.uppercase(Locale.ROOT) && !line.contains(':')) {
-                        subtitlePaint
-                    } else {
-                        textPaint
-                    }
-                    wrapText(line, paint, maxSectionWidth).forEach { wrapped ->
-                        if (y + ROW_H > PAGE_H - MARGIN) newPage(drawTableHeader = false)
-                        canvas.drawText(wrapped, MARGIN, y, paint)
-                        y += ROW_H
-                    }
-                }
-            }
-        }
+        drawExtras(pdf, extras)
 
-        doc.finishPage(page)
+        val doc = pdf.finish()
         FileOutputStream(file).use { doc.writeTo(it) }
         doc.close()
         return file
     }
 
+    private fun drawExtras(pdf: ReportPdfCanvas, extras: ReportePdfExtras) {
+        extras.comparison?.let { cmp ->
+            pdf.drawSectionTitle("Comparativo vs período anterior")
+            val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
+            val margenPct = cmp.margenDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
+            pdf.drawBodyLine("Vendido delta: S/ ${cmp.vendidoDelta.toMoney()} ($vendidoPct)")
+            pdf.drawBodyLine("Margen delta: S/ ${cmp.margenDelta.toMoney()} ($margenPct)")
+            pdf.drawBodyLine("Transacciones delta: ${cmp.transaccionesDelta}")
+        }
+        extras.pacientes?.takeIf { p ->
+            p.altas != 0 || p.hombres != 0 || p.mujeres != 0 || p.sinSexo != 0
+        }?.let { p ->
+            pdf.drawSectionTitle("Pacientes")
+            pdf.drawKpis(
+                listOf(
+                    ReportPdfKpi("Altas", p.altas.toString()),
+                    ReportPdfKpi("Hombres", p.hombres.toString()),
+                    ReportPdfKpi("Mujeres", p.mujeres.toString()),
+                    ReportPdfKpi("Sin dato", p.sinSexo.toString()),
+                ),
+            )
+        }
+        extras.inventario?.takeIf { inv ->
+            inv.modelos > 0 || inv.stockTotal > 0 || inv.lowStock > 0 || inv.salidasVentaPeriodo > 0
+        }?.let { inv ->
+            pdf.drawSectionTitle("Inventario (resumen)")
+            pdf.drawKpis(
+                listOf(
+                    ReportPdfKpi("Modelos", inv.modelos.toString()),
+                    ReportPdfKpi("Stock", inv.stockTotal.toString()),
+                    ReportPdfKpi("Bajo mín.", inv.lowStock.toString()),
+                    ReportPdfKpi("Salidas", inv.salidasVentaPeriodo.toString()),
+                ),
+            )
+        }
+        extras.clinico?.takeIf { it.evaluaciones > 0 }?.let { c ->
+            pdf.drawSectionTitle("Clínico")
+            pdf.drawBodyLine("Evaluaciones: ${c.evaluaciones}")
+            c.porDiagnostico.take(12).forEach { (label, count) ->
+                pdf.drawBodyLine("$label: $count")
+            }
+        }
+        extras.equipo?.takeIf { it.filas.isNotEmpty() || it.sinAtribuirCount > 0 }?.let { e ->
+            pdf.drawSectionTitle("Equipo")
+            pdf.drawMutedLine("Comisión: ${String.format(Locale.US, "%.1f", e.comisionPct)}%")
+            val cols = listOf(
+                ReportPdfColumn("Vendedor", ReportPdfTheme.MARGIN, 180f),
+                ReportPdfColumn("Vendido", ReportPdfTheme.MARGIN + 200f, 100f),
+                ReportPdfColumn("Tx", ReportPdfTheme.MARGIN + 320f, 50f),
+                ReportPdfColumn("Comisión", ReportPdfTheme.MARGIN + 390f, 100f),
+            )
+            pdf.drawTableHeader(cols)
+            e.filas.forEachIndexed { index, row ->
+                pdf.drawTableRow(
+                    cols,
+                    listOf(
+                        row.displayName,
+                        "S/ ${row.vendido.toMoney()}",
+                        row.transacciones.toString(),
+                        "S/ ${row.comision.toMoney()}",
+                    ),
+                    rowIndex = index,
+                )
+            }
+            if (e.sinAtribuirCount > 0) {
+                pdf.drawBodyLine(
+                    "Sin atribuir: S/ ${e.sinAtribuirVendido.toMoney()} (${e.sinAtribuirCount})",
+                    warn = true,
+                )
+            }
+        }
+    }
+
     private fun Double.toMoney(): String = String.format(Locale.forLanguageTag("es-PE"), "%.2f", this)
 
-    internal fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> {
-        if (text.isEmpty()) return listOf("")
-        if (paint.measureText(text) <= maxWidth) return listOf(text)
-        val lines = mutableListOf<String>()
-        var remaining = text
-        while (remaining.isNotEmpty()) {
-            if (paint.measureText(remaining) <= maxWidth) {
-                lines += remaining
-                break
-            }
-            var end = 1
-            var low = 1
-            var high = remaining.length
-            while (low <= high) {
-                val mid = (low + high) ushr 1
-                if (paint.measureText(remaining, 0, mid) <= maxWidth) {
-                    end = mid
-                    low = mid + 1
-                } else {
-                    high = mid - 1
-                }
-            }
-            val breakAt = remaining.lastIndexOf(' ', end).takeIf { it > 0 } ?: end.coerceAtLeast(1)
-            lines += remaining.substring(0, breakAt).trimEnd()
-            remaining = remaining.substring(breakAt).trimStart()
-        }
-        return lines.ifEmpty { listOf(text) }
-    }
+    internal fun wrapText(text: String, paint: Paint, maxWidth: Float): List<String> =
+        ReportPdfCanvas.wrapText(text, paint, maxWidth)
 }
