@@ -50,4 +50,6 @@ L5. Judgment Day on `7f8eed56`: confirmed C1 (online RPC double-count) + C2 (con
 
 L6. Post-JD residual risks fixed: SyncBiseladoGastosDerivados must delete/upsert via OptoRepository (tombstone + sync) not raw DAO; Costos UI blocks edit/delete of linked OT gastos; reclamo clears linked gastos on original OT. Config LWW without updated_at left as known residual (single-row optica, last-write-wins).
 
+L7. Residual JD on `43e9a58c`: WARNINGs (reclamo test gap, replacement mirrors, clear-after-commit UX). Fix `b71b9265`. Scoped re-judgment A+B findings=[]. **JUDGMENT: APPROVED** (residual tombstone slice). Remote migrate still pending.
+
 L5. JD fix round (2026-10-18): C1 rpc_analisis exclude `origen_dispensacion_item_id IS NOT NULL` (migration `20261018030000`); C2 config financiera upload before download; S1 reseed pristine first OT line from origenBiseladoDefault; W1 clear linked gastos on anulación Applied + delete.
