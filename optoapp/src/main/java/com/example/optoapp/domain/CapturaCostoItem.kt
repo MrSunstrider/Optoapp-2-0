@@ -101,6 +101,7 @@ object CapturaCostoItem {
             ComponenteCosto.BISELADO -> listOf(
                 item.materialLente,
                 item.tipoAro,
+                item.ojosLente,
                 AltoIndiceNormalizer.normalize(item.altoIndice),
                 bloqueBiselado(receta?.odEsf, receta?.odCil),
                 bloqueBiselado(receta?.oiEsf, receta?.oiCil),

@@ -70,4 +70,22 @@ class SyncFinanzasDtoCostoOrigenTest {
 
         assertEquals("faltante", entity.costoOrigen)
     }
+
+    @Test
+    fun upload_body_always_carries_ojos_lente() {
+        val body = wireJson.parseToJsonElement(
+            wireJson.encodeToString(item("matriz").copy(ojosLente = OjosLente.OD).toRemoto()),
+        ).jsonObject
+
+        assertEquals("OD", body.getValue("ojos_lente").jsonPrimitive.content)
+    }
+
+    @Test
+    fun remote_row_without_ojos_lente_defaults_to_ambos() {
+        val payload = """{"id":"item-1","dispensacion_id":"disp-1","optica_id":"optica-1"}"""
+
+        val entity = wireJson.decodeFromString<DispensacionItemRemota>(payload).toEntity()
+
+        assertEquals(OjosLente.AMBOS, entity.ojosLente)
+    }
 }

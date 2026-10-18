@@ -28,3 +28,5 @@ S5. Assumption (from screenshot evidence): `Origen guardado: faltante` while OD/
 L1. User: `Por defecto no aparecen od y oi, solo aparece oi, y no guarda correctamente, vuelvo a abrir esa ventana y no queda lo guardado, revisa si lo hace correctamente, deberíamos tener la option de seleccionar 1 sólo ojo se da en muchos casos, el costo de la montura no está jalando correctamente, apesar de haber jalado la montura desde el inventario en dispensaciones.` (2026-10-17) + screenshot Editar Dispensación Costos/margen Origen faltante, Montura 0.00.
 
 L2. Implemented T1–T3 inline: MIXTO origin, montura inventory cost (incl. 0), ojosLente Ambos|OD|OI (Room 60 + supabase migration + LenteForm + calc/captura). Focused + full `testDebugUnitTest` GREEN (3293 tests). Risk: item 1 (Room/schema + supabase column) and item 3 (sync DTO). Pending remote `ojos_lente` migrate until authorized.
+
+L3. JD round 1 (2026-10-18): confirmed CRITICAL upload without remote column + BISELADO entradas missing ojosLente. User OK: applied remote migration `dispensacion_items_ojos_lente` on sflhtihqdhrlryeyrzdo (column verified); fixed CapturaCostoItem BISELADO entradas + tests.
