@@ -46,4 +46,6 @@ L3. T1–T4 implemented on `feat/biselado-propio-tercero` (2026-10-18): Room 61 
 
 L4. Work-unit commit `7f8eed56` (GGA PASSED via temporary mini provider after nano false-positives; restored nano). `.gga` also excludes `*Test.kt`. T5 blocked on explicit OK for remote Supabase migrate `20261018020000_biselado_propio_tercero.sql`, then JD + PR stacked after #189.
 
+L5. Judgment Day on `7f8eed56`: confirmed C1 (online RPC double-count) + C2 (config no upload); verified S1 (dead id.isEmpty seed) + W1 (anular/delete linked gastos). Fix `d89a500e`. Scoped re-judgment A+B findings=[]. **JUDGMENT: APPROVED**. Still need remote migrate OK for `20261018020000` + `20261018030000`, then PR.
+
 L5. JD fix round (2026-10-18): C1 rpc_analisis exclude `origen_dispensacion_item_id IS NOT NULL` (migration `20261018030000`); C2 config financiera upload before download; S1 reseed pristine first OT line from origenBiseladoDefault; W1 clear linked gastos on anulación Applied + delete.
