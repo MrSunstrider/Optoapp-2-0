@@ -799,6 +799,10 @@ class CostosYGastosViewModel @Inject constructor(
         val s = _uiState.value
         val gasto = s.deletingGasto ?: return
         if (s.isLoading || !s.puedeEditarGastos) return
+        if (gasto.origenDispensacionItemId != null) {
+            _uiState.update { it.copy(deletingGasto = null) }
+            return
+        }
         _uiState.update { it.copy(isLoading = true, gastoDeleteError = null) }
         viewModelScope.launch {
             try {

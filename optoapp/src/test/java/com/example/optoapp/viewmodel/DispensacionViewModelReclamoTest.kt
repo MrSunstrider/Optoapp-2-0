@@ -1,10 +1,14 @@
 package com.example.optoapp.viewmodel
 
+import com.example.optoapp.data.DispensacionItem
 import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.Pago
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.gastooperativo.GastoOperativoDao
+import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.domain.OrigenBiselado
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
 import com.example.optoapp.domain.ReclamoStockInsuficienteException
@@ -32,6 +36,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -42,6 +47,7 @@ class DispensacionViewModelReclamoTest {
     private val rolFlow = MutableStateFlow("admin")
     private lateinit var repository: OptoRepository
     private lateinit var reclamar: ReclamarDispensacionUseCase
+    private lateinit var gastoOperativoDao: GastoOperativoDao
     private lateinit var viewModel: DispensacionViewModel
 
     @Before
@@ -51,6 +57,7 @@ class DispensacionViewModelReclamoTest {
         Dispatchers.setMain(testDispatcher)
         repository = mockk(relaxed = true)
         reclamar = mockk()
+        gastoOperativoDao = mockk(relaxed = true)
         val sessionManager = mockk<SessionManager>()
         every { sessionManager.opticaId } returns MutableStateFlow(opticaId)
         every { sessionManager.opticaRol } returns rolFlow
@@ -67,9 +74,9 @@ class DispensacionViewModelReclamoTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-        mockk(relaxed = true),
             mockk(relaxed = true),
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            gastoOperativoDao,
         )
         testDispatcher.scheduler.advanceUntilIdle()
     }
@@ -110,6 +117,57 @@ class DispensacionViewModelReclamoTest {
         assertNull(viewModel.uiState.value.error)
         assertFalse(viewModel.uiState.value.isLoading)
         coVerify(exactly = 1) { reclamar(originalId, opticaId, "Lente rayado", 150.0, "Yape") }
+    }
+
+    @Test
+    fun `created claim clears original linked gastos and upserts mirrors for replacement items`() = runTest {
+        rolFlow.value = "gerente"
+        val fecha = LocalDate.of(2026, 10, 18)
+        val originalItem = DispensacionItem(
+            id = "item-orig",
+            dispensacionId = originalId,
+            tipoLente = "Monofocal",
+            materialLente = "Resina",
+            tratamientos = emptyList(),
+            origenMontura = "Paciente",
+            opticaId = opticaId,
+            origenBiselado = OrigenBiselado.TERCERO,
+            costoRealBiselado = 20.0,
+        )
+        val replacementItem = originalItem.copy(id = "item-repl", dispensacionId = "repl-1")
+        val linked = GastoOperativoEntity(
+            id = "gb_item-orig",
+            opticaId = opticaId,
+            categoria = "Biselado",
+            monto = BigDecimal("20"),
+            fecha = fecha,
+            origenDispensacionItemId = "item-orig",
+        )
+        val replacement = DispensacionOptica(
+            id = "repl-1",
+            pacienteId = "pac-1",
+            ot = "OT-1-R1",
+            fecha = fecha,
+            opticaId = opticaId,
+        )
+        coEvery { reclamar(originalId, opticaId, any(), any(), any()) } returns
+            ReclamoOutcome.Created("repl-1", "OT-1-R1")
+        coEvery { repository.getDispensacionItemsByDispensacion(originalId, opticaId) } returns listOf(originalItem)
+        coEvery { repository.getDispensacionItemsByDispensacion("repl-1", opticaId) } returns listOf(replacementItem)
+        coEvery { repository.getDispensacionById("repl-1", opticaId) } returns Resource.Success(replacement)
+        coEvery { gastoOperativoDao.getByOrigenDispensacionItemId(opticaId, "item-orig") } returns linked
+        coEvery { gastoOperativoDao.getByOrigenDispensacionItemId(opticaId, "item-repl") } returns null
+
+        val navigatedTo = reclamarAndAwait()
+
+        assertEquals("repl-1", navigatedTo)
+        assertNull(viewModel.uiState.value.error)
+        coVerify(exactly = 1) { repository.deleteGastoOperativo(linked) }
+        coVerify(exactly = 1) {
+            repository.upsertGastoOperativo(
+                match { it.origenDispensacionItemId == "item-repl" && it.descripcion == "Biselado OT OT-1-R1" },
+            )
+        }
     }
 
     @Test

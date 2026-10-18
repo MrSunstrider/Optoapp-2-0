@@ -449,6 +449,7 @@ class CostosYGastosViewModelGastosTest {
 
         viewModel.editGasto(linked)
         viewModel.confirmDeleteGasto(linked)
+        viewModel.deleteGasto()
         advanceUntilIdle()
 
         assertFalse(viewModel.uiState.value.isDialogVisible)

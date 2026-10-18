@@ -409,6 +409,17 @@ class DispensacionViewModel @Inject constructor(
         )
     }
 
+    /** Lifecycle actions already committed; linked-gasto cleanup must not fail the user-facing outcome. */
+    private suspend fun clearLinkedBiseladoGastosBestEffort(opticaId: String, deletedItemIds: List<String>) {
+        try {
+            clearLinkedBiseladoGastos(opticaId, deletedItemIds)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.e(TAG, "linked biselado gasto cleanup failed", e)
+        }
+    }
+
     fun updateItem(index: Int, item: DispensacionItemUi) {
         _uiState.update { s ->
             val updated = s.items.toMutableList()
@@ -741,7 +752,7 @@ class DispensacionViewModel @Inject constructor(
                 val deletedItemIds = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
                     .map { it.id }
                 eliminarDispensacionUseCase(dispensacionId, opticaId)
-                clearLinkedBiseladoGastos(opticaId, deletedItemIds)
+                clearLinkedBiseladoGastosBestEffort(opticaId, deletedItemIds)
                 _uiState.update { it.copy(isLoading = false) }
                 onComplete()
             } catch (e: kotlinx.coroutines.CancellationException) {
@@ -769,10 +780,26 @@ class DispensacionViewModel @Inject constructor(
                 val opticaId = sessionManager.opticaId.first()
                 when (val outcome = reclamarDispensacionUseCase(originalDispensacionId, opticaId, motivo, nuevoMontoTotal, metodoReembolso)) {
                     is ReclamoOutcome.Created -> {
-                        // Original OT is terminal; drop linked Tercero bevel gastos so they cannot resurface.
+                        // Original OT is terminal; drop its linked gastos. Replacement needs its own mirrors.
                         val originalItemIds = repository.getDispensacionItemsByDispensacion(originalDispensacionId, opticaId)
                             .map { it.id }
-                        clearLinkedBiseladoGastos(opticaId, originalItemIds)
+                        clearLinkedBiseladoGastosBestEffort(opticaId, originalItemIds)
+                        val replacement = (repository.getDispensacionById(outcome.replacementId, opticaId) as? Resource.Success)?.data
+                        val replacementItems = repository.getDispensacionItemsByDispensacion(outcome.replacementId, opticaId)
+                        if (replacement != null && replacementItems.isNotEmpty()) {
+                            try {
+                                syncBiseladoGastosDerivados(
+                                    opticaId = opticaId,
+                                    ot = replacement.ot,
+                                    fecha = replacement.fecha,
+                                    items = replacementItems,
+                                    deletedItemIds = emptyList(),
+                                )
+                            } catch (e: Exception) {
+                                if (e is kotlinx.coroutines.CancellationException) throw e
+                                Log.e(TAG, "replacement linked biselado gasto sync failed", e)
+                            }
+                        }
                         _uiState.update { it.copy(isLoading = false) }
                         onCreated(outcome.replacementId)
                     }
@@ -808,7 +835,7 @@ class DispensacionViewModel @Inject constructor(
                     LifecycleOutcome.Applied -> {
                         val deletedItemIds = repository.getDispensacionItemsByDispensacion(dispensacionId, opticaId)
                             .map { it.id }
-                        clearLinkedBiseladoGastos(opticaId, deletedItemIds)
+                        clearLinkedBiseladoGastosBestEffort(opticaId, deletedItemIds)
                         _uiState.update { it.copy(isLoading = false) }
                     }
                     is LifecycleOutcome.AlreadyTerminal -> {
