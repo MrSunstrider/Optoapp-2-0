@@ -167,7 +167,8 @@ class CostosYGastosViewModelTest {
     fun saveCosto_rejectsEmptyTipoLente_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = buildViewModel()
 
-        viewModel.loadBlock("Stock Monofocal")
+        // Fabricación Resina does not prefill tipo — Stock Monofocal would.
+        viewModel.loadBlock("Fabricación Resina")
         advanceUntilIdle()
 
         viewModel.showNewCosto()

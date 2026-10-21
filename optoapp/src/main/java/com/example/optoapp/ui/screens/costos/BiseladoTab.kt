@@ -60,7 +60,7 @@ fun FormBiseladoDialog(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             MatrizDropdown(
-                label = stringResource(R.string.costos_material_requerido),
+                label = stringResource(R.string.costos_biselado_material_hint),
                 seleccion = form.material,
                 opciones = materiales,
                 etiqueta = { it },

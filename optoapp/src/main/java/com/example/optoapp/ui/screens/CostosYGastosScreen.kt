@@ -36,7 +36,11 @@ import com.example.optoapp.ui.components.common.GastoFormDialog
 import com.example.optoapp.ui.components.common.GastoFormValues
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
+import com.example.optoapp.domain.costo.LensProductCatalog
+import com.example.optoapp.viewmodel.CURVAS_BASE_MATRIZ
+import com.example.optoapp.viewmodel.INDICES_REFRACCION_MATRIZ
 import com.example.optoapp.ui.screens.costos.BiseladoTab
 import com.example.optoapp.ui.screens.costos.CostosCharts
 import com.example.optoapp.ui.screens.costos.CostosHeader
@@ -77,10 +81,10 @@ fun CostosYGastosScreen(
     LaunchedEffect(uiState.mesGastos) { headerViewModel.seleccionarMes(uiState.mesGastos) }
     val scope = rememberCoroutineScope()
     val tabs = listOf(
+        stringResource(R.string.costos_tab_gastos),
         stringResource(R.string.costos_tab_lentes),
         stringResource(R.string.costos_tab_biselado),
         stringResource(R.string.costos_tab_lentes_contacto),
-        stringResource(R.string.costos_tab_gastos),
         stringResource(R.string.costos_tab_servicios),
     )
     var showDatePicker by remember { mutableStateOf(false) }
@@ -130,27 +134,27 @@ fun CostosYGastosScreen(
             }
 
             when (uiState.selectedTab) {
-                0 -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel)
-                1 -> BiseladoTab(
-                    filas = uiState.costosBiselado,
-                    puedeEditar = uiState.puedeEditarMatrices,
-                    onEditar = viewModel::showEditBiselado,
-                    onAgregar = viewModel::showNewBiselado,
-                )
-                2 -> LcTab(
-                    filas = uiState.costosLc,
-                    puedeEditar = uiState.puedeEditarMatrices,
-                    onEditar = viewModel::showEditLc,
-                    onAgregar = viewModel::showNewLc,
-                )
-                3 -> GastosOperativosTab(
+                CostosTab.GASTOS.ordinal -> GastosOperativosTab(
                     uiState = uiState,
                     headerState = headerState,
                     onVerOtsSinCosto = { navController.navigate(Route.OtsSinCosto.createRoute(headerState.mes)) },
                     viewModel = viewModel,
                     showDatePicker = { showDatePicker = true },
                 )
-                4 -> ServicioTiposTab()
+                CostosTab.LENTES.ordinal -> MatrizDeCostosTab(uiState = uiState, viewModel = viewModel)
+                CostosTab.BISELADO.ordinal -> BiseladoTab(
+                    filas = uiState.costosBiselado,
+                    puedeEditar = uiState.puedeEditarMatrices,
+                    onEditar = viewModel::showEditBiselado,
+                    onAgregar = viewModel::showNewBiselado,
+                )
+                CostosTab.LC.ordinal -> LcTab(
+                    filas = uiState.costosLc,
+                    puedeEditar = uiState.puedeEditarMatrices,
+                    onEditar = viewModel::showEditLc,
+                    onAgregar = viewModel::showNewLc,
+                )
+                CostosTab.SERVICIOS.ordinal -> ServicioTiposTab()
             }
         }
     }
@@ -201,7 +205,7 @@ private fun MatricesDialogs(uiState: CostosYGastosUiState, viewModel: CostosYGas
     uiState.formBiselado?.let { form ->
         FormBiseladoDialog(
             form = form,
-            materiales = viewModel.materialesOpticos(),
+            materiales = com.example.optoapp.viewmodel.MATERIALES_BISELADO,
             onCambio = viewModel::updateFormBiselado,
             onGuardar = viewModel::saveBiselado,
             onDismiss = viewModel::dismissFormBiselado,
@@ -364,6 +368,83 @@ private fun MatrizDeCostosTab(
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                         )
+
+                        if (uiState.costoTipoLente == LensProductCatalog.TIPO_BIFOCAL) {
+                            var subExpanded by remember { mutableStateOf(false) }
+                            ExposedDropdownMenuBox(expanded = subExpanded, onExpandedChange = { subExpanded = !subExpanded }) {
+                                OutlinedTextField(
+                                    value = uiState.costoSubtipoBifocal,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text(stringResource(R.string.costos_subtipo_bifocal)) },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subExpanded) },
+                                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                                )
+                                ExposedDropdownMenu(expanded = subExpanded, onDismissRequest = { subExpanded = false }) {
+                                    val ninguno = stringResource(R.string.costos_tratamiento_ninguno)
+                                    DropdownMenuItem(text = { Text(ninguno) }, onClick = {
+                                        viewModel.updateCostoSubtipoBifocal("")
+                                        subExpanded = false
+                                    })
+                                    LensProductCatalog.SUBTIPOS_BIFOCAL.forEach { sub ->
+                                        DropdownMenuItem(text = { Text(sub) }, onClick = {
+                                            viewModel.updateCostoSubtipoBifocal(sub)
+                                            subExpanded = false
+                                        })
+                                    }
+                                }
+                            }
+                        }
+
+                        var irExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = irExpanded, onExpandedChange = { irExpanded = !irExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.costoIndiceRefraccion,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text(stringResource(R.string.costos_indice_refraccion)) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = irExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = irExpanded, onDismissRequest = { irExpanded = false }) {
+                                val ninguno = stringResource(R.string.costos_tratamiento_ninguno)
+                                DropdownMenuItem(text = { Text(ninguno) }, onClick = {
+                                    viewModel.updateCostoIndiceRefraccion("")
+                                    irExpanded = false
+                                })
+                                INDICES_REFRACCION_MATRIZ.forEach { ir ->
+                                    DropdownMenuItem(text = { Text(ir) }, onClick = {
+                                        viewModel.updateCostoIndiceRefraccion(ir)
+                                        irExpanded = false
+                                    })
+                                }
+                            }
+                        }
+
+                        var curvaExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = curvaExpanded, onExpandedChange = { curvaExpanded = !curvaExpanded }) {
+                            OutlinedTextField(
+                                value = uiState.costoCurvaBase,
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text(stringResource(R.string.costos_curva_base)) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = curvaExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
+                            )
+                            ExposedDropdownMenu(expanded = curvaExpanded, onDismissRequest = { curvaExpanded = false }) {
+                                val ninguno = stringResource(R.string.costos_tratamiento_ninguno)
+                                DropdownMenuItem(text = { Text(ninguno) }, onClick = {
+                                    viewModel.updateCostoCurvaBase("")
+                                    curvaExpanded = false
+                                })
+                                CURVAS_BASE_MATRIZ.forEach { curva ->
+                                    DropdownMenuItem(text = { Text(curva) }, onClick = {
+                                        viewModel.updateCostoCurvaBase(curva)
+                                        curvaExpanded = false
+                                    })
+                                }
+                            }
+                        }
 
                         OutlinedTextField(
                             value = uiState.costoCostoUnitario,
@@ -646,14 +727,14 @@ private fun GastoOperativoCard(fila: GastoFila, puedeEditar: Boolean, onEdit: ()
 private fun FiltrosLentes(uiState: CostosYGastosUiState, viewModel: CostosYGastosViewModel) {
     val costos = uiState.costosDelBloque
     val todos = stringResource(R.string.costos_filtro_todos)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
         MatrizDropdown(
             label = stringResource(R.string.costos_filtro_material),
             seleccion = uiState.filtroMaterial,
             opciones = listOf(null) + costos.map { it.material }.distinct().sorted(),
             etiqueta = { it ?: todos },
             onSeleccion = viewModel::updateFiltroMaterial,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
         MatrizDropdown(
             label = stringResource(R.string.costos_filtro_tipo_lente),
@@ -661,7 +742,7 @@ private fun FiltrosLentes(uiState: CostosYGastosUiState, viewModel: CostosYGasto
             opciones = listOf(null) + costos.map { it.tipoLente }.distinct().sorted(),
             etiqueta = { it ?: todos },
             onSeleccion = viewModel::updateFiltroTipoLente,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
         MatrizDropdown(
             label = stringResource(R.string.costos_filtro_serie),
@@ -669,7 +750,7 @@ private fun FiltrosLentes(uiState: CostosYGastosUiState, viewModel: CostosYGasto
             opciones = listOf(null) + costos.mapNotNull { it.serie }.distinct().sorted(),
             etiqueta = { it?.toString() ?: todos },
             onSeleccion = viewModel::updateFiltroSerie,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -720,6 +801,9 @@ private fun CostoLenteRow(costo: CostoProductoEntity, puedeEditar: Boolean, onEd
     val detalle = listOfNotNull(
         costo.tratamiento?.takeIf { it.isNotBlank() },
         costo.serie?.let { stringResource(R.string.costos_serie_corta, it) },
+        costo.subtipoBifocal?.takeIf { it.isNotBlank() },
+        costo.indiceRefraccion?.takeIf { it.isNotBlank() }?.let { "IR $it" },
+        costo.curvaBase?.takeIf { it.isNotBlank() }?.let { "CB $it" },
     ).joinToString(" · ")
     MatrizRow(
         titulo = "${costo.material} · ${costo.tipoLente}",

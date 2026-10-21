@@ -2,10 +2,10 @@ package com.example.optoapp.ui.navigation
 
 // Declaration order is the tab row order of CostosYGastosScreen; the ordinal is the selected tab index.
 enum class CostosTab(val arg: String) {
+    GASTOS("gastos"),
     LENTES("lentes"),
     BISELADO("biselado"),
     LC("lc"),
-    GASTOS("gastos"),
     SERVICIOS("servicios"),
     ;
 

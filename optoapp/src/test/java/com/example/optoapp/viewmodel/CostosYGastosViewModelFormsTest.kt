@@ -231,7 +231,8 @@ class CostosYGastosViewModelFormsTest {
     fun newCostoValidatesMaterialThenLensTypeThenUnitCost() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
         advanceUntilIdle()
-        viewModel.loadBlock("Stock Monofocal")
+        // Fabricación Resina prefills modality only — tipo stays empty for the full chain.
+        viewModel.loadBlock("Fabricación Resina")
         viewModel.showNewCosto()
 
         viewModel.saveCosto()
@@ -247,6 +248,22 @@ class CostosYGastosViewModelFormsTest {
         assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
 
         coVerify(exactly = 0) { costoProductoDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun newCostoOnStockMonofocalPrefillsTipoAndSkipsTipoValidation() = runTest(testDispatcher) {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+        viewModel.loadBlock("Stock Monofocal")
+        viewModel.showNewCosto()
+        assertEquals("Monofocal", viewModel.uiState.value.costoTipoLente)
+
+        viewModel.saveCosto()
+        assertEquals("Selecciona un material", viewModel.uiState.value.costoSaveError)
+
+        viewModel.updateCostoMaterial("Resina")
+        viewModel.saveCosto()
+        assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
     }
 
     @Test
@@ -355,7 +372,7 @@ class CostosYGastosViewModelFormsTest {
     }
 
     @Test
-    fun lensTypeAndSeriesFiltersNarrowTheVisibleCosts() = runTest(testDispatcher) {
+    fun stockMonofocalBlockHidesOtherTiposAndSeriesFilterNarrowsFurther() = runTest(testDispatcher) {
         val mono1 = costo("m1", "Monofocal", 1)
         val mono2 = costo("m2", "Monofocal", 2)
         val bifo1 = costo("b1", "Bifocal", 1)
@@ -365,15 +382,13 @@ class CostosYGastosViewModelFormsTest {
         viewModel.loadBlock("Stock Monofocal")
         advanceUntilIdle()
 
-        viewModel.updateFiltroTipoLente("Monofocal")
         assertEquals(listOf(mono1, mono2), viewModel.uiState.value.costosVisibles)
 
         viewModel.updateFiltroSerie(2)
         assertEquals(listOf(mono2), viewModel.uiState.value.costosVisibles)
 
-        viewModel.updateFiltroTipoLente(null)
         viewModel.updateFiltroSerie(1)
-        assertEquals(listOf(mono1, bifo1), viewModel.uiState.value.costosVisibles)
+        assertEquals(listOf(mono1), viewModel.uiState.value.costosVisibles)
     }
 
     @Test

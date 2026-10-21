@@ -47,10 +47,31 @@ val COST_BLOCKS = listOf(
     "Fabricación Cristal",
 )
 
-fun blockToFilter(block: String): String = when (block) {
-    "Stock Monofocal", "Stock Bifocal", "Stock Multifocal" -> "stock"
-    "Fabricación Resina", "Fabricación Cristal" -> "fabricacion"
-    else -> block
+/** Stock|fab key only — prefer [blockFilter] when tipo/material matter. */
+fun blockToFilter(block: String): String = blockFilter(block).stockOFabricacion
+
+data class CostBlockFilter(
+    val stockOFabricacion: String,
+    val tipoLente: String? = null,
+    /** Substring match on material (e.g. Resina / Cristal families). */
+    val materialContains: String? = null,
+)
+
+fun blockFilter(block: String): CostBlockFilter = when (block) {
+    "Stock Monofocal" -> CostBlockFilter("stock", tipoLente = "Monofocal")
+    "Stock Bifocal" -> CostBlockFilter("stock", tipoLente = "Bifocal")
+    "Stock Multifocal" -> CostBlockFilter("stock", tipoLente = "Multifocal")
+    "Fabricación Resina" -> CostBlockFilter("fabricacion", materialContains = "Resina")
+    "Fabricación Cristal" -> CostBlockFilter("fabricacion", materialContains = "Cristal")
+    else -> CostBlockFilter(block)
+}
+
+fun aplicarFiltroBloque(
+    costos: List<CostoProductoEntity>,
+    filter: CostBlockFilter,
+): List<CostoProductoEntity> = costos.filter {
+    (filter.tipoLente == null || it.tipoLente.equals(filter.tipoLente, ignoreCase = true)) &&
+        (filter.materialContains == null || it.material.contains(filter.materialContains, ignoreCase = true))
 }
 
 val MATRIZ_BLOQUES_EDITABLES = COST_BLOCKS + listOf("Biselado", "Lentes de Contacto")
@@ -58,8 +79,12 @@ val MATRIZ_BLOQUES_EDITABLES = COST_BLOCKS + listOf("Biselado", "Lentes de Conta
 // WHY: Codes mirror the server CHECK constraints and the cost lookup keys, so a free-text value would never be priced.
 val TIPOS_ARO_BISELADO = listOf("aro_completo", "semi_aire", "al_aire")
 val MODALIDADES_BISELADO = listOf("stock", "fabricacion")
+/** Matches CalcularCostoItemUseCase.biseladoMaterialKey outputs. */
+val MATERIALES_BISELADO = listOf("Resina", "Cristal", "Policarbonato", "Trivex")
 val TIPOS_LC = listOf("cosmetico", "graduado", "terapeutico")
 val MODALIDADES_LC = listOf("diario", "quincenal", "mensual", "anual")
+val INDICES_REFRACCION_MATRIZ = listOf("1.56", "1.60", "1.67", "1.70", "1.74", "1.80")
+val CURVAS_BASE_MATRIZ = listOf("4", "6", "8")
 
 fun filtrarCostos(
     costos: List<CostoProductoEntity>,
@@ -163,6 +188,9 @@ data class CostosYGastosUiState(
     val costoStockOFabricacion: String = "",
     val costoTratamiento: String = "",
     val costoSerie: String = "",
+    val costoSubtipoBifocal: String = "",
+    val costoIndiceRefraccion: String = "",
+    val costoCurvaBase: String = "",
     val costoCostoUnitario: String = "",
     val costoSaveError: String? = null,
     val deletingCosto: CostoProductoEntity? = null,
@@ -203,7 +231,7 @@ class CostosYGastosViewModel @Inject constructor(
         private val FECHA_UI = DateTimeFormatter.ofPattern("dd/MM/yyyy")
         private const val TIPO_BISELADO = "costo_biselado"
         private const val TIPO_LC = "costo_lc"
-        private const val PRECIO_DUPLICADO = "Ya existe un precio vigente para esta combinación. Tócalo en la lista para editarlo."
+        private const val PRECIO_DUPLICADO = "Ya existe un precio vigente para esta combinación. Ábralo en la lista para editarlo."
         val CATEGORIAS = listOf("alquiler", "servicios", "personal", "proveedores", "insumos", "marketing", "impuestos", "otro")
 
         fun autoGenerarRecurrentes(
@@ -284,13 +312,29 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun selectMesGastos(mes: YearMonth) {
         _uiState.update { conGastosDelMes(it.copy(mesGastos = mes)) }
+        viewModelScope.launch {
+            try {
+                val actuales = _uiState.value.gastosOperativos
+                val ampliados = autoGenerarSiFalta(actuales, mes.atDay(1))
+                if (ampliados !== actuales) {
+                    _uiState.update { conGastosDelMes(it.copy(gastosOperativos = ampliados.sortedByDescending { g -> g.fecha })) }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "selectMesGastos auto-generate failed", e)
+            }
+        }
     }
 
-    private suspend fun autoGenerarSiFalta(gastos: List<GastoOperativoEntity>): List<GastoOperativoEntity> {
+    private suspend fun autoGenerarSiFalta(
+        gastos: List<GastoOperativoEntity>,
+        mesReferencia: LocalDate = _uiState.value.mesGastos.atDay(1),
+    ): List<GastoOperativoEntity> {
         val nuevos = autoGenerarRecurrentes(
             templates = gastos.filter { it.isRecurring },
             existentes = gastos,
-            mesActual = DateUtils.today(),
+            mesActual = mesReferencia,
         )
         if (nuevos.isEmpty()) return gastos
         val opticaId = sessionManager.opticaId.first()
@@ -359,14 +403,21 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun loadBlock(block: String) {
+        val filter = blockFilter(block)
         _uiState.update {
-            it.copy(selectedBlock = block, isLoading = true, filtroMaterial = null, filtroTipoLente = null, filtroSerie = null)
+            it.copy(
+                selectedBlock = block,
+                isLoading = true,
+                filtroMaterial = null,
+                filtroTipoLente = filter.tipoLente,
+                filtroSerie = null,
+            )
         }
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                val bloqueFilter = blockToFilter(block)
-                val costos = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
+                val raw = costoProductoDao.getByBloque(opticaId, filter.stockOFabricacion).first()
+                val costos = aplicarFiltroBloque(raw, filter)
                 _uiState.update { it.copy(isLoading = false, costosDelBloque = costos) }
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading block $block", e)
@@ -524,7 +575,11 @@ class CostosYGastosViewModel @Inject constructor(
 
     private suspend fun refrescarBloque(opticaId: String) {
         val bloque = _uiState.value.selectedBlock ?: return
-        val refreshed = costoProductoDao.getByBloque(opticaId, blockToFilter(bloque)).first()
+        val filter = blockFilter(bloque)
+        val refreshed = aplicarFiltroBloque(
+            costoProductoDao.getByBloque(opticaId, filter.stockOFabricacion).first(),
+            filter,
+        )
         _uiState.update { it.copy(costosDelBloque = refreshed) }
     }
 
@@ -830,15 +885,19 @@ class CostosYGastosViewModel @Inject constructor(
     fun showNewCosto() {
         if (!_uiState.value.puedeEditarMatrices) return
         val block = _uiState.value.selectedBlock
+        val filter = block?.let(::blockFilter)
         _uiState.update {
             it.copy(
                 isCostoDialogVisible = true,
                 creatingCosto = true,
                 costoMaterial = "",
-                costoTipoLente = "",
-                costoStockOFabricacion = block?.let { blockToFilter(it) } ?: "",
+                costoTipoLente = filter?.tipoLente.orEmpty(),
+                costoStockOFabricacion = filter?.stockOFabricacion.orEmpty(),
                 costoTratamiento = "",
                 costoSerie = "",
+                costoSubtipoBifocal = "",
+                costoIndiceRefraccion = "",
+                costoCurvaBase = "",
                 costoCostoUnitario = "",
                 costoSaveError = null,
                 deletingCosto = null,
@@ -867,6 +926,15 @@ class CostosYGastosViewModel @Inject constructor(
     }
     fun updateCostoSerie(value: String) {
         _uiState.update { it.copy(costoSerie = value) }
+    }
+    fun updateCostoSubtipoBifocal(value: String) {
+        _uiState.update { it.copy(costoSubtipoBifocal = value) }
+    }
+    fun updateCostoIndiceRefraccion(value: String) {
+        _uiState.update { it.copy(costoIndiceRefraccion = value) }
+    }
+    fun updateCostoCurvaBase(value: String) {
+        _uiState.update { it.copy(costoCurvaBase = value) }
     }
     fun updateCostoCostoUnitario(value: String) {
         _uiState.update { it.copy(costoCostoUnitario = value) }
@@ -898,12 +966,19 @@ class CostosYGastosViewModel @Inject constructor(
                     stockOFabricacion = s.costoStockOFabricacion,
                     tratamiento = s.costoTratamiento.ifBlank { null },
                     serie = s.costoSerie.toIntOrNull(),
+                    subtipoBifocal = s.costoSubtipoBifocal.ifBlank { null },
+                    indiceRefraccion = s.costoIndiceRefraccion.ifBlank { null },
+                    curvaBase = s.costoCurvaBase.ifBlank { null },
                     costoUnitario = costoUnitario,
                     vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
                 saveCostoLocal(opticaId, entity)
-                val bloqueFilter = blockToFilter(s.selectedBlock ?: return@launch)
-                val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
+                val block = s.selectedBlock ?: return@launch
+                val filter = blockFilter(block)
+                val refreshed = aplicarFiltroBloque(
+                    costoProductoDao.getByBloque(opticaId, filter.stockOFabricacion).first(),
+                    filter,
+                )
                 _uiState.update {
                     it.copy(
                         isCostoDialogVisible = false,
@@ -915,6 +990,9 @@ class CostosYGastosViewModel @Inject constructor(
                         costoStockOFabricacion = "",
                         costoTratamiento = "",
                         costoSerie = "",
+                        costoSubtipoBifocal = "",
+                        costoIndiceRefraccion = "",
+                        costoCurvaBase = "",
                         costoCostoUnitario = "",
                     )
                 }
@@ -949,8 +1027,12 @@ class CostosYGastosViewModel @Inject constructor(
             try {
                 val opticaId = sessionManager.opticaId.first()
                 saveCostoLocal(opticaId, costo.copy(vigenteHasta = DateUtils.toIso(DateUtils.today())))
-                val bloqueFilter = blockToFilter(_uiState.value.selectedBlock ?: return@launch)
-                val refreshed = costoProductoDao.getByBloque(opticaId, bloqueFilter).first()
+                val block = _uiState.value.selectedBlock ?: return@launch
+                val filter = blockFilter(block)
+                val refreshed = aplicarFiltroBloque(
+                    costoProductoDao.getByBloque(opticaId, filter.stockOFabricacion).first(),
+                    filter,
+                )
                 _uiState.update {
                     it.copy(
                         deletingCosto = null,

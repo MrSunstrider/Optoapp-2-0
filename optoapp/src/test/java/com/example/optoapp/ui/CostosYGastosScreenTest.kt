@@ -1,8 +1,10 @@
 package com.example.optoapp.ui.screens
 
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.viewmodel.COST_BLOCKS
 import com.example.optoapp.viewmodel.CostosYGastosUiState
 import com.example.optoapp.viewmodel.CostosYGastosViewModel
+import com.example.optoapp.viewmodel.blockFilter
 import com.example.optoapp.viewmodel.blockToFilter
 import org.junit.Assert.*
 import org.junit.Test
@@ -10,9 +12,10 @@ import org.junit.Test
 class CostosYGastosScreenTest {
 
     @Test
-    fun uiState_defaults_tabIsMatriz() {
+    fun uiState_defaults_tabIsGastosFirst() {
         val state = CostosYGastosUiState()
-        assertEquals(0, state.selectedTab)
+        assertEquals(CostosTab.GASTOS.ordinal, state.selectedTab)
+        assertEquals(0, CostosTab.GASTOS.ordinal)
     }
 
     @Test
@@ -48,6 +51,9 @@ class CostosYGastosScreenTest {
     @Test
     fun costBlocks_mapToTheirStockOrFabricationFilter() {
         assertEquals(listOf("stock", "stock", "stock", "fabricacion", "fabricacion"), COST_BLOCKS.map(::blockToFilter))
+        assertEquals("Monofocal", blockFilter("Stock Monofocal").tipoLente)
+        assertEquals("Bifocal", blockFilter("Stock Bifocal").tipoLente)
+        assertEquals("Resina", blockFilter("Fabricación Resina").materialContains)
     }
 
     @Test

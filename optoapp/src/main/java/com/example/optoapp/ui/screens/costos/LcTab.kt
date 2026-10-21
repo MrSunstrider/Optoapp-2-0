@@ -54,7 +54,7 @@ fun FormLcDialog(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             MatrizDropdown(
-                label = stringResource(R.string.costos_tipo_lc_requerido),
+                label = stringResource(R.string.costos_lc_tipo_hint),
                 seleccion = form.tipoLc,
                 opciones = TIPOS_LC,
                 etiqueta = { etiquetaMatriz(it) },
@@ -63,11 +63,11 @@ fun FormLcDialog(
             OutlinedTextField(
                 value = form.material,
                 onValueChange = { valor -> onCambio { it.copy(material = valor) } },
-                label = { Text(stringResource(R.string.costos_material_requerido)) },
+                label = { Text(stringResource(R.string.costos_lc_material_hint)) },
                 modifier = Modifier.fillMaxWidth(),
             )
             MatrizDropdown(
-                label = stringResource(R.string.costos_modalidad_requerida),
+                label = stringResource(R.string.costos_lc_modalidad_hint),
                 seleccion = form.modalidad,
                 opciones = MODALIDADES_LC,
                 etiqueta = { etiquetaMatriz(it) },

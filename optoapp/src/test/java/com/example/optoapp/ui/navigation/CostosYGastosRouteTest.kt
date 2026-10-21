@@ -27,7 +27,7 @@ class CostosYGastosRouteTest {
 
     @Test
     fun `tab order matches the tab row of the screen`() {
-        assertEquals(listOf("lentes", "biselado", "lc", "gastos", "servicios"), CostosTab.entries.map { it.arg })
+        assertEquals(listOf("gastos", "lentes", "biselado", "lc", "servicios"), CostosTab.entries.map { it.arg })
     }
 
     @Test

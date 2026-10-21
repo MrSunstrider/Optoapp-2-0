@@ -14,6 +14,7 @@ import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.ResultadoVigencia
 import com.example.optoapp.domain.SyncFinanzasUseCase
 import com.example.optoapp.sync.PostSaveSyncScheduler
+import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.util.DateUtils
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -161,7 +162,7 @@ class CostosYGastosViewModelMatricesTest {
         coEvery { costoBiseladoDao.getByOpticaIdList(opticaId) } returns listOf(biselado)
         val viewModel = buildViewModel()
 
-        viewModel.selectTab(1)
+        viewModel.selectTab(CostosTab.BISELADO.ordinal)
         advanceUntilIdle()
 
         val fila = viewModel.uiState.value.costosBiselado.single()
@@ -178,7 +179,7 @@ class CostosYGastosViewModelMatricesTest {
         coEvery { costoLcDao.getByOpticaIdList(opticaId) } returns listOf(lc)
         val viewModel = buildViewModel()
 
-        viewModel.selectTab(2)
+        viewModel.selectTab(CostosTab.LC.ordinal)
         advanceUntilIdle()
 
         val fila = viewModel.uiState.value.costosLc.single()
@@ -191,7 +192,7 @@ class CostosYGastosViewModelMatricesTest {
     @Test
     fun anEmptyMatrixOffersTheAddPriceActionToWriters() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
-        viewModel.selectTab(1)
+        viewModel.selectTab(CostosTab.BISELADO.ordinal)
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value.costosBiselado.isEmpty())
@@ -199,7 +200,7 @@ class CostosYGastosViewModelMatricesTest {
         viewModel.showNewBiselado()
         assertNotNull(viewModel.uiState.value.formBiselado)
 
-        viewModel.selectTab(2)
+        viewModel.selectTab(CostosTab.LC.ordinal)
         viewModel.showNewLc()
         assertNotNull(viewModel.uiState.value.formLc)
     }
@@ -230,7 +231,7 @@ class CostosYGastosViewModelMatricesTest {
     @Test
     fun aNewBiseladoPriceStoresTheCanonicalAltoIndiceSoRowsStayComparable() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
-        viewModel.selectTab(1)
+        viewModel.selectTab(CostosTab.BISELADO.ordinal)
         viewModel.showNewBiselado()
         viewModel.updateFormBiselado {
             it.copy(material = "Resina", tipoAro = "aro_completo", modalidad = "stock", serie = "1", altoIndice = "1,7", costo = "15")
@@ -275,7 +276,7 @@ class CostosYGastosViewModelMatricesTest {
     fun aNewBiseladoPriceForAnOpenCombinationIsRejectedSoTheLookupStaysUnambiguous() = runTest(testDispatcher) {
         coEvery { costoBiseladoDao.getByOpticaIdList(opticaId) } returns listOf(biselado)
         val viewModel = buildViewModel()
-        viewModel.selectTab(1)
+        viewModel.selectTab(CostosTab.BISELADO.ordinal)
         advanceUntilIdle()
         viewModel.showNewBiselado()
         viewModel.updateFormBiselado {
@@ -286,7 +287,7 @@ class CostosYGastosViewModelMatricesTest {
         advanceUntilIdle()
 
         assertEquals(
-            "Ya existe un precio vigente para esta combinación. Tócalo en la lista para editarlo.",
+            "Ya existe un precio vigente para esta combinación. Ábralo en la lista para editarlo.",
             viewModel.uiState.value.formBiselado?.error,
         )
         coVerify(exactly = 0) { costoBiseladoDao.upsertAll(any()) }
@@ -308,7 +309,7 @@ class CostosYGastosViewModelMatricesTest {
     @Test
     fun aNewLcPriceIsMarkedForUploadAndSchedulesSync() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
-        viewModel.selectTab(2)
+        viewModel.selectTab(CostosTab.LC.ordinal)
         viewModel.showNewLc()
         viewModel.updateFormLc { it.copy(tipoLc = "graduado", material = "Hydrogel", modalidad = "mensual", costo = "40") }
 
@@ -382,7 +383,7 @@ class CostosYGastosViewModelMatricesTest {
         val desde = LocalDate.of(2026, 8, 1)
         coEvery { matrizVigencia.editarLc(lc, 50.0, desde, hoy) } returns ResultadoVigencia.Aplicado("l3")
         val viewModel = buildViewModel()
-        viewModel.selectTab(2)
+        viewModel.selectTab(CostosTab.LC.ordinal)
         advanceUntilIdle()
 
         viewModel.showEditLc(lc)
