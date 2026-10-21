@@ -23,12 +23,12 @@ S7. User (verbatim): `usa gentle ai para este ciclo hazlo todo`.
 
 ## Tasks
 
-- [x] T1 S1-S2 — Block = real tipo/material filter; new-cost form prefills + IR/curva/subtipo — route: inline — commit: (pending this delivery)
-- [x] T2 S4 — CostosTab GASTOS first + screen `when(ordinal)` — route: inline — commit: (pending this delivery)
-- [x] T3 S3 — Biselado/LC labels coherence (display codes) — route: inline — commit: (pending this delivery)
-- [x] T4 S5 — Recurrentes for `mesGastos` viewed month — route: inline — commit: (pending this delivery)
-- [x] T5 S6 — Layout filters stack + MatrizRow multi-line — route: inline — commit: (pending this delivery)
-- [x] T6 S7 — Focused tests + suite — route: inline — evidence: CostBlockFilter + Costos* tests green; full `:optoapp:testDebugUnitTest` BUILD SUCCESSFUL
+- [x] T1 S1-S2 — Block = real tipo/material filter; new-cost form prefills + IR/curva/subtipo — route: inline — commit: `d25f44e2`
+- [x] T2 S4 — CostosTab GASTOS first + screen `when(ordinal)` — route: inline — commit: `d25f44e2`
+- [x] T3 S3 — Biselado/LC labels coherence (display codes) — route: inline — commit: `d25f44e2`
+- [x] T4 S5 — Recurrentes for `mesGastos` viewed month — route: inline — commit: `d25f44e2`
+- [x] T5 S6 — Layout filters stack + MatrizRow multi-line — route: inline — commit: `d25f44e2`
+- [x] T6 S7 — Focused tests + suite — route: inline — commit: `d25f44e2` — full `:optoapp:testDebugUnitTest` BUILD SUCCESSFUL; GGA PASSED
 
 ## Log
 
