@@ -159,6 +159,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideThemeModeStore(@ApplicationContext context: Context): com.example.optoapp.domain.ThemeModeStore =
+        ThemePreferences(context)
+
+    @Provides
+    @Singleton
     fun provideSessionManager(@ApplicationContext context: Context): SessionManager = SessionManager(context)
 
     @Provides
