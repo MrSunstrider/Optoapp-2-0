@@ -1,5 +1,7 @@
 package com.example.optoapp.ui.screens
 
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -26,9 +28,11 @@ import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.screens.costos.OtsSinCostoScreen
 import com.example.optoapp.ui.screens.ordenescompra.OrdenesCompraScreen
+import com.example.optoapp.domain.AppThemeMode
 import com.example.optoapp.util.MesArg
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.OpticaHeaderViewModel
+import com.example.optoapp.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
 
 // Screens show snackbars without receiving the host through every composable signature.
@@ -47,9 +51,14 @@ fun MainDrawerScreen(
 
     val syncViewModel: com.example.optoapp.viewmodel.SyncViewModel = hiltViewModel()
     val opticaHeaderViewModel: OpticaHeaderViewModel = hiltViewModel()
+    // WHY: same Activity store as MainActivity so the banner toggle drives OptoAppTheme immediately
+    val themeViewModel: ThemeViewModel = hiltViewModel(LocalContext.current as ComponentActivity)
     val syncState by syncViewModel.syncState.collectAsState()
     val isSilentSyncing by syncViewModel.isSilentSyncing.collectAsState()
     val opticaHeader by opticaHeaderViewModel.uiState.collectAsState()
+    val themeMode by themeViewModel.mode.collectAsState()
+    val systemDark = isSystemInDarkTheme()
+    val effectiveDark = AppThemeMode.resolveDark(themeMode, systemDark)
     val opticaRol by authViewModel.opticaRol.collectAsState(initial = "")
     val showCierreCaja = AppRoles.canViewCierreCaja(opticaRol)
     val showBiYReportes = AppRoles.canViewBiAndReports(opticaRol)
@@ -107,41 +116,62 @@ fun MainDrawerScreen(
                             .fillMaxWidth()
                             .statusBarsPadding(),
                     ) {
-                        TextButton(
-                            onClick = {
-                                scope.launch {
-                                    when (val prep = authViewModel.prepareOpticaSelection()) {
-                                        is com.example.optoapp.viewmodel.OpticaSelectionPrep.Error -> {
-                                            android.widget.Toast.makeText(
-                                                context,
-                                                prep.message.ifBlank { context.getString(R.string.drawer_error_cargar_opticas) },
-                                                android.widget.Toast.LENGTH_SHORT,
-                                            ).show()
-                                        }
-                                        is com.example.optoapp.viewmodel.OpticaSelectionPrep.Ok -> {
-                                            if (prep.hasMultiple) {
-                                                parentNavController.navigate(Route.SeleccionOptica.route)
-                                            } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        when (val prep = authViewModel.prepareOpticaSelection()) {
+                                            is com.example.optoapp.viewmodel.OpticaSelectionPrep.Error -> {
                                                 android.widget.Toast.makeText(
                                                     context,
-                                                    context.getString(R.string.drawer_una_optica),
+                                                    prep.message.ifBlank { context.getString(R.string.drawer_error_cargar_opticas) },
                                                     android.widget.Toast.LENGTH_SHORT,
                                                 ).show()
                                             }
+                                            is com.example.optoapp.viewmodel.OpticaSelectionPrep.Ok -> {
+                                                if (prep.hasMultiple) {
+                                                    parentNavController.navigate(Route.SeleccionOptica.route)
+                                                } else {
+                                                    android.widget.Toast.makeText(
+                                                        context,
+                                                        context.getString(R.string.drawer_una_optica),
+                                                        android.widget.Toast.LENGTH_SHORT,
+                                                    ).show()
+                                                }
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.drawer_optica_activa, opticaHeader.nombreOptica, opticaHeader.fiscalEtiqueta),
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(vertical = 2.dp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                                },
+                                modifier = Modifier.weight(1f),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.drawer_optica_activa,
+                                        opticaHeader.nombreOptica,
+                                        opticaHeader.fiscalEtiqueta,
+                                    ),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(vertical = 2.dp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            IconButton(
+                                onClick = { themeViewModel.toggle(systemDark) },
+                                modifier = Modifier.size(40.dp),
+                            ) {
+                                Icon(
+                                    imageVector = if (effectiveDark) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                                    contentDescription = stringResource(
+                                        if (effectiveDark) R.string.theme_toggle_to_light else R.string.theme_toggle_to_dark,
+                                    ),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                     OfflineBanner(isOnline = isOnline)

@@ -104,6 +104,36 @@ class GuardarCostoLenteDesdeOtUseCaseTest {
     }
 
     @Test
+    fun samePriceOnOpenRowDoesNotVersion() = runTest {
+        val abierto = CostoProductoEntity(
+            id = "p1",
+            opticaId = opticaId,
+            material = "Resina",
+            tipoLente = "Monofocal",
+            stockOFabricacion = "stock",
+            tratamiento = "UV 400",
+            serie = 1,
+            costoUnitario = 2.5,
+            vigenteDesde = "2026-01-01",
+        )
+        coEvery {
+            dao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns abierto
+
+        val result = useCase(
+            opticaId,
+            item(),
+            ComponenteCosto.OD,
+            costoUnitario = 2.5,
+            receta = RecetaCosto(odEsf = -1.0, odCil = 0.0, oiEsf = -1.0, oiCil = 0.0),
+            hoy = hoy,
+        )
+
+        assertEquals(ResultadoCostoMatriz.SinCambio("p1"), result)
+        coVerify(exactly = 0) { vigencia.editarProducto(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun rejectsWithoutSphereForEye() = runTest {
         val result = useCase(
             opticaId,

@@ -295,6 +295,28 @@ class ReportesViewModelOtrosPeriodosTest {
     }
 
     @Test
+    fun `Anual with invalid year falls back without crashing`() = runTest(testDispatcher) {
+        val currentYear = LocalDate.now().year
+        val currentYearDate = LocalDate.of(currentYear, 6, 23)
+        val dispensaciones = listOf(
+            DispensacionOptica(id = "d-current", pacienteId = "p", fecha = currentYearDate, montoTotal = 10.0, opticaId = opticaId),
+            DispensacionOptica(id = "d-other", pacienteId = "p", fecha = currentYearDate.minusYears(1), montoTotal = 20.0, opticaId = opticaId),
+        )
+        every { repository.getAllDispensacionesForOptica(opticaId) } returns flowOf(dispensaciones)
+
+        viewModel = ReportesViewModel(repository, sessionManager,
+        mockk(relaxed = true))
+        activateFlows()
+        viewModel.setPeriodo("Anual")
+        viewModel.setFechaDiario(currentYearDate)
+        viewModel.setAnio("abc")
+        advanceUntilIdle()
+
+        assertEquals("Invalid Anual year should fall back to the current year", 1, viewModel.allDispensaciones.value.size)
+        assertTrue(viewModel.allDispensaciones.value.any { it.id == "d-current" })
+    }
+
+    @Test
     fun `Anual with no matching year returns empty`() = runTest(testDispatcher) {
         val dispensaciones = listOf(
             DispensacionOptica(id = "d2025", pacienteId = "p", fecha = LocalDate.of(2025, 6, 23), montoTotal = 10.0, opticaId = opticaId),

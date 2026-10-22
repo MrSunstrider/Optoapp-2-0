@@ -11,7 +11,11 @@ import com.example.optoapp.data.ServicioExtra
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.opticasettings.CommissionConfigJson
 import com.example.optoapp.data.opticasettings.OpticaSettingsEntity
+import com.example.optoapp.domain.ClinicoEdadFiltro
+import com.example.optoapp.domain.ClinicoEmetropiaFiltro
+import com.example.optoapp.domain.ClinicoFiltros
 import com.example.optoapp.domain.ClinicoReporte
+import com.example.optoapp.domain.ClinicoSexoFiltro
 import com.example.optoapp.domain.CostoVentaCalculator
 import com.example.optoapp.domain.EquipoReporte
 import com.example.optoapp.domain.InventarioReporte
@@ -21,26 +25,35 @@ import com.example.optoapp.domain.Origen
 import com.example.optoapp.domain.PacientesReporte
 import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.PeriodComparison
+import com.example.optoapp.domain.PeriodSeriesComparison
 import com.example.optoapp.domain.ReportesModuleStats
 import com.example.optoapp.domain.TipoMovimiento
 import com.example.optoapp.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Year
 import javax.inject.Inject
+
+data class ReportesPeriodoComparativo(
+    val totals: PeriodComparison,
+    val series: PeriodSeriesComparison?,
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -85,7 +98,7 @@ class ReportesViewModel @Inject constructor(
             "Diario" -> _fechaDiario.value = _fechaDiario.value.minusDays(1)
             "Semanal" -> _fechaDiario.value = _fechaDiario.value.minusWeeks(1)
             "Mensual" -> _fechaDiario.value = _fechaDiario.value.minusMonths(1)
-            "Anual" -> _anio.value = (_anio.value.toInt() - 1).toString()
+            "Anual" -> _anio.value = (anioAsIntOrCurrent() - 1).toString()
         }
     }
 
@@ -94,7 +107,7 @@ class ReportesViewModel @Inject constructor(
             "Diario" -> _fechaDiario.value = _fechaDiario.value.plusDays(1)
             "Semanal" -> _fechaDiario.value = _fechaDiario.value.plusWeeks(1)
             "Mensual" -> _fechaDiario.value = _fechaDiario.value.plusMonths(1)
-            "Anual" -> _anio.value = (_anio.value.toInt() + 1).toString()
+            "Anual" -> _anio.value = (anioAsIntOrCurrent() + 1).toString()
         }
     }
 
@@ -124,7 +137,7 @@ class ReportesViewModel @Inject constructor(
             !date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)
         }
         "Mensual" -> date.year == fechaDiario.year && date.month == fechaDiario.month
-        "Anual" -> date.year.toString() == a
+        "Anual" -> date.year == (a.toIntOrNull() ?: fechaDiario.year)
         else -> true
     }
 
@@ -135,7 +148,10 @@ class ReportesViewModel @Inject constructor(
             startOfWeek to startOfWeek.plusDays(6)
         }
         "Mensual" -> fd.withDayOfMonth(1) to fd.withDayOfMonth(fd.lengthOfMonth())
-        "Anual" -> LocalDate.of(a.toInt(), 1, 1) to LocalDate.of(a.toInt(), 12, 31)
+        "Anual" -> {
+            val year = a.toIntOrNull() ?: fd.year
+            LocalDate.of(year, 1, 1) to LocalDate.of(year, 12, 31)
+        }
         else -> LocalDate.MIN to LocalDate.MAX
     }
 
@@ -150,7 +166,7 @@ class ReportesViewModel @Inject constructor(
             prev.withDayOfMonth(1) to prev.withDayOfMonth(prev.lengthOfMonth())
         }
         "Anual" -> {
-            val y = a.toInt() - 1
+            val y = (a.toIntOrNull() ?: fd.year) - 1
             LocalDate.of(y, 1, 1) to LocalDate.of(y, 12, 31)
         }
         else -> null
@@ -375,58 +391,97 @@ class ReportesViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    val periodComparison: StateFlow<PeriodComparison?> = sessionManager.opticaId
+    val periodComparativo: StateFlow<ReportesPeriodoComparativo?> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
             combine(_periodo, _anio, _fechaDiario, allMovimientosDelPeriodo) { p, a, fd, current ->
-                val prevRange = previousPeriodDateRange(p, a, fd)
-                Triple(opticaId, current, prevRange)
-            }.flatMapLatest { (opticaId, current, prevRange) ->
+                ComparativoQuery(opticaId, p, a, fd, current, previousPeriodDateRange(p, a, fd))
+            }.flatMapLatest { q ->
                 flow {
+                    // Drop the previous granularity immediately so Ventas does not keep a
+                    // Semanal/Anual bar model on screen while Mensual data is still loading.
+                    emit(null)
+                    val prevRange = q.prevRange
                     if (prevRange == null) {
-                        emit(null)
                         return@flow
                     }
                     val (start, end) = prevRange
-                    val disps = repository.getDispensacionesByDateRangeForOptica(start, end, opticaId).first()
-                        .filter { it.estadoEntrega != OrderStatusPolicy.ANULADO && it.estadoEntrega != OrderStatusPolicy.RECLAMADA }
-                    val servs = repository.getServiciosByDateRangeForOptica(start, end, opticaId).first()
-                        .filter { it.estado != OrderStatusPolicy.ANULADO }
-                    val itemsByDisp = repository.getDispensacionItemsSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
-                    val regalosByDisp = repository.getRegalosSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
-                    val itemsByServ = repository.getServicioExtraItemsSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
-                    val regalosByServ = repository.getRegalosServicioExtraSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
-                    val pagos = repository.getAllPagosFlowForOptica(opticaId).first()
-                    val pagosSumByDisp = pagos.filter { it.dispensacionId != null }
-                        .groupBy { it.dispensacionId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
-                    val aCuentaSumByServ = pagos.filter { it.servicioExtraId != null }
-                        .groupBy { it.servicioExtraId!! }
-                        .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
-                    val previous = disps.map { d ->
-                        val costo = CostoVentaCalculator.dispensacion(
-                            items = itemsByDisp[d.id].orEmpty(),
-                            costoUnitarioSnapshot = null,
-                            regalos = regalosByDisp[d.id].orEmpty(),
-                        )
-                        MovimientoFinanciero(
-                            id = d.id, fecha = d.fecha, tipo = TipoMovimiento.VENTA, origen = Origen.DISPENSACION,
-                            origenId = d.id, montoTotal = d.montoTotal, montoPagado = pagosSumByDisp[d.id] ?: 0.0,
-                            costo = costo.costo, pacienteId = d.pacienteId, opticaId = d.opticaId,
-                            descripcion = "OT ${d.ot}", costoIncompleto = costo.costoIncompleto,
-                        )
-                    } + servs.map { s ->
-                        val costo = CostoVentaCalculator.servicio(s, itemsByServ[s.id].orEmpty(), regalosByServ[s.id].orEmpty())
-                        MovimientoFinanciero(
-                            id = s.id, fecha = s.fecha, tipo = TipoMovimiento.VENTA, origen = Origen.SERVICIO,
-                            origenId = s.id, montoTotal = s.montoTotal, montoPagado = aCuentaSumByServ[s.id] ?: 0.0,
-                            costo = costo.costo, pacienteId = s.pacienteId.orEmpty(), opticaId = s.opticaId,
-                            descripcion = s.descripcion, costoIncompleto = costo.costoIncompleto,
-                        )
-                    }
-                    emit(PeriodComparison.fromMovimientos(current, previous))
+                    val previous = loadMovimientosForRange(q.opticaId, start, end)
+                    emit(
+                        ReportesPeriodoComparativo(
+                            totals = PeriodComparison.fromMovimientos(q.current, previous),
+                            series = PeriodSeriesComparison.fromMovimientos(
+                                periodo = q.periodo,
+                                fechaAncla = q.fechaAncla,
+                                anio = q.anio,
+                                current = q.current,
+                                previous = previous,
+                            ),
+                        ),
+                    )
                 }
+                    .flowOn(Dispatchers.IO)
+                    .catch { emit(null) }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /** Kept for PDF / callers that only need aggregate deltas. */
+    val periodComparison: StateFlow<PeriodComparison?> = periodComparativo
+        .map { it?.totals }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private data class ComparativoQuery(
+        val opticaId: String,
+        val periodo: String,
+        val anio: String,
+        val fechaAncla: LocalDate,
+        val current: List<MovimientoFinanciero>,
+        val prevRange: Pair<LocalDate, LocalDate>?,
+    )
+
+    private fun anioAsIntOrCurrent(): Int = _anio.value.toIntOrNull() ?: LocalDate.now().year
+
+    private suspend fun loadMovimientosForRange(
+        opticaId: String,
+        start: LocalDate,
+        end: LocalDate,
+    ): List<MovimientoFinanciero> {
+        val disps = repository.getDispensacionesByDateRangeForOptica(start, end, opticaId).first()
+            .filter { it.estadoEntrega != OrderStatusPolicy.ANULADO && it.estadoEntrega != OrderStatusPolicy.RECLAMADA }
+        val servs = repository.getServiciosByDateRangeForOptica(start, end, opticaId).first()
+            .filter { it.estado != OrderStatusPolicy.ANULADO }
+        val itemsByDisp = repository.getDispensacionItemsSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
+        val regalosByDisp = repository.getRegalosSnapshotForOptica(opticaId).groupBy { it.dispensacionId }
+        val itemsByServ = repository.getServicioExtraItemsSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
+        val regalosByServ = repository.getRegalosServicioExtraSnapshotForOptica(opticaId).groupBy { it.servicioExtraId }
+        val pagos = repository.getAllPagosFlowForOptica(opticaId).first()
+        val pagosSumByDisp = pagos.filter { it.dispensacionId != null }
+            .groupBy { it.dispensacionId!! }
+            .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
+        val aCuentaSumByServ = pagos.filter { it.servicioExtraId != null }
+            .groupBy { it.servicioExtraId!! }
+            .mapValues { (_, pags) -> pags.sumOf { PagoEffect.signedAmount(it.tipo, it.monto) } }
+        return disps.map { d ->
+            val costo = CostoVentaCalculator.dispensacion(
+                items = itemsByDisp[d.id].orEmpty(),
+                costoUnitarioSnapshot = null,
+                regalos = regalosByDisp[d.id].orEmpty(),
+            )
+            MovimientoFinanciero(
+                id = d.id, fecha = d.fecha, tipo = TipoMovimiento.VENTA, origen = Origen.DISPENSACION,
+                origenId = d.id, montoTotal = d.montoTotal, montoPagado = pagosSumByDisp[d.id] ?: 0.0,
+                costo = costo.costo, pacienteId = d.pacienteId, opticaId = d.opticaId,
+                descripcion = "OT ${d.ot}", costoIncompleto = costo.costoIncompleto,
+            )
+        } + servs.map { s ->
+            val costo = CostoVentaCalculator.servicio(s, itemsByServ[s.id].orEmpty(), regalosByServ[s.id].orEmpty())
+            MovimientoFinanciero(
+                id = s.id, fecha = s.fecha, tipo = TipoMovimiento.VENTA, origen = Origen.SERVICIO,
+                origenId = s.id, montoTotal = s.montoTotal, montoPagado = aCuentaSumByServ[s.id] ?: 0.0,
+                costo = costo.costo, pacienteId = s.pacienteId.orEmpty(), opticaId = s.opticaId,
+                descripcion = s.descripcion, costoIncompleto = costo.costoIncompleto,
+            )
+        }
+    }
 
     val pacientesReporte: StateFlow<PacientesReporte> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
@@ -455,18 +510,54 @@ class ReportesViewModel @Inject constructor(
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InventarioReporte(0, 0, 0, 0))
 
+    private val _clinicoSexo = MutableStateFlow(ClinicoSexoFiltro.TODOS)
+    private val _clinicoEdad = MutableStateFlow(ClinicoEdadFiltro.TODOS)
+    private val _clinicoEmetropia = MutableStateFlow(ClinicoEmetropiaFiltro.TODOS)
+
+    val clinicoFiltros: StateFlow<ClinicoFiltros> = combine(_clinicoSexo, _clinicoEdad, _clinicoEmetropia) { sexo, edad, emetropia ->
+        ClinicoFiltros(sexo = sexo, edad = edad, emetropia = emetropia)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ClinicoFiltros())
+
+    fun setClinicoSexo(filtro: ClinicoSexoFiltro) {
+        _clinicoSexo.value = filtro
+    }
+
+    fun setClinicoEdad(filtro: ClinicoEdadFiltro) {
+        _clinicoEdad.value = filtro
+    }
+
+    fun setClinicoEmetropia(filtro: ClinicoEmetropiaFiltro) {
+        _clinicoEmetropia.value = filtro
+    }
+
     val clinicoReporte: StateFlow<ClinicoReporte> = sessionManager.opticaId
         .flatMapLatest { opticaId ->
-            combine(_periodo, _anio, _fechaDiario) { p, a, fd ->
+            combine(_periodo, _anio, _fechaDiario, clinicoFiltros) { p, a, fd, filtros ->
                 val (start, end) = periodDateRange(p, a, fd)
-                Triple(opticaId, start, end)
-            }.flatMapLatest { (opticaId, start, end) ->
+                ClinicoQuery(opticaId, start, end, filtros)
+            }.flatMapLatest { q ->
                 flow {
-                    val evaluaciones = repository.getEvaluacionesSnapshotForOptica(opticaId)
-                    emit(ReportesModuleStats.clinico(evaluaciones, start, end))
+                    val evaluaciones = repository.getEvaluacionesSnapshotForOptica(q.opticaId)
+                    val pacientes = repository.getPacientesSnapshotForOptica(q.opticaId).associateBy { it.id }
+                    emit(
+                        ReportesModuleStats.clinico(
+                            evaluaciones = evaluaciones,
+                            start = q.start,
+                            end = q.end,
+                            pacientesById = pacientes,
+                            filtros = q.filtros,
+                        ),
+                    )
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ClinicoReporte(0, emptyList()))
+
+    private data class ClinicoQuery(
+        val opticaId: String,
+        val start: LocalDate,
+        val end: LocalDate,
+        val filtros: ClinicoFiltros,
+    )
 
     val comisionPct: StateFlow<Double> = sessionManager.opticaId
         .flatMapLatest { opticaId ->

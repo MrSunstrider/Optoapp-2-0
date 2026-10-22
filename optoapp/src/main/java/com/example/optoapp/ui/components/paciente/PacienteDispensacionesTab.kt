@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -36,11 +37,13 @@ fun DispensacionesList(
     paciente: Paciente,
     evaluaciones: List<EvaluacionClinica>,
     onEdit: (String) -> Unit,
+    onDelete: ((String) -> Unit)? = null,
     laboratorioVm: LaboratorioConfigViewModel = hiltViewModel(),
     pagosSumMap: Map<String, Double> = emptyMap(),
 ) {
     val selectedDispForResumen = remember { mutableStateOf<DispensacionOptica?>(null) }
     val selectedDispForTicket = remember { mutableStateOf<DispensacionOptica?>(null) }
+    var dispToDelete by remember { mutableStateOf<DispensacionOptica?>(null) }
     val labCfg by laboratorioVm.uiState.collectAsState()
 
     if (dispensaciones.isEmpty()) {
@@ -62,26 +65,51 @@ fun DispensacionesList(
                     onClick = { onEdit(disp.id) },
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForTicket.value = disp }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = date,
+                                modifier = Modifier.weight(1f),
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            OrderEstadoChip(disp.estadoEntrega, saldo = saldo)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(modifier = Modifier.size(40.dp), onClick = { selectedDispForTicket.value = disp }) {
+                                Icon(
+                                    Icons.Filled.Science,
+                                    contentDescription = stringResource(R.string.paciente_disp_ticket_cd),
+                                    tint = MaterialTheme.colorScheme.tertiary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            IconButton(modifier = Modifier.size(40.dp), onClick = { selectedDispForResumen.value = disp }) {
+                                Icon(
+                                    Icons.Default.Visibility,
+                                    contentDescription = stringResource(R.string.paciente_disp_ver_resumen_cd),
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                            if (onDelete != null) {
+                                IconButton(modifier = Modifier.size(40.dp), onClick = { dispToDelete = disp }) {
                                     Icon(
-                                        Icons.Filled.Science,
-                                        contentDescription = stringResource(R.string.paciente_disp_ticket_cd),
-                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.paciente_disp_eliminar_cd),
+                                        tint = MaterialTheme.colorScheme.error,
                                         modifier = Modifier.size(20.dp),
                                     )
                                 }
-                                IconButton(modifier = Modifier.size(48.dp), onClick = { selectedDispForResumen.value = disp }) {
-                                    Icon(
-                                        Icons.Default.Visibility,
-                                        contentDescription = stringResource(R.string.paciente_disp_ver_resumen_cd),
-                                        tint = MaterialTheme.colorScheme.secondary,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                }
-                                OrderEstadoChip(disp.estadoEntrega)
                             }
                         }
                         if (disp.fechaEntrega != null) {
@@ -121,6 +149,37 @@ fun DispensacionesList(
             ticketTextoCompacto = DispensacionLaboratorioTicket.textoCompacto(ticketCtx, ultimaEval),
             laboratorioNombre = labCfg.laboratorioNombre,
             laboratorioContacto = labCfg.laboratorioContacto,
+        )
+    }
+
+    dispToDelete?.let { disp ->
+        AlertDialog(
+            onDismissRequest = { dispToDelete = null },
+            title = { Text(stringResource(R.string.paciente_disp_eliminar_titulo)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.paciente_disp_eliminar_mensaje,
+                        disp.ot.ifBlank { "—" },
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete?.invoke(disp.id)
+                        dispToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(stringResource(R.string.common_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { dispToDelete = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     }
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -34,36 +35,48 @@ fun OptoBarChart(
 ) {
     val plan = remember(series, stacked) { BarChartPlan.from(series, stacked) }
     val colors = chartSeriesColors()
+    val emptyState = ChartEmptyStateModel.forSeries(title, series)
+    val canRenderChart = !emptyState.isEmpty && plan.labels.isNotEmpty() && plan.series.isNotEmpty() && plan.values.isNotEmpty()
     ChartFrame(
         title = title,
-        model = ChartEmptyStateModel.forSeries(title, series).let { if (it.isEmpty) it else it.copy(summary = plan.contentDescription(title)) },
+        model = emptyState.let { if (it.isEmpty) it else it.copy(summary = plan.contentDescription(title)) },
         table = remember(series) { ChartDataTableState.fromSeries(plan.series) },
         labelHeader = stringResource(R.string.chart_columna_periodo),
         legend = plan.series.withChartColors(colors) { it.name },
         modifier = modifier,
     ) {
-        val producer = remember { CartesianChartModelProducer() }
-        LaunchedEffect(plan) {
-            producer.runTransaction { columnSeries { plan.values.forEach { series(it) } } }
+        if (!canRenderChart) {
+            ChartEmptyState(message = emptyState.summary)
+            return@ChartFrame
         }
-        val columns = plan.series.indices.map { rememberLineComponent(fill(colors[it % colors.size]), thickness = 16.dp) }
-        CartesianChartHost(
-            chart = rememberCartesianChart(
-                rememberColumnCartesianLayer(
-                    columnProvider = ColumnCartesianLayer.ColumnProvider.series(columns),
-                    mergeMode = { if (plan.stacked) ColumnCartesianLayer.MergeMode.Stacked else ColumnCartesianLayer.MergeMode.Grouped() },
-                    rangeProvider = remember(plan) { CartesianLayerRangeProvider.fixed(minY = plan.range.min, maxY = plan.range.max) },
+        // WHY: Reusing one Vico ModelProducer across Semanal(7)/Mensual(~5)/Anual(12) x-sizes
+        // native-crashes the process when the user switches periodo in Reportes → Ventas.
+        key(plan.labels.size, plan.series.size, plan.stacked, title) {
+            val producer = remember { CartesianChartModelProducer() }
+            LaunchedEffect(plan) {
+                producer.runTransaction { columnSeries { plan.values.forEach { series(it) } } }
+            }
+            val columns = List(plan.series.size) { index ->
+                rememberLineComponent(fill(colors[index % colors.size]), thickness = 16.dp)
+            }
+            CartesianChartHost(
+                chart = rememberCartesianChart(
+                    rememberColumnCartesianLayer(
+                        columnProvider = ColumnCartesianLayer.ColumnProvider.series(columns),
+                        mergeMode = { if (plan.stacked) ColumnCartesianLayer.MergeMode.Stacked else ColumnCartesianLayer.MergeMode.Grouped() },
+                        rangeProvider = remember(plan) { CartesianLayerRangeProvider.fixed(minY = plan.range.min, maxY = plan.range.max) },
+                    ),
+                    startAxis = VerticalAxis.rememberStart(valueFormatter = moneyAxisFormatter),
+                    bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = labelAxisFormatter(plan.labels)),
                 ),
-                startAxis = VerticalAxis.rememberStart(valueFormatter = moneyAxisFormatter),
-                bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = labelAxisFormatter(plan.labels)),
-            ),
-            modelProducer = producer,
-            modifier = Modifier.fillMaxWidth().height(CHART_HEIGHT),
-        )
+                modelProducer = producer,
+                modifier = Modifier.fillMaxWidth().height(CHART_HEIGHT),
+            )
+        }
     }
 }
 
-internal val CHART_HEIGHT = 200.dp
+internal val CHART_HEIGHT = 220.dp
 
 internal val moneyAxisFormatter = CartesianValueFormatter { _, value, _ -> MoneyFormatter.formatAbbreviated(value) }
 

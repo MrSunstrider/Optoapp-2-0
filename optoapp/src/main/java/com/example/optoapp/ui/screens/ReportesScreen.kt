@@ -94,9 +94,11 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
     var isPdfLoading by remember { mutableStateOf(false) }
     var selectedModule by remember { mutableStateOf(ReportModule.RESUMEN) }
     val periodComparison by viewModel.periodComparison.collectAsState()
+    val periodComparativo by viewModel.periodComparativo.collectAsState()
     val pacientesReporte by viewModel.pacientesReporte.collectAsState()
     val inventarioReporte by viewModel.inventarioReporte.collectAsState()
     val clinicoReporte by viewModel.clinicoReporte.collectAsState()
+    val clinicoFiltros by viewModel.clinicoFiltros.collectAsState()
     val equipoReporte by viewModel.equipoReporte.collectAsState()
     val comisionPct by viewModel.comisionPct.collectAsState()
     val canEditComision by viewModel.canEditComision.collectAsState()
@@ -385,7 +387,8 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 ReportModule.VENTAS -> {
                     item {
                         ReportesVentasVisuals(
-                            comparison = periodComparison,
+                            comparison = periodComparativo?.totals ?: periodComparison,
+                            seriesComparison = periodComparativo?.series,
                             dispensacionesMonto = dispensaciones.sumOf { it.montoTotal },
                             serviciosMonto = serviciosExtra.sumOf { it.montoTotal },
                         )
@@ -460,7 +463,15 @@ fun ReportesScreen(drawerState: DrawerState, viewModel: ReportesViewModel = hilt
                 }
 
                 ReportModule.CLINICO -> {
-                    item { ReportesClinicoVisuals(clinicoReporte) }
+                    item {
+                        ReportesClinicoVisuals(
+                            reporte = clinicoReporte,
+                            filtros = clinicoFiltros,
+                            onSexoChange = viewModel::setClinicoSexo,
+                            onEdadChange = viewModel::setClinicoEdad,
+                            onEmetropiaChange = viewModel::setClinicoEmetropia,
+                        )
+                    }
                 }
 
                 ReportModule.EQUIPO -> {

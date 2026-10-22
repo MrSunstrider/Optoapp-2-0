@@ -15,11 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.optoapp.R
 import com.example.optoapp.data.Paciente
 import com.example.optoapp.data.Resource
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -70,7 +72,11 @@ fun DetallePacienteScreen(
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Evaluaciones", "Dispensaciones", "Servicios")
+    val tabs = listOf(
+        stringResource(R.string.paciente_detalle_tab_evaluaciones),
+        stringResource(R.string.paciente_detalle_tab_dispensaciones),
+        stringResource(R.string.paciente_detalle_tab_servicios),
+    )
     var showWhatsAppMenu by remember { mutableStateOf(false) }
     var showDeletePacienteDialog by remember { mutableStateOf(false) }
     var deletingPaciente by remember { mutableStateOf(false) }
@@ -78,25 +84,38 @@ fun DetallePacienteScreen(
     // Dynamic deuda computed from pagos (montoPagado/aCuenta are @Ignore in entities)
     val pagosSumByDisp by dispensacionViewModel.pagosSumByDispensacion.collectAsState()
     val aCuentaSumByServ by dispensacionViewModel.aCuentaSumByServicio.collectAsState()
+    val dispUi by dispensacionViewModel.uiState.collectAsState()
     val deudaDisp = dispensaciones.sumOf { it.montoTotal - (pagosSumByDisp[it.id] ?: 0.0) }
     val deudaServ = servicios.sumOf { it.montoTotal - (aCuentaSumByServ[it.id] ?: 0.0) }
     val deudaTotal = deudaDisp + deudaServ
+
+    LaunchedEffect(dispUi.error) {
+        val msg = dispUi.error?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+        dispensacionViewModel.clearError()
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             OptoTopAppBar(
-                title = "Ficha del Paciente",
+                title = stringResource(R.string.paciente_detalle_titulo),
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.paciente_detalle_atras_cd),
+                        )
                     }
                 },
                 actions = {
                     Box {
                         IconButton(onClick = { showWhatsAppMenu = true }) {
-                            Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "WhatsApp")
+                            Icon(
+                                Icons.AutoMirrored.Filled.Chat,
+                                contentDescription = stringResource(R.string.paciente_detalle_whatsapp_cd),
+                            )
                         }
                         pacienteState.data?.let { p ->
                             PacienteWhatsAppMenu(
@@ -116,12 +135,20 @@ fun DetallePacienteScreen(
                         onClick = {
                             val p = pacienteState.data
                             if (p == null) {
-                                Toast.makeText(context, "Esperando datos del paciente…", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.paciente_detalle_esperando_datos),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
                                 return@IconButton
                             }
                             val ultima = evaluaciones.maxByOrNull { it.fecha }
                             if (ultima == null) {
-                                Toast.makeText(context, "No hay evaluaciones para generar la fórmula en PDF", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.paciente_detalle_sin_evaluaciones_pdf),
+                                    Toast.LENGTH_LONG,
+                                ).show()
                                 return@IconButton
                             }
                             try {
@@ -129,20 +156,33 @@ fun DetallePacienteScreen(
                                 val file = RecetaEvaluacionPdfGenerator.generate(context, p, ultima, opticaNombre)
                                 RecetaEvaluacionPdfGenerator.openPdf(context, file)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "No se pudo generar el PDF: ${e.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.paciente_detalle_pdf_error, e.message.orEmpty()),
+                                    Toast.LENGTH_LONG,
+                                ).show()
                             }
                         },
                     ) {
-                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Exportar fórmula en PDF")
+                        Icon(
+                            Icons.Default.PictureAsPdf,
+                            contentDescription = stringResource(R.string.paciente_detalle_exportar_pdf_cd),
+                        )
                     }
                     IconButton(onClick = { navController.navigate(Route.EditarPaciente(id).route) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar Perfil")
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.paciente_detalle_editar_perfil_cd),
+                        )
                     }
                     IconButton(
                         onClick = { showDeletePacienteDialog = true },
                         enabled = !deletingPaciente,
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar Paciente")
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = stringResource(R.string.paciente_detalle_eliminar_cd),
+                        )
                     }
                 },
             )
@@ -160,7 +200,10 @@ fun DetallePacienteScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = stringResource(R.string.paciente_detalle_anadir_cd),
+                )
             }
         },
     ) { padding ->
@@ -179,7 +222,10 @@ fun DetallePacienteScreen(
                                         is DeletePacienteResult.Success -> {
                                             Toast.makeText(
                                                 context,
-                                                "Paciente eliminado. Quedan ${result.remainingDeletesToday} eliminaciones hoy.",
+                                                context.getString(
+                                                    R.string.paciente_detalle_eliminado,
+                                                    result.remainingDeletesToday,
+                                                ),
                                                 Toast.LENGTH_LONG,
                                             ).show()
                                             showDeletePacienteDialog = false
@@ -188,9 +234,7 @@ fun DetallePacienteScreen(
                                         is DeletePacienteResult.PendingRemoteSync -> {
                                             Toast.makeText(
                                                 context,
-                                                "El paciente se eliminó localmente pero no se pudo eliminar en " +
-                                                    "el servidor. Se reintentará automáticamente en la próxima " +
-                                                    "sincronización. Si el problema persiste, contacta al administrador.",
+                                                context.getString(R.string.paciente_detalle_eliminado_pending_sync),
                                                 Toast.LENGTH_LONG,
                                             ).show()
                                             showDeletePacienteDialog = false
@@ -256,6 +300,9 @@ fun DetallePacienteScreen(
                                 onEdit = { dispId ->
                                     navController.navigate(Route.EditarDispensacion(id, dispId).route)
                                 },
+                                onDelete = { dispId ->
+                                    dispensacionViewModel.deleteDispensacion(dispId) { }
+                                },
                                 pagosSumMap = pagosSumByDisp,
                             )
                             2 -> ServiciosExtraList(
@@ -286,14 +333,14 @@ fun DetallePacienteScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Error al cargar el paciente",
+                            text = stringResource(R.string.paciente_detalle_error_cargar),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "El paciente no pudo cargarse. Verifica tu conexión e intenta de nuevo.",
+                            text = stringResource(R.string.paciente_detalle_error_cargar_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
@@ -306,7 +353,7 @@ fun DetallePacienteScreen(
                         ) {
                             Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Reintentar")
+                            Text(stringResource(R.string.paciente_detalle_reintentar))
                         }
                     }
                 }

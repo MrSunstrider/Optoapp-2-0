@@ -111,7 +111,8 @@ object ReporteFinancieroPdfGenerator {
             pdf.drawBodyLine("Transacciones delta: ${cmp.transaccionesDelta}")
         }
         extras.pacientes?.takeIf { p ->
-            p.altas != 0 || p.hombres != 0 || p.mujeres != 0 || p.sinSexo != 0
+            p.altas != 0 || p.hombres != 0 || p.mujeres != 0 || p.sinSexo != 0 ||
+                p.pediatricos != 0 || p.adultos != 0 || p.adultosMayores != 0
         }?.let { p ->
             pdf.drawSectionTitle("Pacientes")
             pdf.drawKpis(
@@ -120,6 +121,13 @@ object ReporteFinancieroPdfGenerator {
                     ReportPdfKpi("Hombres", p.hombres.toString()),
                     ReportPdfKpi("Mujeres", p.mujeres.toString()),
                     ReportPdfKpi("Sin dato", p.sinSexo.toString()),
+                ),
+            )
+            pdf.drawKpis(
+                listOf(
+                    ReportPdfKpi("Pediatricos", p.pediatricos.toString()),
+                    ReportPdfKpi("Adultos", p.adultos.toString()),
+                    ReportPdfKpi("Adulto mayor", p.adultosMayores.toString()),
                 ),
             )
         }
@@ -135,10 +143,34 @@ object ReporteFinancieroPdfGenerator {
                     ReportPdfKpi("Salidas", inv.salidasVentaPeriodo.toString()),
                 ),
             )
+            inv.stockPorTipoAro.takeIf { it.isNotEmpty() }?.let { buckets ->
+                pdf.drawBodyLine(
+                    "Tipo de aro: " + buckets.joinToString(" · ") { "${it.label} ${it.unidades}" },
+                )
+            }
+            inv.stockPorMaterial.takeIf { it.isNotEmpty() }?.let { buckets ->
+                pdf.drawBodyLine(
+                    "Material: " + buckets.joinToString(" · ") { "${it.label} ${it.unidades}" },
+                )
+            }
+            inv.topSalidasModelo.takeIf { it.isNotEmpty() }?.let { buckets ->
+                pdf.drawBodyLine(
+                    "Top salidas: " + buckets.joinToString(" · ") { "${it.label} ${it.unidades}" },
+                )
+            }
         }
         extras.clinico?.takeIf { it.evaluaciones > 0 }?.let { c ->
             pdf.drawSectionTitle("Clínico")
             pdf.drawBodyLine("Evaluaciones: ${c.evaluaciones}")
+            if (c.porSexo.isNotEmpty()) {
+                pdf.drawBodyLine("Sexo: " + c.porSexo.joinToString(" · ") { "${it.label} ${it.unidades}" })
+            }
+            if (c.porEdad.isNotEmpty()) {
+                pdf.drawBodyLine("Edad: " + c.porEdad.joinToString(" · ") { "${it.label} ${it.unidades}" })
+            }
+            if (c.porEmetropia.isNotEmpty()) {
+                pdf.drawBodyLine("Refracción: " + c.porEmetropia.joinToString(" · ") { "${it.label} ${it.unidades}" })
+            }
             c.porDiagnostico.take(12).forEach { (label, count) ->
                 pdf.drawBodyLine("$label: $count")
             }

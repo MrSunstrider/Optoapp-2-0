@@ -1,9 +1,11 @@
 package com.example.optoapp.ui.screens
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -64,11 +66,31 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
 
     val aCuentaSumByServicio by viewModel.aCuentaSumByServicio.collectAsState()
     val cancelableServicioIds by viewModel.cancelableServicioIds.collectAsState()
-    val totalFacturado = servicios.sumOf { it.montoTotal }
-    val totalPendiente = servicios.filter { it.estado == "Pendiente" }.sumOf {
-        it.montoTotal - (aCuentaSumByServicio[it.id] ?: 0.0)
+    // WHY: KPIs follow the estado chip; "Todos" omits Anulado so Facturado matches live sales
+    val kpiScope = when (estadoFilter) {
+        "Todos" -> servicios.filter { it.estado != "Anulado" }
+        else -> servicios.filter { it.estado == estadoFilter }
     }
-    val pendientesCount = servicios.count { it.estado == "Pendiente" }
+    val totalFacturado = kpiScope.sumOf { it.montoTotal }
+    val totalPendiente = when (estadoFilter) {
+        "Todos" -> servicios.filter { it.estado == "Pendiente" }.sumOf {
+            it.montoTotal - (aCuentaSumByServicio[it.id] ?: 0.0)
+        }
+        "Pendiente" -> kpiScope.sumOf { it.montoTotal - (aCuentaSumByServicio[it.id] ?: 0.0) }
+        else -> kpiScope.sumOf { (aCuentaSumByServicio[it.id] ?: 0.0) }
+    }
+    val cantidadKpi = when (estadoFilter) {
+        "Todos" -> servicios.count { it.estado == "Pendiente" }
+        else -> kpiScope.size
+    }
+    val segundoKpiLabel = when (estadoFilter) {
+        "Entregado", "Anulado" -> stringResource(R.string.servicios_extra_kpi_cobrado)
+        else -> stringResource(R.string.servicios_extra_kpi_pendiente)
+    }
+    val cantidadKpiLabel = when (estadoFilter) {
+        "Todos", "Pendiente" -> stringResource(R.string.servicios_extra_kpi_cantidad)
+        else -> stringResource(R.string.servicios_extra_kpi_registros)
+    }
 
     if (showDatePicker) {
         OptoDatePickerDialog(
@@ -141,9 +163,37 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
         ) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OptoKpiCard(stringResource(R.string.servicios_extra_kpi_facturado), MoneyFormatter.format(totalFacturado), MaterialTheme.colorScheme.primary, Icons.Default.Receipt, Modifier.weight(1f))
-                    OptoKpiCard(stringResource(R.string.servicios_extra_kpi_pendiente), MoneyFormatter.format(totalPendiente), if (totalPendiente > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen, Icons.Default.Schedule, Modifier.weight(1f))
-                    OptoKpiCard(stringResource(R.string.servicios_extra_kpi_cantidad), "$pendientesCount", MaterialTheme.colorScheme.warningAmber, Icons.Default.Handyman, Modifier.weight(1f))
+                    OptoKpiCard(
+                        stringResource(R.string.servicios_extra_kpi_facturado),
+                        MoneyFormatter.format(totalFacturado),
+                        MaterialTheme.colorScheme.primary,
+                        Icons.Default.Receipt,
+                        Modifier.weight(1f),
+                    )
+                    OptoKpiCard(
+                        segundoKpiLabel,
+                        MoneyFormatter.format(totalPendiente),
+                        if (estadoFilter == "Entregado" || estadoFilter == "Anulado") {
+                            MaterialTheme.colorScheme.positiveGreen
+                        } else if (totalPendiente > 0) {
+                            MaterialTheme.colorScheme.alertRed
+                        } else {
+                            MaterialTheme.colorScheme.positiveGreen
+                        },
+                        if (estadoFilter == "Entregado" || estadoFilter == "Anulado") {
+                            Icons.Default.Payments
+                        } else {
+                            Icons.Default.Schedule
+                        },
+                        Modifier.weight(1f),
+                    )
+                    OptoKpiCard(
+                        cantidadKpiLabel,
+                        "$cantidadKpi",
+                        MaterialTheme.colorScheme.warningAmber,
+                        Icons.Default.Handyman,
+                        Modifier.weight(1f),
+                    )
                 }
             }
 
@@ -160,28 +210,53 @@ fun ServiciosExtraScreen(navController: NavController, drawerState: DrawerState,
             }
 
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf("Todos", "Pendiente", "Entregado", "Anulado").forEach { estado ->
-                        FilterChip(
-                            selected = estadoFilter == estado,
-                            onClick = { estadoFilter = estado },
-                            label = { Text(stringResource(estadoFilterLabel(estado)), fontSize = 12.sp) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = when (estado) {
-                                    "Pendiente" -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.15f)
-                                    "Entregado" -> MaterialTheme.colorScheme.positiveGreen.copy(alpha = 0.15f)
-                                    "Anulado" -> orderEstadoColor(estado, null).copy(alpha = 0.15f)
-                                    else -> MaterialTheme.colorScheme.primaryContainer
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // WHY: chips in an unbounded LazyColumn row without scroll can inflate to viewport height
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        listOf("Todos", "Pendiente", "Entregado", "Anulado").forEach { estado ->
+                            FilterChip(
+                                selected = estadoFilter == estado,
+                                onClick = {
+                                    // WHY: estado chips mean "all of this status"; drop date so totals match the list
+                                    estadoFilter = estado
+                                    selectedDate = null
                                 },
-                            ),
-                        )
+                                label = { Text(stringResource(estadoFilterLabel(estado)), fontSize = 12.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = when (estado) {
+                                        "Pendiente" -> MaterialTheme.colorScheme.alertRed.copy(alpha = 0.15f)
+                                        "Entregado" -> MaterialTheme.colorScheme.positiveGreen.copy(alpha = 0.15f)
+                                        "Anulado" -> orderEstadoColor(estado, null).copy(alpha = 0.15f)
+                                        else -> MaterialTheme.colorScheme.primaryContainer
+                                    },
+                                ),
+                            )
+                        }
                     }
-                    if (selectedDate != null) {
+                    selectedDate?.let { fecha ->
                         FilterChip(
                             selected = true,
                             onClick = { selectedDate = null },
-                            label = { Text(DateUtils.formatLocalized(selectedDate!!), fontSize = 12.sp) },
-                            trailingIcon = { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.servicios_extra_quitar_filtro_cd), modifier = Modifier.size(14.dp)) },
+                            label = {
+                                Text(
+                                    DateUtils.formatLocalized(fecha),
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.servicios_extra_quitar_filtro_cd),
+                                    modifier = Modifier.size(14.dp),
+                                )
+                            },
                         )
                     }
                 }

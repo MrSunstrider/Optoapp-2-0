@@ -96,4 +96,35 @@ class ChartModelsTest {
         assertEquals(120.0, plan.total, 0.0)
         assertEquals(listOf(0.25, 0.75), plan.slices.map { it.share })
     }
+
+    @Test
+    fun donutPlan_allNonPositive_returnsEmptyWithoutDividingByZero() {
+        val plan = DonutPlan.from(listOf(DonutSlice("A", 0.0), DonutSlice("B", -5.0)))
+
+        assertTrue(plan.slices.isEmpty())
+        assertEquals(0.0, plan.total, 0.0)
+    }
+
+    @Test
+    fun barChartPlan_fromSemanalThenMensual_labelCountsChangeWithoutThrowing() {
+        val semanal = BarChartPlan.from(
+            listOf(
+                ChartSeries("Actual", listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom").map { ChartPoint(it, 1.0) }),
+                ChartSeries("Anterior", listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom").map { ChartPoint(it, 2.0) }),
+            ),
+            stacked = false,
+        )
+        val mensual = BarChartPlan.from(
+            listOf(
+                ChartSeries("Actual", listOf("Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5").map { ChartPoint(it, 3.0) }),
+                ChartSeries("Anterior", listOf("Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5").map { ChartPoint(it, 4.0) }),
+            ),
+            stacked = false,
+        )
+
+        assertEquals(7, semanal.labels.size)
+        assertEquals(5, mensual.labels.size)
+        assertEquals(2, semanal.values.size)
+        assertEquals(2, mensual.values.size)
+    }
 }

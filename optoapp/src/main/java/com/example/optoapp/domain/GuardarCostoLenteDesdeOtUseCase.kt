@@ -13,10 +13,6 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
-/**
- * Persists OD/OI lens unit cost from an OT into costos_productos (same key the resolver uses).
- * Open rows are versioned via [MatrizVigenciaUseCase], never rewritten in place.
- */
 class GuardarCostoLenteDesdeOtUseCase @Inject constructor(
     private val costoProductoDao: CostoProductoDao,
     private val matrizVigenciaUseCase: MatrizVigenciaUseCase,
@@ -90,6 +86,9 @@ class GuardarCostoLenteDesdeOtUseCase @Inject constructor(
         )?.takeIf { it.vigenteHasta == null }
 
         if (abierto != null) {
+            if (mismoCosto(abierto.costoUnitario, costoUnitario)) {
+                return ResultadoCostoMatriz.SinCambio(abierto.id)
+            }
             return when (val r = matrizVigenciaUseCase.editarProducto(abierto, costoUnitario, hoy, hoy)) {
                 is ResultadoVigencia.Aplicado -> ResultadoCostoMatriz.Versionado(r.nuevoId)
                 is ResultadoVigencia.Rechazado -> ResultadoCostoMatriz.Rechazado(
@@ -124,5 +123,7 @@ class GuardarCostoLenteDesdeOtUseCase @Inject constructor(
 
     companion object {
         private const val TIPO_PRODUCTO = "costo_producto"
+
+        private fun mismoCosto(a: Double, b: Double): Boolean = kotlin.math.abs(a - b) < 0.005
     }
 }

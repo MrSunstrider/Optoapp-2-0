@@ -37,7 +37,7 @@ fun ChartEmptyState(
 data class ChartEmptyStateModel(val isEmpty: Boolean, val summary: String, val showDataToggle: Boolean) {
     companion object {
         fun forSeries(title: String, series: List<ChartSeries>): ChartEmptyStateModel {
-            val hasData = series.any { it.points.isNotEmpty() }
+            val hasData = series.any { chartSeries -> chartSeries.points.any { it.value != 0.0 } }
             return of(hasData, if (hasData) ChartSummaryBuilder.cartesian(title, series) else ChartSummaryBuilder.empty(title))
         }
 

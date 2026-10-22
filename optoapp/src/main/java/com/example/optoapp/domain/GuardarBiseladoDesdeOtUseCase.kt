@@ -13,10 +13,6 @@ import java.time.LocalDate
 import java.util.UUID
 import javax.inject.Inject
 
-/**
- * Persists a bevel cost from an OT into costos_biselado so later OTs resolve the same key.
- * Existing open rows are versioned (never rewritten) via [MatrizVigenciaUseCase].
- */
 class GuardarBiseladoDesdeOtUseCase @Inject constructor(
     private val costoBiseladoDao: CostoBiseladoDao,
     private val matrizVigenciaUseCase: MatrizVigenciaUseCase,
@@ -81,6 +77,9 @@ class GuardarBiseladoDesdeOtUseCase @Inject constructor(
 
         val abierto = candidatos.firstOrNull()
         if (abierto != null) {
+            if (mismoCosto(abierto.costoPorPar, costoPorPar)) {
+                return ResultadoCostoMatriz.SinCambio(abierto.id)
+            }
             return when (val r = matrizVigenciaUseCase.editarBiselado(abierto, costoPorPar, hoy, hoy)) {
                 is ResultadoVigencia.Aplicado -> ResultadoCostoMatriz.Versionado(r.nuevoId)
                 is ResultadoVigencia.Rechazado -> ResultadoCostoMatriz.Rechazado(
@@ -112,5 +111,7 @@ class GuardarBiseladoDesdeOtUseCase @Inject constructor(
 
     companion object {
         private const val TIPO_BISELADO = "costo_biselado"
+
+        private fun mismoCosto(a: Double, b: Double): Boolean = kotlin.math.abs(a - b) < 0.005
     }
 }

@@ -36,6 +36,17 @@ class ChartEmptyStateTest {
     }
 
     @Test
+    fun forSeries_withOnlyZeroValues_isEmpty() {
+        val series = listOf(ChartSeries("Ingresos", listOf(ChartPoint("Ene", 0.0), ChartPoint("Feb", 0.0))))
+
+        val model = ChartEmptyStateModel.forSeries("Ingresos", series)
+
+        assertTrue(model.isEmpty)
+        assertEquals("Ingresos. Sin datos para este período.", model.summary)
+        assertFalse(model.showDataToggle)
+    }
+
+    @Test
     fun forSlices_withOnlyZeroAmounts_isEmpty() {
         val model = ChartEmptyStateModel.forSlices("Costos", listOf(DonutSlice("Lentes", 0.0)))
 

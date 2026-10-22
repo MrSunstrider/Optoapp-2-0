@@ -25,15 +25,21 @@ fun OptoDonutChart(
     title: String,
     slices: List<DonutSlice>,
     modifier: Modifier = Modifier,
+    // WHY: count charts (altas, stock, diagnósticos) must not reuse the money "Monto" column
+    valuesAsCount: Boolean = false,
 ) {
     val plan = remember(slices) { DonutPlan.from(slices) }
     val colors = chartSeriesColors()
-    val amountHeader = stringResource(R.string.chart_columna_monto)
+    val amountHeader = stringResource(
+        if (valuesAsCount) R.string.chart_columna_cantidad else R.string.chart_columna_monto,
+    )
     val shareHeader = stringResource(R.string.chart_columna_porcentaje)
     ChartFrame(
         title = title,
         model = ChartEmptyStateModel.forSlices(title, slices),
-        table = remember(slices, amountHeader, shareHeader) { ChartDataTableState.fromSlices(slices, amountHeader, shareHeader) },
+        table = remember(slices, amountHeader, shareHeader, valuesAsCount) {
+            ChartDataTableState.fromSlices(slices, amountHeader, shareHeader, formatAsCount = valuesAsCount)
+        },
         labelHeader = stringResource(R.string.chart_columna_categoria),
         legend = plan.slices.withChartColors(colors) { "${it.label} ${ChartSummaryBuilder.percent(it.amount, plan.total)}" },
         modifier = modifier,

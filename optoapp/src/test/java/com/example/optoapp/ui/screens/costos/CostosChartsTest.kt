@@ -21,7 +21,7 @@ class CostosChartsTest {
         serie = "Costo",
         lentes = "Lentes",
         montura = "Montura",
-        lc = "Lentes de contacto",
+        lc = "LC",
         biselado = "Biselado",
         servicios = "Servicios",
         regalos = "Regalos",
@@ -71,8 +71,26 @@ class CostosChartsTest {
         val chart = CostosChartsModel.componentes(facts, copy) as ComponentesCostoChart.Serie
 
         val puntos = chart.series.single().points
-        assertEquals(listOf("Lentes", "Montura", "Lentes de contacto", "Biselado", "Servicios", "Regalos"), puntos.map { it.label })
+        assertEquals(listOf("Lentes", "Montura", "LC", "Biselado", "Servicios", "Regalos"), puntos.map { it.label })
         assertEquals(listOf(100.0, 80.0, 20.0, 10.0, 15.0, 4.0), puntos.map { it.value })
+    }
+
+    @Test
+    fun onlineComponentsChartOmitsZeroBarsSoLabelsStayAligned() {
+        val facts = MarginFacts(
+            costosPorLinea = CostosPorLinea(
+                lentes = 100.0,
+                montura = 0.0,
+                lc = 20.0,
+                biselado = 0.0,
+                serviciosPropios = 15.0,
+                regalos = 0.0,
+            ),
+        )
+
+        val chart = CostosChartsModel.componentes(facts, copy) as ComponentesCostoChart.Serie
+
+        assertEquals(listOf("Lentes", "LC", "Servicios"), chart.series.single().points.map { it.label })
     }
 
     @Test

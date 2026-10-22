@@ -1,5 +1,6 @@
 package com.example.optoapp.ui.screens.reportes
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -19,10 +21,12 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,11 +36,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.optoapp.R
+import com.example.optoapp.domain.ClinicoEdadFiltro
+import com.example.optoapp.domain.ClinicoEmetropiaFiltro
+import com.example.optoapp.domain.ClinicoFiltros
 import com.example.optoapp.domain.ClinicoReporte
+import com.example.optoapp.domain.ClinicoSexoFiltro
 import com.example.optoapp.domain.EquipoReporte
 import com.example.optoapp.domain.InventarioReporte
 import com.example.optoapp.domain.PacientesReporte
 import com.example.optoapp.domain.PeriodComparison
+import com.example.optoapp.domain.PeriodSeriesComparison
 import com.example.optoapp.ui.components.OptoKpiCard
 import com.example.optoapp.ui.components.charts.OptoBarChart
 import com.example.optoapp.ui.components.charts.OptoDonutChart
@@ -77,34 +86,46 @@ private fun ReportesEmptyBlock(
 @Composable
 fun ReportesVentasVisuals(
     comparison: PeriodComparison?,
+    seriesComparison: PeriodSeriesComparison?,
     dispensacionesMonto: Double,
     serviciosMonto: Double,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        comparison?.let { cmp ->
-            OptoBarChart(
-                title = stringResource(R.string.reportes_chart_vs_periodo),
-                series = ReportesChartsModel.ventasComparativo(
-                    cmp = cmp,
-                    actualLabel = stringResource(R.string.reportes_chart_periodo_actual),
-                    anteriorLabel = stringResource(R.string.reportes_chart_periodo_anterior),
-                    vendidoLabel = stringResource(R.string.reportes_vendido),
-                    margenLabel = stringResource(R.string.reportes_chart_margen),
-                ),
-            )
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(stringResource(R.string.reportes_vs_periodo_anterior), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
-                    val margenPct = cmp.margenDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
-                    Text(stringResource(R.string.reportes_delta_vendido, MoneyFormatter.format(cmp.vendidoDelta), vendidoPct), fontSize = 13.sp)
-                    Text(stringResource(R.string.reportes_delta_margen, MoneyFormatter.format(cmp.margenDelta), margenPct), fontSize = 13.sp)
-                    Text(stringResource(R.string.reportes_delta_tx, cmp.transaccionesDelta), fontSize = 13.sp)
+        seriesComparison?.let { series ->
+            val title = when (series.granularity) {
+                PeriodSeriesComparison.Granularity.ANUAL_MESES ->
+                    stringResource(R.string.reportes_chart_serie_anual)
+                PeriodSeriesComparison.Granularity.MENSUAL_SEMANAS ->
+                    stringResource(R.string.reportes_chart_serie_mensual)
+                PeriodSeriesComparison.Granularity.SEMANAL_DIAS ->
+                    stringResource(R.string.reportes_chart_serie_semanal)
+            }
+            // Remount when bucket count changes (Semanal↔Mensual↔Anual) so Vico does not reuse a stale model.
+            key(series.granularity, series.labels.size) {
+                OptoBarChart(
+                    title = title,
+                    series = ReportesChartsModel.ventasSerieComparativo(
+                        series = series,
+                        actualLabel = stringResource(R.string.reportes_chart_periodo_actual),
+                        anteriorLabel = stringResource(R.string.reportes_chart_periodo_anterior),
+                    ),
+                )
+            }
+            comparison?.let { cmp ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(stringResource(R.string.reportes_vs_periodo_anterior), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        val vendidoPct = cmp.vendidoDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
+                        val margenPct = cmp.margenDeltaPct()?.let { String.format(Locale.US, "%.1f%%", it) } ?: "—"
+                        Text(stringResource(R.string.reportes_delta_vendido, MoneyFormatter.format(cmp.vendidoDelta), vendidoPct), fontSize = 13.sp)
+                        Text(stringResource(R.string.reportes_delta_margen, MoneyFormatter.format(cmp.margenDelta), margenPct), fontSize = 13.sp)
+                        Text(stringResource(R.string.reportes_delta_tx, cmp.transaccionesDelta), fontSize = 13.sp)
+                    }
                 }
             }
         }
@@ -155,6 +176,29 @@ fun ReportesPacientesVisuals(reporte: PacientesReporte, modifier: Modifier = Mod
                 modifier = Modifier.weight(1f),
             )
         }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OptoKpiCard(
+                title = stringResource(R.string.reportes_kpi_pediatricos),
+                value = reporte.pediatricos.toString(),
+                color = MaterialTheme.colorScheme.primary,
+                icon = Icons.Default.PersonAdd,
+                modifier = Modifier.weight(1f),
+            )
+            OptoKpiCard(
+                title = stringResource(R.string.reportes_kpi_adultos),
+                value = reporte.adultos.toString(),
+                color = MaterialTheme.colorScheme.tertiary,
+                icon = Icons.Default.Groups,
+                modifier = Modifier.weight(1f),
+            )
+            OptoKpiCard(
+                title = stringResource(R.string.reportes_kpi_adultos_mayores),
+                value = reporte.adultosMayores.toString(),
+                color = MaterialTheme.colorScheme.secondary,
+                icon = Icons.Default.Groups,
+                modifier = Modifier.weight(1f),
+            )
+        }
         OptoDonutChart(
             title = stringResource(R.string.reportes_chart_sexo),
             slices = ReportesChartsModel.sexoSlices(
@@ -163,6 +207,17 @@ fun ReportesPacientesVisuals(reporte: PacientesReporte, modifier: Modifier = Mod
                 mujeresLabel = stringResource(R.string.reportes_kpi_mujeres),
                 sinDatoLabel = stringResource(R.string.reportes_kpi_sin_sexo),
             ),
+            valuesAsCount = true,
+        )
+        OptoDonutChart(
+            title = stringResource(R.string.reportes_chart_edad),
+            slices = ReportesChartsModel.edadSlices(
+                reporte = reporte,
+                pediatricosLabel = stringResource(R.string.reportes_kpi_pediatricos),
+                adultosLabel = stringResource(R.string.reportes_kpi_adultos),
+                adultosMayoresLabel = stringResource(R.string.reportes_kpi_adultos_mayores),
+            ),
+            valuesAsCount = true,
         )
     }
 }
@@ -218,7 +273,67 @@ fun ReportesInventarioVisuals(reporte: InventarioReporte, modifier: Modifier = M
                 okLabel = stringResource(R.string.reportes_inv_ok),
                 bajoLabel = stringResource(R.string.reportes_inv_critico),
             ),
+            valuesAsCount = true,
         )
+        val stockTipoAro = ReportesChartsModel.inventarioBuckets(reporte.stockPorTipoAro)
+        if (stockTipoAro.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_stock_tipo_aro),
+                slices = stockTipoAro,
+                valuesAsCount = true,
+            )
+        }
+        val stockMaterial = ReportesChartsModel.inventarioBuckets(reporte.stockPorMaterial)
+        if (stockMaterial.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_stock_material),
+                slices = stockMaterial,
+                valuesAsCount = true,
+            )
+        }
+        val movLabelSalidaVenta = stringResource(R.string.reportes_inv_mov_salida_venta)
+        val movLabelEntrada = stringResource(R.string.reportes_inv_mov_entrada)
+        val movLabelSalida = stringResource(R.string.reportes_inv_mov_salida)
+        val movimientos = ReportesChartsModel.inventarioMovimientos(reporte) { tipo ->
+            when (tipo) {
+                "SALIDA_VENTA" -> movLabelSalidaVenta
+                "ENTRADA" -> movLabelEntrada
+                "SALIDA" -> movLabelSalida
+                else -> tipo.replace('_', ' ').lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
+            }
+        }
+        if (movimientos.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_movimientos_tipo),
+                slices = movimientos,
+                valuesAsCount = true,
+            )
+        }
+        val salidasTipoAro = ReportesChartsModel.inventarioBuckets(reporte.salidasPorTipoAro)
+        if (salidasTipoAro.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_salidas_tipo_aro),
+                slices = salidasTipoAro,
+                valuesAsCount = true,
+            )
+        }
+        if (reporte.topSalidasModelo.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.reportes_inv_top_salidas_titulo), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    reporte.topSalidasModelo.forEach { row ->
+                        Text(
+                            stringResource(R.string.reportes_inv_top_salida_fila, row.label, row.unidades),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
         if (reporte.criticos.isNotEmpty()) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -240,17 +355,67 @@ fun ReportesInventarioVisuals(reporte: InventarioReporte, modifier: Modifier = M
 }
 
 @Composable
-fun ReportesClinicoVisuals(reporte: ClinicoReporte, modifier: Modifier = Modifier) {
-    if (reporte.evaluaciones == 0) {
-        ReportesEmptyBlock(
-            icon = Icons.Default.MedicalServices,
-            title = stringResource(R.string.reportes_clinico_empty_title),
-            subtitle = stringResource(R.string.reportes_clinico_empty_subtitle),
-            modifier = modifier,
-        )
-        return
-    }
+fun ReportesClinicoVisuals(
+    reporte: ClinicoReporte,
+    filtros: ClinicoFiltros,
+    onSexoChange: (ClinicoSexoFiltro) -> Unit,
+    onEdadChange: (ClinicoEdadFiltro) -> Unit,
+    onEmetropiaChange: (ClinicoEmetropiaFiltro) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val filtrosActivos = filtros.sexo != ClinicoSexoFiltro.TODOS ||
+        filtros.edad != ClinicoEdadFiltro.TODOS ||
+        filtros.emetropia != ClinicoEmetropiaFiltro.TODOS
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ClinicoFiltroRow(
+            title = stringResource(R.string.reportes_clinico_filtros_sexo),
+            options = listOf(
+                ClinicoSexoFiltro.TODOS to stringResource(R.string.reportes_clinico_filtro_todos),
+                ClinicoSexoFiltro.HOMBRES to stringResource(R.string.reportes_kpi_hombres),
+                ClinicoSexoFiltro.MUJERES to stringResource(R.string.reportes_kpi_mujeres),
+                ClinicoSexoFiltro.SIN_DATO to stringResource(R.string.reportes_kpi_sin_sexo),
+            ),
+            selected = filtros.sexo,
+            onSelect = onSexoChange,
+        )
+        ClinicoFiltroRow(
+            title = stringResource(R.string.reportes_clinico_filtros_edad),
+            options = listOf(
+                ClinicoEdadFiltro.TODOS to stringResource(R.string.reportes_clinico_filtro_todos),
+                ClinicoEdadFiltro.PEDIATRICO to stringResource(R.string.reportes_kpi_pediatricos),
+                ClinicoEdadFiltro.ADULTO to stringResource(R.string.reportes_kpi_adultos),
+                ClinicoEdadFiltro.ADULTO_MAYOR to stringResource(R.string.reportes_kpi_adultos_mayores),
+            ),
+            selected = filtros.edad,
+            onSelect = onEdadChange,
+        )
+        ClinicoFiltroRow(
+            title = stringResource(R.string.reportes_clinico_filtros_emetropia),
+            options = listOf(
+                ClinicoEmetropiaFiltro.TODOS to stringResource(R.string.reportes_clinico_filtro_todos),
+                ClinicoEmetropiaFiltro.EMETROPIA to stringResource(R.string.reportes_clinico_emetropia_label),
+                ClinicoEmetropiaFiltro.MIOPIA to stringResource(R.string.reportes_clinico_miopia_label),
+                ClinicoEmetropiaFiltro.HIPERMETROPIA to stringResource(R.string.reportes_clinico_hipermetropia_label),
+                ClinicoEmetropiaFiltro.ASTIGMATISMO to stringResource(R.string.reportes_clinico_astigmatismo_label),
+                ClinicoEmetropiaFiltro.SIN_DATO to stringResource(R.string.reportes_kpi_sin_sexo),
+            ),
+            selected = filtros.emetropia,
+            onSelect = onEmetropiaChange,
+        )
+        if (reporte.evaluaciones == 0) {
+            ReportesEmptyBlock(
+                icon = Icons.Default.MedicalServices,
+                title = stringResource(
+                    if (filtrosActivos) R.string.reportes_clinico_empty_filtros_title
+                    else R.string.reportes_clinico_empty_title,
+                ),
+                subtitle = stringResource(
+                    if (filtrosActivos) R.string.reportes_clinico_empty_filtros_subtitle
+                    else R.string.reportes_clinico_empty_subtitle,
+                ),
+            )
+            return
+        }
         OptoKpiCard(
             title = stringResource(R.string.reportes_kpi_evals),
             value = reporte.evaluaciones.toString(),
@@ -264,7 +429,75 @@ fun ReportesClinicoVisuals(reporte: ClinicoReporte, modifier: Modifier = Modifie
                 reporte = reporte,
                 otrosLabel = stringResource(R.string.reportes_clinico_otros),
             ),
+            valuesAsCount = true,
         )
+        val sexoSlices = ReportesChartsModel.inventarioBuckets(reporte.porSexo)
+        if (sexoSlices.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_clinico_sexo),
+                slices = sexoSlices,
+                valuesAsCount = true,
+            )
+        }
+        val edadSlices = ReportesChartsModel.inventarioBuckets(reporte.porEdad)
+        if (edadSlices.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_clinico_edad),
+                slices = edadSlices,
+                valuesAsCount = true,
+            )
+        }
+        val emetropiaSlices = ReportesChartsModel.inventarioBuckets(reporte.porEmetropia)
+        if (emetropiaSlices.isNotEmpty()) {
+            OptoDonutChart(
+                title = stringResource(R.string.reportes_chart_clinico_emetropia),
+                slices = emetropiaSlices,
+                valuesAsCount = true,
+            )
+        }
+        if (reporte.porDiagnostico.isNotEmpty()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(stringResource(R.string.reportes_clinico_ranking_titulo), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    reporte.porDiagnostico.take(12).forEach { (label, count) ->
+                        Text(
+                            stringResource(R.string.reportes_clinico_ranking_fila, label, count),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun <T> ClinicoFiltroRow(
+    title: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            options.forEach { (value, label) ->
+                FilterChip(
+                    selected = selected == value,
+                    onClick = { onSelect(value) },
+                    label = { Text(label) },
+                )
+            }
+        }
     }
 }
 

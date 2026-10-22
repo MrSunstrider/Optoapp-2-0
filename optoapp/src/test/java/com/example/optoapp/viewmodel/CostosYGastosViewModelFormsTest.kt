@@ -242,7 +242,16 @@ class CostosYGastosViewModelFormsTest {
         viewModel.saveCosto()
         assertEquals("Selecciona un tipo de lente", viewModel.uiState.value.costoSaveError)
 
+        // Changing tipo resets material/distancia (catalog chain).
         viewModel.updateCostoTipoLente("Monofocal")
+        viewModel.saveCosto()
+        assertEquals("Selecciona un material", viewModel.uiState.value.costoSaveError)
+
+        viewModel.updateCostoDistancia("Lejos")
+        viewModel.updateCostoMaterial("Resina")
+        viewModel.saveCosto()
+        assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
+
         viewModel.updateCostoCostoUnitario("-3")
         viewModel.saveCosto()
         assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
@@ -261,6 +270,7 @@ class CostosYGastosViewModelFormsTest {
         viewModel.saveCosto()
         assertEquals("Selecciona un material", viewModel.uiState.value.costoSaveError)
 
+        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
         viewModel.saveCosto()
         assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
@@ -278,9 +288,8 @@ class CostosYGastosViewModelFormsTest {
         every { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(refrescado)
 
         viewModel.showNewCosto()
+        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
-        viewModel.updateCostoTipoLente("Monofocal")
-        viewModel.updateCostoTratamiento("")
         viewModel.updateCostoSerie("2")
         viewModel.updateCostoCostoUnitario("18.5")
         viewModel.saveCosto()
@@ -299,6 +308,7 @@ class CostosYGastosViewModelFormsTest {
         assertFalse(estado.isCostoDialogVisible)
         assertEquals(refrescado, estado.costosDelBloque)
         assertEquals("", estado.costoMaterial)
+        assertEquals("", estado.costoDistancia)
         assertEquals("", estado.costoCostoUnitario)
     }
 
@@ -309,8 +319,8 @@ class CostosYGastosViewModelFormsTest {
         advanceUntilIdle()
         viewModel.loadBlock("Stock Monofocal")
         viewModel.showNewCosto()
+        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
-        viewModel.updateCostoTipoLente("Monofocal")
         viewModel.updateCostoCostoUnitario("10")
 
         viewModel.saveCosto()

@@ -44,6 +44,20 @@ class ChartDataTableTest {
     }
 
     @Test
+    fun fromSlices_formatsCountsWithoutMoneyWhenRequested() {
+        val state = ChartDataTableState.fromSlices(
+            listOf(DonutSlice("Hombres", 2.0), DonutSlice("Mujeres", 3.0)),
+            amountHeader = "Cantidad",
+            shareHeader = "Porcentaje",
+            formatAsCount = true,
+        )
+
+        assertEquals(listOf("Cantidad", "Porcentaje"), state.seriesNames)
+        assertEquals(listOf("2", "40.0 %"), state.rows.first().values)
+        assertEquals(listOf("3", "60.0 %"), state.rows.last().values)
+    }
+
+    @Test
     fun startsCollapsedWithNoVisibleRows() {
         val state = ChartDataTableState.fromSeries(listOf(ingresos))
 

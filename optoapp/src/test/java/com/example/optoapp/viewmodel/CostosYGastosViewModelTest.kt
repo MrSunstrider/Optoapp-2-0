@@ -113,8 +113,9 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoMaterial("CR39")
-        viewModel.updateCostoTipoLente("Monofocal")
+        // Catalog chain: tipo (prefilled) → distancia → material → cost
+        viewModel.updateCostoDistancia("Lejos")
+        viewModel.updateCostoMaterial("Resina")
         viewModel.updateCostoCostoUnitario("150.00")
 
         viewModel.saveCosto()
@@ -126,8 +127,9 @@ class CostosYGastosViewModelTest {
                     assertEquals(1, entities.size)
                     val entity = entities[0]
                     assertEquals(opticaId, entity.opticaId)
-                    assertEquals("CR39", entity.material)
+                    assertEquals("Resina", entity.material)
                     assertEquals("Monofocal", entity.tipoLente)
+                    assertEquals("stock", entity.stockOFabricacion)
                     assertEquals(150.0, entity.costoUnitario, 0.001)
                     assertEquals("2026-07-16", entity.vigenteDesde)
                     assertNotNull("Entity must have a generated UUID", entity.id)
@@ -144,6 +146,43 @@ class CostosYGastosViewModelTest {
 
         assertFalse("Dialog must be dismissed after successful save", viewModel.uiState.value.isCostoDialogVisible)
         assertNull("No error expected after successful save", viewModel.uiState.value.costoSaveError)
+    }
+
+    @Test
+    fun saveCosto_persistsLookupCompatibleMatrixKeys() = runTest(testDispatcher) {
+        coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(emptyList())
+
+        viewModel = buildViewModel()
+        viewModel.loadBlock("Stock Monofocal")
+        advanceUntilIdle()
+
+        viewModel.showNewCosto()
+        viewModel.updateCostoDistancia("Lejos")
+        viewModel.updateCostoMaterial("Resina")
+        viewModel.toggleCostoTratamiento("Solar")
+        viewModel.toggleCostoTratamiento("Filtro Discromatopsia")
+        viewModel.updateCostoDiscromatopsiaTipo("550 Rojo")
+        viewModel.updateCostoCurvaBase("6")
+        viewModel.updateCostoCostoUnitario("155.00")
+
+        viewModel.saveCosto()
+        advanceUntilIdle()
+
+        coVerify {
+            costoProductoDao.upsertAll(
+                withArg { entities ->
+                    assertEquals(1, entities.size)
+                    val entity = entities[0]
+                    assertEquals("Resina", entity.material)
+                    assertEquals("Monofocal", entity.tipoLente)
+                    assertEquals("stock", entity.stockOFabricacion)
+                    assertEquals("Filtro Discromatopsia + Solar (550 Rojo)", entity.tratamiento)
+                    assertEquals("6", entity.curvaBase)
+                    assertNull(entity.indiceRefraccion)
+                },
+            )
+        }
+        assertNull(viewModel.uiState.value.costoSaveError)
     }
 
     @Test
@@ -189,8 +228,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoMaterial("CR39")
-        viewModel.updateCostoTipoLente("Monofocal")
+        viewModel.updateCostoDistancia("Lejos")
+        viewModel.updateCostoMaterial("Resina")
         viewModel.updateCostoCostoUnitario("0")
 
         viewModel.saveCosto()
@@ -207,8 +246,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoMaterial("CR39")
-        viewModel.updateCostoTipoLente("Monofocal")
+        viewModel.updateCostoDistancia("Lejos")
+        viewModel.updateCostoMaterial("Resina")
         viewModel.updateCostoCostoUnitario("-50")
 
         viewModel.saveCosto()
@@ -224,8 +263,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoMaterial("CR39")
-        viewModel.updateCostoTipoLente("Monofocal")
+        viewModel.updateCostoDistancia("Lejos")
+        viewModel.updateCostoMaterial("Resina")
         viewModel.updateCostoCostoUnitario("abc")
 
         viewModel.saveCosto()

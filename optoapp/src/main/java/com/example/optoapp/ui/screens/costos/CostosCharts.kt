@@ -45,6 +45,7 @@ object CostosChartsModel {
         if (!facts.detalleServidorDisponible) return ComponentesCostoChart.SinConexion
         val linea = facts.costosPorLinea
         val servicios = linea.serviciosPropios + linea.serviciosTercerizados + linea.serviciosSinClasificar
+        // WHY: omit zero bars so short X labels (LC, etc.) stay aligned under visible columns
         val puntos = listOf(
             ChartPoint(copy.lentes, linea.lentes),
             ChartPoint(copy.montura, linea.montura),
@@ -52,7 +53,7 @@ object CostosChartsModel {
             ChartPoint(copy.biselado, linea.biselado),
             ChartPoint(copy.servicios, servicios),
             ChartPoint(copy.regalos, linea.regalos),
-        )
+        ).filter { it.value > 0.0 }
         return ComponentesCostoChart.Serie(listOf(ChartSeries(copy.serie, puntos)))
     }
 

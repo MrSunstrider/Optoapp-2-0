@@ -21,6 +21,10 @@ import com.example.optoapp.domain.MatrizVigenciaUseCase
 import com.example.optoapp.domain.OpticalCatalog
 import com.example.optoapp.domain.ResultadoVigencia
 import com.example.optoapp.domain.SyncFinanzasUseCase
+import com.example.optoapp.domain.costo.LensCatalogRules
+import com.example.optoapp.domain.costo.LensCatalogSelection
+import com.example.optoapp.domain.costo.LensProductCatalog
+import com.example.optoapp.domain.costo.LensTreatments
 import com.example.optoapp.sync.PostSaveSyncScheduler
 import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.util.DateUtils
@@ -185,8 +189,10 @@ data class CostosYGastosUiState(
     val creatingCosto: Boolean = false,
     val costoMaterial: String = "",
     val costoTipoLente: String = "",
+    val costoDistancia: String = "",
     val costoStockOFabricacion: String = "",
-    val costoTratamiento: String = "",
+    val costoTratamientos: List<String> = emptyList(),
+    val costoDiscromatopsiaTipo: String = "",
     val costoSerie: String = "",
     val costoSubtipoBifocal: String = "",
     val costoIndiceRefraccion: String = "",
@@ -875,10 +881,18 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
 
-    fun materialesOpticos(tipoLente: String = _uiState.value.costoTipoLente): List<String> =
-        com.example.optoapp.domain.costo.LensCatalogRules.familias(
-            tipoLente.ifBlank { com.example.optoapp.domain.costo.LensProductCatalog.TIPO_MONOFOCAL },
+    fun materialesOpticos(
+        tipoLente: String = _uiState.value.costoTipoLente,
+        distancia: String = _uiState.value.costoDistancia,
+        subTipoBifocal: String = _uiState.value.costoSubtipoBifocal,
+    ): List<String> {
+        if (tipoLente.isBlank()) return emptyList()
+        return LensCatalogRules.familias(
+            tipoLente,
+            distancia.takeIf { it.isNotBlank() },
+            subTipoBifocal.takeIf { it.isNotBlank() },
         ).ifEmpty { OpticalCatalog.MATERIALES }
+    }
     val tiposLente = OpticalCatalog.TIPO_LENTE.filter { it != "Lentes de Contacto" }
     val tratamientos = OpticalCatalog.TRATAMIENTOS
 
@@ -892,8 +906,10 @@ class CostosYGastosViewModel @Inject constructor(
                 creatingCosto = true,
                 costoMaterial = "",
                 costoTipoLente = filter?.tipoLente.orEmpty(),
+                costoDistancia = "",
                 costoStockOFabricacion = filter?.stockOFabricacion.orEmpty(),
-                costoTratamiento = "",
+                costoTratamientos = emptyList(),
+                costoDiscromatopsiaTipo = "",
                 costoSerie = "",
                 costoSubtipoBifocal = "",
                 costoIndiceRefraccion = "",
@@ -916,19 +932,73 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun updateCostoMaterial(value: String) {
-        _uiState.update { it.copy(costoMaterial = value) }
+        _uiState.update {
+            it.copy(
+                costoMaterial = value,
+                costoTratamientos = emptyList(),
+                costoDiscromatopsiaTipo = "",
+                costoCurvaBase = "",
+                costoIndiceRefraccion = "",
+            )
+        }
     }
     fun updateCostoTipoLente(value: String) {
-        _uiState.update { it.copy(costoTipoLente = value) }
+        _uiState.update {
+            it.copy(
+                costoTipoLente = value,
+                costoDistancia = "",
+                costoMaterial = "",
+                costoTratamientos = emptyList(),
+                costoDiscromatopsiaTipo = "",
+                costoCurvaBase = "",
+                costoIndiceRefraccion = "",
+                costoSerie = "",
+                costoSubtipoBifocal = "",
+            )
+        }
     }
-    fun updateCostoTratamiento(value: String) {
-        _uiState.update { it.copy(costoTratamiento = value) }
+    fun updateCostoDistancia(value: String) {
+        _uiState.update {
+            it.copy(
+                costoDistancia = value,
+                costoMaterial = "",
+                costoTratamientos = emptyList(),
+                costoDiscromatopsiaTipo = "",
+                costoCurvaBase = "",
+                costoIndiceRefraccion = "",
+                costoSerie = "",
+                costoSubtipoBifocal = "",
+            )
+        }
+    }
+    fun toggleCostoTratamiento(value: String) {
+        _uiState.update {
+            val updated = if (value in it.costoTratamientos) it.costoTratamientos - value else it.costoTratamientos + value
+            it.copy(
+                costoTratamientos = updated,
+                costoDiscromatopsiaTipo = if (LensTreatments.DISCROMATOPSIA !in updated) "" else it.costoDiscromatopsiaTipo,
+                costoCurvaBase = if (LensTreatments.SOLAR !in updated) "" else it.costoCurvaBase,
+            )
+        }
+    }
+    fun updateCostoDiscromatopsiaTipo(value: String) {
+        _uiState.update { it.copy(costoDiscromatopsiaTipo = value) }
     }
     fun updateCostoSerie(value: String) {
         _uiState.update { it.copy(costoSerie = value) }
     }
     fun updateCostoSubtipoBifocal(value: String) {
-        _uiState.update { it.copy(costoSubtipoBifocal = value) }
+        _uiState.update {
+            it.copy(
+                costoSubtipoBifocal = value,
+                costoMaterial = "",
+                costoTratamientos = emptyList(),
+                costoDiscromatopsiaTipo = "",
+                costoCurvaBase = "",
+                costoIndiceRefraccion = "",
+                costoSerie = "",
+            )
+        }
     }
     fun updateCostoIndiceRefraccion(value: String) {
         _uiState.update { it.copy(costoIndiceRefraccion = value) }
@@ -950,9 +1020,41 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona un tipo de lente") }
             return
         }
+        if (s.costoTipoLente == LensProductCatalog.TIPO_MONOFOCAL && s.costoDistancia.isBlank()) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona la distancia") }
+            return
+        }
+        if (s.costoTipoLente == LensProductCatalog.TIPO_BIFOCAL && s.costoSubtipoBifocal.isBlank()) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona el subtipo bifocal") }
+            return
+        }
         val costoUnitario = s.costoCostoUnitario.toDoubleOrNull()
         if (costoUnitario == null || costoUnitario <= 0) {
             _uiState.update { it.copy(costoSaveError = "Ingresa un costo unitario válido") }
+            return
+        }
+        if (LensTreatments.DISCROMATOPSIA in s.costoTratamientos && s.costoDiscromatopsiaTipo.isBlank()) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona el tipo de filtro discromatopsia") }
+            return
+        }
+        val selection = LensCatalogSelection(
+            tipoLente = s.costoTipoLente,
+            distancia = s.costoDistancia.takeIf { it.isNotBlank() },
+            subTipoBifocal = s.costoSubtipoBifocal.takeIf { it.isNotBlank() },
+            familia = s.costoMaterial,
+            tratamientos = s.costoTratamientos,
+            discromatopsiaTipo = s.costoDiscromatopsiaTipo.takeIf { it.isNotBlank() },
+            curvaBase = s.costoCurvaBase.takeIf { it.isNotBlank() },
+            indiceRefraccion = s.costoIndiceRefraccion.takeIf { it.isNotBlank() },
+            forzarStockIgnorandoAstigmatismo = false,
+        )
+        val resolution = LensCatalogRules.resolve(selection, null)
+        if (resolution.requiresManualIrCost && s.costoIndiceRefraccion.isBlank()) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona el índice de refracción") }
+            return
+        }
+        if (resolution.requiresCurvaBase && s.costoCurvaBase.isBlank()) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona la curva base") }
             return
         }
         viewModelScope.launch {
@@ -961,14 +1063,14 @@ class CostosYGastosViewModel @Inject constructor(
                 val entity = CostoProductoEntity(
                     id = UUID.randomUUID().toString(),
                     opticaId = opticaId,
-                    material = s.costoMaterial,
+                    material = resolution.matrixFamilia,
                     tipoLente = s.costoTipoLente,
                     stockOFabricacion = s.costoStockOFabricacion,
-                    tratamiento = s.costoTratamiento.ifBlank { null },
+                    tratamiento = resolution.matrixTratamiento,
                     serie = s.costoSerie.toIntOrNull(),
                     subtipoBifocal = s.costoSubtipoBifocal.ifBlank { null },
-                    indiceRefraccion = s.costoIndiceRefraccion.ifBlank { null },
-                    curvaBase = s.costoCurvaBase.ifBlank { null },
+                    indiceRefraccion = if (resolution.requiresManualIrCost) s.costoIndiceRefraccion.ifBlank { null } else null,
+                    curvaBase = if (resolution.requiresCurvaBase) s.costoCurvaBase.ifBlank { null } else null,
                     costoUnitario = costoUnitario,
                     vigenteDesde = DateUtils.toIso(DateUtils.today()),
                 )
@@ -987,8 +1089,10 @@ class CostosYGastosViewModel @Inject constructor(
                         costoSaveError = null,
                         costoMaterial = "",
                         costoTipoLente = "",
+                        costoDistancia = "",
                         costoStockOFabricacion = "",
-                        costoTratamiento = "",
+                        costoTratamientos = emptyList(),
+                        costoDiscromatopsiaTipo = "",
                         costoSerie = "",
                         costoSubtipoBifocal = "",
                         costoIndiceRefraccion = "",

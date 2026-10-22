@@ -38,6 +38,7 @@ data class DonutPlan(val slices: List<DonutPlanSlice>, val total: Double) {
         fun from(slices: List<DonutSlice>): DonutPlan {
             val positive = slices.filter { it.amount > 0 }
             val total = positive.sumOf { it.amount }
+            if (total <= 0.0) return DonutPlan(emptyList(), 0.0)
             return DonutPlan(positive.map { DonutPlanSlice(it.label, it.amount, it.amount / total) }, total)
         }
     }

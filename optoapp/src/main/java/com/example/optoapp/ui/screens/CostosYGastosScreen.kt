@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -21,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,15 +30,13 @@ import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.domain.GastoTipoResolver
 import com.example.optoapp.ui.components.OptoDatePickerDialog
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.costo.CostoLenteCatalogForm
 import com.example.optoapp.ui.components.common.GastoFormDialog
 import com.example.optoapp.ui.components.common.GastoFormValues
 import com.example.optoapp.ui.components.common.MonthSelector
 import com.example.optoapp.ui.components.common.MonthSelectorState
 import com.example.optoapp.ui.navigation.CostosTab
 import com.example.optoapp.ui.navigation.Route
-import com.example.optoapp.domain.costo.LensProductCatalog
-import com.example.optoapp.viewmodel.CURVAS_BASE_MATRIZ
-import com.example.optoapp.viewmodel.INDICES_REFRACCION_MATRIZ
 import com.example.optoapp.ui.screens.costos.BiseladoTab
 import com.example.optoapp.ui.screens.costos.CostosCharts
 import com.example.optoapp.ui.screens.costos.CostosHeader
@@ -290,173 +286,31 @@ private fun MatrizDeCostosTab(
                 onDismissRequest = { viewModel.dismissCostoDialog() },
                 title = { Text(stringResource(R.string.costos_nuevo_titulo), fontWeight = FontWeight.Bold) },
                 text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        var materialExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(expanded = materialExpanded, onExpandedChange = { materialExpanded = !materialExpanded }) {
-                            OutlinedTextField(
-                                value = uiState.costoMaterial,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.costos_material_requerido)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = materialExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            )
-                            ExposedDropdownMenu(expanded = materialExpanded, onDismissRequest = { materialExpanded = false }) {
-                                viewModel.materialesOpticos().forEach { mat ->
-                                    DropdownMenuItem(text = { Text(mat) }, onClick = {
-                                        viewModel.updateCostoMaterial(mat)
-                                        materialExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        var tipoExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(expanded = tipoExpanded, onExpandedChange = { tipoExpanded = !tipoExpanded }) {
-                            OutlinedTextField(
-                                value = uiState.costoTipoLente,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.costos_tipo_lente_requerido)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tipoExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            )
-                            ExposedDropdownMenu(expanded = tipoExpanded, onDismissRequest = { tipoExpanded = false }) {
-                                viewModel.tiposLente.forEach { tl ->
-                                    DropdownMenuItem(text = { Text(tl) }, onClick = {
-                                        viewModel.updateCostoTipoLente(tl)
-                                        tipoExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = uiState.selectedBlock ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text(stringResource(R.string.costos_stock_fabricacion)) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-
-                        var tratExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(expanded = tratExpanded, onExpandedChange = { tratExpanded = !tratExpanded }) {
-                            OutlinedTextField(
-                                value = uiState.costoTratamiento,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.costos_tratamiento_opcional)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = tratExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            )
-                            ExposedDropdownMenu(expanded = tratExpanded, onDismissRequest = { tratExpanded = false }) {
-                                val ningunoLabel = stringResource(R.string.costos_tratamiento_ninguno)
-                                viewModel.tratamientos.forEach { tr ->
-                                    val display = tr.ifBlank { ningunoLabel }
-                                    DropdownMenuItem(text = { Text(display) }, onClick = {
-                                        viewModel.updateCostoTratamiento(tr)
-                                        tratExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = uiState.costoSerie,
-                            onValueChange = { viewModel.updateCostoSerie(it) },
-                            label = { Text(stringResource(R.string.costos_serie_opcional)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-
-                        if (uiState.costoTipoLente == LensProductCatalog.TIPO_BIFOCAL) {
-                            var subExpanded by remember { mutableStateOf(false) }
-                            ExposedDropdownMenuBox(expanded = subExpanded, onExpandedChange = { subExpanded = !subExpanded }) {
-                                OutlinedTextField(
-                                    value = uiState.costoSubtipoBifocal,
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text(stringResource(R.string.costos_subtipo_bifocal)) },
-                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = subExpanded) },
-                                    modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                                )
-                                ExposedDropdownMenu(expanded = subExpanded, onDismissRequest = { subExpanded = false }) {
-                                    val ninguno = stringResource(R.string.costos_tratamiento_ninguno)
-                                    DropdownMenuItem(text = { Text(ninguno) }, onClick = {
-                                        viewModel.updateCostoSubtipoBifocal("")
-                                        subExpanded = false
-                                    })
-                                    LensProductCatalog.SUBTIPOS_BIFOCAL.forEach { sub ->
-                                        DropdownMenuItem(text = { Text(sub) }, onClick = {
-                                            viewModel.updateCostoSubtipoBifocal(sub)
-                                            subExpanded = false
-                                        })
-                                    }
-                                }
-                            }
-                        }
-
-                        var irExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(expanded = irExpanded, onExpandedChange = { irExpanded = !irExpanded }) {
-                            OutlinedTextField(
-                                value = uiState.costoIndiceRefraccion,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.costos_indice_refraccion)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = irExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            )
-                            ExposedDropdownMenu(expanded = irExpanded, onDismissRequest = { irExpanded = false }) {
-                                val ninguno = stringResource(R.string.costos_tratamiento_ninguno)
-                                DropdownMenuItem(text = { Text(ninguno) }, onClick = {
-                                    viewModel.updateCostoIndiceRefraccion("")
-                                    irExpanded = false
-                                })
-                                INDICES_REFRACCION_MATRIZ.forEach { ir ->
-                                    DropdownMenuItem(text = { Text(ir) }, onClick = {
-                                        viewModel.updateCostoIndiceRefraccion(ir)
-                                        irExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        var curvaExpanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(expanded = curvaExpanded, onExpandedChange = { curvaExpanded = !curvaExpanded }) {
-                            OutlinedTextField(
-                                value = uiState.costoCurvaBase,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.costos_curva_base)) },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = curvaExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true),
-                            )
-                            ExposedDropdownMenu(expanded = curvaExpanded, onDismissRequest = { curvaExpanded = false }) {
-                                val ninguno = stringResource(R.string.costos_tratamiento_ninguno)
-                                DropdownMenuItem(text = { Text(ninguno) }, onClick = {
-                                    viewModel.updateCostoCurvaBase("")
-                                    curvaExpanded = false
-                                })
-                                CURVAS_BASE_MATRIZ.forEach { curva ->
-                                    DropdownMenuItem(text = { Text(curva) }, onClick = {
-                                        viewModel.updateCostoCurvaBase(curva)
-                                        curvaExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = uiState.costoCostoUnitario,
-                            onValueChange = { viewModel.updateCostoCostoUnitario(it) },
-                            label = { Text(stringResource(R.string.costos_costo_unitario_requerido)) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-
-                        uiState.costoSaveError?.let { e ->
-                            Text(e, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
-                        }
+                    CostoLenteCatalogForm(
+                        tipoLente = uiState.costoTipoLente,
+                        distancia = uiState.costoDistancia,
+                        subtipoBifocal = uiState.costoSubtipoBifocal,
+                        material = uiState.costoMaterial,
+                        tratamientos = uiState.costoTratamientos,
+                        discromatopsiaTipo = uiState.costoDiscromatopsiaTipo,
+                        curvaBase = uiState.costoCurvaBase,
+                        indiceRefraccion = uiState.costoIndiceRefraccion,
+                        serie = uiState.costoSerie,
+                        costoUnitario = uiState.costoCostoUnitario,
+                        stockOFabricacion = uiState.costoStockOFabricacion,
+                        onTipoLenteChange = viewModel::updateCostoTipoLente,
+                        onDistanciaChange = viewModel::updateCostoDistancia,
+                        onSubtipoBifocalChange = viewModel::updateCostoSubtipoBifocal,
+                        onMaterialChange = viewModel::updateCostoMaterial,
+                        onToggleTratamiento = viewModel::toggleCostoTratamiento,
+                        onDiscromatopsiaTipoChange = viewModel::updateCostoDiscromatopsiaTipo,
+                        onCurvaBaseChange = viewModel::updateCostoCurvaBase,
+                        onIndiceRefraccionChange = viewModel::updateCostoIndiceRefraccion,
+                        onSerieChange = viewModel::updateCostoSerie,
+                        onCostoUnitarioChange = viewModel::updateCostoCostoUnitario,
+                    )
+                    uiState.costoSaveError?.let { e ->
+                        Text(e, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
                     }
                 },
                 confirmButton = { Button(onClick = { viewModel.saveCosto() }) { Text(stringResource(R.string.common_save)) } },

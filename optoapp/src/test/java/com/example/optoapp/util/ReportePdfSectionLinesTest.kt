@@ -35,6 +35,7 @@ class ReportePdfSectionLinesTest {
         assertTrue(lines.any { it.startsWith("COMPARATIVO") })
         assertTrue(lines.any { it.startsWith("PACIENTES") })
         assertTrue(lines.any { it.contains("Altas: 2") })
+        assertTrue(lines.any { it.contains("Pediatricos") })
         assertTrue(lines.any { it.startsWith("EQUIPO") })
         assertTrue(lines.any { it.contains("ana@x.com") })
         assertTrue(lines.any { it.startsWith("Sin atribuir") })

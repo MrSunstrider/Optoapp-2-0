@@ -11,7 +11,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.optoapp.R
@@ -38,7 +37,7 @@ fun ChartDataTable(
 @Composable
 private fun ChartDataTableRow(label: String, values: List<String>, header: Boolean) {
     val weight = if (header) FontWeight.SemiBold else FontWeight.Normal
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics(mergeDescendants = true) {}) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         (listOf(label) + values).forEach { cell ->
             Text(cell, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, fontWeight = weight)
         }
@@ -57,7 +56,7 @@ data class ChartDataTableState(
     fun toggle(): ChartDataTableState = copy(expanded = !expanded)
 
     companion object {
-        private const val MISSING = "\u2014"
+        private const val MISSING = "-"
 
         fun fromSeries(series: List<ChartSeries>): ChartDataTableState {
             val rows = chartXLabels(series).map { label ->
@@ -69,10 +68,20 @@ data class ChartDataTableState(
             return ChartDataTableState(seriesNames = series.map { it.name }, rows = rows)
         }
 
-        fun fromSlices(slices: List<DonutSlice>, amountHeader: String, shareHeader: String): ChartDataTableState {
+        fun fromSlices(
+            slices: List<DonutSlice>,
+            amountHeader: String,
+            shareHeader: String,
+            formatAsCount: Boolean = false,
+        ): ChartDataTableState {
             val plan = DonutPlan.from(slices)
             val rows = plan.slices.map {
-                ChartDataRow(it.label, listOf(MoneyFormatter.format(it.amount), ChartSummaryBuilder.percent(it.amount, plan.total)))
+                val amount = if (formatAsCount) {
+                    it.amount.toLong().toString()
+                } else {
+                    MoneyFormatter.format(it.amount)
+                }
+                ChartDataRow(it.label, listOf(amount, ChartSummaryBuilder.percent(it.amount, plan.total)))
             }
             return ChartDataTableState(seriesNames = listOf(amountHeader, shareHeader), rows = rows)
         }

@@ -29,6 +29,7 @@ import com.example.optoapp.domain.PagoEffect
 import com.example.optoapp.domain.RecetaCosto
 import com.example.optoapp.domain.ReclamarDispensacionUseCase
 import com.example.optoapp.domain.ReclamoOutcome
+import com.example.optoapp.domain.ResultadoCostoMatriz
 import com.example.optoapp.domain.ResumenRecalcMarker
 import com.example.optoapp.domain.SyncBiseladoGastosDerivados
 import com.example.optoapp.domain.VendedorAttribution
@@ -430,11 +431,10 @@ class DispensacionViewModel @Inject constructor(
         }
     }
 
-    /** Siempre mantener al menos un item vacío para que el usuario pueda seguir agregando lentes. */
+    // WHY: keep one blank row so the user can keep adding lenses after deleting the last filled item.
     fun removeItem(index: Int) {
         _uiState.update { s ->
             val removed = s.items[index]
-            // Items without an id were never persisted, so there is no row to delete.
             val toDelete = if (removed.id.isNotEmpty()) s.itemsToDelete + removed.id else s.itemsToDelete
             val updated = s.items.toMutableList().apply { removeAt(index) }
             val finalItems = if (updated.isEmpty()) listOf(blankItem()) else updated
@@ -517,7 +517,7 @@ class DispensacionViewModel @Inject constructor(
                 s.montoTotal.replace(",", ".").toDoubleOrNull()?.takeIf { it > 0.0 } ?: 0.0
             } else {
                 val parsed = s.montoTotal.replace(",", ".").toDoubleOrNull()
-                val zeroAllowed = parsed == 0.0 && dispensacionId != null && isClaimReplacement(dispensacionId)
+                val zeroAllowed = parsed == 0.0 && isClaimReplacement(dispensacionId)
                 if (parsed == null || parsed < 0.0 || (parsed == 0.0 && !zeroAllowed)) {
                     fail(FinanzasRemoteDefaults.Messages.MONTO_TOTAL_MAYOR_A_CERO)
                     return@launch
@@ -700,11 +700,80 @@ class DispensacionViewModel @Inject constructor(
                 return@launch
             }
 
+            // WHY: push OT lens/bevel costs into Costos y gastos so the next similar product resolves them
+            val matrizFeedback = persistCostosOtEnMatriz(currentOpticaId, s, receta)
             postSaveSyncScheduler.scheduleFinanzasSync(currentOpticaId)
             onComplete()
-            _uiState.update { it.copy(isLoading = false) }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    infoMessage = matrizFeedback.info,
+                    error = matrizFeedback.error ?: it.error,
+                )
+            }
         }
     }
+
+    // WHY: OT save must succeed even if matrix writeback rejects; surface rejects as error only when nothing wrote.
+    private suspend fun persistCostosOtEnMatriz(
+        opticaId: String,
+        s: DispensacionUiState,
+        receta: RecetaCosto?,
+    ): MatrizPersistFeedback {
+        var wrote = false
+        val rechazos = mutableListOf<String>()
+        for (itemUi in s.items) {
+            val entity = itemUi.toEntity(s.generatedId, opticaId)
+            for (ojo in listOf(ComponenteCosto.OD, ComponenteCosto.OI)) {
+                val costo = when (ojo) {
+                    ComponenteCosto.OD -> itemUi.costoOverrides[ojo] ?: itemUi.costoRealOd
+                    ComponenteCosto.OI -> itemUi.costoOverrides[ojo] ?: itemUi.costoRealOi
+                    else -> null
+                } ?: continue
+                if (costo <= 0.0) continue
+                when (
+                    val r = guardarCostoLenteDesdeOt(
+                        opticaId = opticaId,
+                        item = entity,
+                        ojo = ojo,
+                        costoUnitario = costo,
+                        receta = receta,
+                        hoy = s.fecha,
+                    )
+                ) {
+                    is ResultadoCostoMatriz.Creado,
+                    is ResultadoCostoMatriz.Versionado,
+                    -> wrote = true
+                    is ResultadoCostoMatriz.SinCambio -> Unit
+                    is ResultadoCostoMatriz.Rechazado -> rechazos.add(r.motivo)
+                }
+            }
+            val biselado = itemUi.costoOverrides[ComponenteCosto.BISELADO] ?: itemUi.costoRealBiselado
+            if (biselado != null && biselado > 0.0) {
+                when (
+                    val r = guardarBiseladoDesdeOt(
+                        opticaId = opticaId,
+                        item = entity,
+                        costoPorPar = biselado,
+                        receta = receta,
+                        hoy = s.fecha,
+                    )
+                ) {
+                    is ResultadoCostoMatriz.Creado,
+                    is ResultadoCostoMatriz.Versionado,
+                    -> wrote = true
+                    is ResultadoCostoMatriz.SinCambio -> Unit
+                    is ResultadoCostoMatriz.Rechazado -> rechazos.add(r.motivo)
+                }
+            }
+        }
+        return MatrizPersistFeedback(
+            info = if (wrote) "Costos de lente/biselado guardados en Costos y gastos" else null,
+            error = if (!wrote && rechazos.isNotEmpty()) rechazos.distinct().joinToString(" · ") else null,
+        )
+    }
+
+    private data class MatrizPersistFeedback(val info: String?, val error: String?)
 
     /** A warranty remake may be free, so a claim replacement keeps a total of 0 on edit. */
     private suspend fun isClaimReplacement(dispensacionId: String): Boolean {
@@ -733,6 +802,10 @@ class DispensacionViewModel @Inject constructor(
     // Gifts are left out: this save never changes them, so they cannot move the day's cost.
     private fun costoItems(items: List<DispensacionItem>): Double =
         CostoVentaCalculator.dispensacion(items, costoUnitarioSnapshot = null, regalos = emptyList()).costo
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
 
     /** Claims the loading flag before launching so a second tap queued behind the first is ignored. */
     private fun tryStartAction(): Boolean {
@@ -949,6 +1022,9 @@ class DispensacionViewModel @Inject constructor(
             -> {
                 _uiState.update { it.copy(infoMessage = okMessage, error = null) }
                 postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+            }
+            is com.example.optoapp.domain.ResultadoCostoMatriz.SinCambio -> {
+                _uiState.update { it.copy(infoMessage = "Ya estaba en Costos y gastos con el mismo precio", error = null) }
             }
             is com.example.optoapp.domain.ResultadoCostoMatriz.Rechazado -> {
                 _uiState.update { it.copy(error = result.motivo) }

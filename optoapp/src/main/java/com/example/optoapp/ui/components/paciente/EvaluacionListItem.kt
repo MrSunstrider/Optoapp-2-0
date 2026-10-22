@@ -9,9 +9,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.optoapp.R
 import com.example.optoapp.data.EvaluacionClinica
 import com.example.optoapp.util.DateUtils
 
@@ -30,31 +33,40 @@ fun EvaluacionListItem(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        onClick = onEdit,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Event, contentDescription = "Evento", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = date, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    text = date,
+                    modifier = Modifier.weight(1f),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                IconButton(modifier = Modifier.size(40.dp), onClick = onResumen) {
+                    Icon(
+                        Icons.Default.Visibility,
+                        contentDescription = stringResource(R.string.paciente_eval_ver_resumen_cd),
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
-                Row {
-                    IconButton(onClick = onResumen, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Visibility, contentDescription = "Ver Resumen", tint = MaterialTheme.colorScheme.secondary)
-                    }
-                    IconButton(onClick = onEdit, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MaterialTheme.colorScheme.primary)
-                    }
-                    IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.size(48.dp)) {
-                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error)
-                    }
+                IconButton(modifier = Modifier.size(40.dp), onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.paciente_eval_eliminar_cd),
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
             }
+
             val formulaStr = buildString {
                 val odEsf = eval.recetaOdEsf.orEmpty()
                 val odCil = eval.recetaOdCil.orEmpty()
@@ -66,8 +78,9 @@ fun EvaluacionListItem(
                 val hasOi = oiEsf.isNotBlank() || oiCil.isNotBlank()
                 if (hasOd) {
                     append("OD: $odEsf/$odCil x ${odEje}°")
-                    if (eval.recetaOdAv.orEmpty().isNotBlank()) append(" (${eval.recetaOdAv}) ") else append(" ")
+                    if (eval.recetaOdAv.orEmpty().isNotBlank()) append(" (${eval.recetaOdAv})")
                 }
+                if (hasOd && hasOi) append(" · ")
                 if (hasOi) {
                     append("OI: $oiEsf/$oiCil x ${oiEje}°")
                     if (eval.recetaOiAv.orEmpty().isNotBlank()) append(" (${eval.recetaOiAv})")
@@ -76,19 +89,36 @@ fun EvaluacionListItem(
             val diagStr = buildString {
                 val dOd = eval.diagnosticoOd?.firstOrNull().orEmpty()
                 val dOi = eval.diagnosticoOi?.firstOrNull().orEmpty()
-                if (dOd.isNotBlank()) append("OD: $dOd ")
+                if (dOd.isNotBlank()) append("OD: $dOd")
+                if (dOd.isNotBlank() && dOi.isNotBlank()) append(" · ")
                 if (dOi.isNotBlank()) append("OI: $dOi")
             }.trim()
 
             if (formulaStr.isNotBlank()) {
-                Text(text = "Fórmula $formulaStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    text = stringResource(R.string.paciente_eval_formula, formulaStr),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
                 if (diagStr.isNotBlank()) {
-                    Text(text = "Diag: $diagStr", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = stringResource(R.string.paciente_eval_diag, diagStr),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             } else if (diagStr.isNotBlank()) {
-                Text("Diagnóstico: $diagStr", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    text = stringResource(R.string.paciente_eval_diagnostico, diagStr),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             } else {
-                Text("Sin fórmula ni diagnóstico", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    text = stringResource(R.string.paciente_eval_sin_datos),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -96,8 +126,8 @@ fun EvaluacionListItem(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("¿Eliminar evaluación?") },
-            text = { Text("Esta acción no se puede deshacer.") },
+            title = { Text(stringResource(R.string.paciente_eval_eliminar_titulo)) },
+            text = { Text(stringResource(R.string.paciente_eval_eliminar_mensaje)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -106,12 +136,12 @@ fun EvaluacionListItem(
                     },
                     colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
-                    Text("Eliminar")
+                    Text(stringResource(R.string.common_delete))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.common_cancel))
                 }
             },
         )

@@ -7,10 +7,7 @@ import com.example.optoapp.domain.PacientesReporte
 import com.example.optoapp.domain.PeriodComparison
 import java.util.Locale
 
-/**
- * Optional rich-report sections for PDF export (RF-REP-03..06 + Equipo).
- * Pure lines — no Android/PdfDocument — so unit tests stay Robolectric-free.
- */
+// WHY: keep PDF section builders free of PdfDocument so unit tests stay Robolectric-free.
 data class ReportePdfExtras(
     val comparison: PeriodComparison? = null,
     val pacientes: PacientesReporte? = null,
@@ -33,6 +30,7 @@ object ReportePdfSectionLines {
             lines += "PACIENTES"
             lines += "Altas: ${p.altas}"
             lines += "Hombres ${p.hombres} · Mujeres ${p.mujeres} · Sin dato ${p.sinSexo}"
+            lines += "Pediatricos ${p.pediatricos} · Adultos ${p.adultos} · Adulto mayor ${p.adultosMayores}"
             lines += ""
         }
         extras.inventario?.let { inv ->
@@ -41,11 +39,32 @@ object ReportePdfSectionLines {
             lines += "Stock total: ${inv.stockTotal}"
             lines += "Stock bajo: ${inv.lowStock}"
             lines += "Salidas por venta: ${inv.salidasVentaPeriodo}"
+            if (inv.stockPorTipoAro.isNotEmpty()) {
+                lines += "Stock por tipo de aro: " + inv.stockPorTipoAro.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
+            if (inv.stockPorMaterial.isNotEmpty()) {
+                lines += "Stock por material: " + inv.stockPorMaterial.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
+            if (inv.movimientosPorTipo.isNotEmpty()) {
+                lines += "Movimientos: " + inv.movimientosPorTipo.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
+            if (inv.topSalidasModelo.isNotEmpty()) {
+                lines += "Top salidas: " + inv.topSalidasModelo.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
             lines += ""
         }
         extras.clinico?.let { c ->
             lines += "CLINICO"
             lines += "Evaluaciones: ${c.evaluaciones}"
+            if (c.porSexo.isNotEmpty()) {
+                lines += "Sexo: " + c.porSexo.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
+            if (c.porEdad.isNotEmpty()) {
+                lines += "Edad: " + c.porEdad.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
+            if (c.porEmetropia.isNotEmpty()) {
+                lines += "Refraccion: " + c.porEmetropia.joinToString(" · ") { "${it.label} ${it.unidades}" }
+            }
             c.porDiagnostico.take(12).forEach { (label, count) ->
                 lines += "$label: $count"
             }

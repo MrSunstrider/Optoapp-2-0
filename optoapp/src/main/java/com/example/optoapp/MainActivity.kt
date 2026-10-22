@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -23,10 +24,12 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.util.NetworkMonitor
 import com.example.optoapp.ui.components.UpdateDialog
 import com.example.optoapp.ui.screens.*
+import com.example.optoapp.domain.AppThemeMode
 import com.example.optoapp.ui.theme.OptoAppTheme
 import com.example.optoapp.util.UpdateChecker
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.RecoveryState
+import com.example.optoapp.viewmodel.ThemeViewModel
 import com.example.optoapp.viewmodel.auth.ColdStartNavigation
 import com.example.optoapp.viewmodel.auth.PostLoginNavigation
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,6 +42,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels()
+    private val themeViewModel: ThemeViewModel by viewModels()
 
     @Inject lateinit var supabaseClient: SupabaseClient
 
@@ -86,7 +90,9 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            OptoAppTheme {
+            val themeMode by themeViewModel.mode.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+            OptoAppTheme(darkTheme = AppThemeMode.resolveDark(themeMode, systemDark)) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
@@ -180,8 +186,7 @@ fun OptoAppNavigation(
         }
     }
 
-    // Guardia global: si la sesión se invalida, volver al login vaciando la pila
-    // No interfiere con el flujo de recuperación de contraseña
+    // WHY: an expired session must clear the back stack so protected routes cannot reopen.
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn == false &&
             recoveryState !is RecoveryState.LinkReceived &&
@@ -224,7 +229,7 @@ fun OptoAppNavigation(
         }
     }
 
-    // UpdateCheck sobrevive a la navegación — se muestra sobre la pantalla activa
+    // WHY: keep the update dialog above the active route after navigation.
     updateInfo?.let { info ->
         UpdateDialog(updateInfo = info, onDismiss = { updateInfo = null })
     }

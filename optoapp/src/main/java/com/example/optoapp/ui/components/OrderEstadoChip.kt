@@ -65,6 +65,8 @@ fun OrderEstadoChip(
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             color = color,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }
