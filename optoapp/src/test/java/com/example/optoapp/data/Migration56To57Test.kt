@@ -46,7 +46,7 @@ class Migration56To57Test {
         createV56Database()
 
         val room = Room.databaseBuilder(context, OptoDatabase::class.java, dbName)
-            .addMigrations(MIGRATION_56_57, MIGRATION_57_58, MIGRATION_58_59, MIGRATION_59_60, MIGRATION_60_61, MIGRATION_61_62, MIGRATION_62_63)
+            .addMigrations(MIGRATION_56_57, MIGRATION_57_58, MIGRATION_58_59, MIGRATION_59_60, MIGRATION_60_61, MIGRATION_61_62, MIGRATION_62_63, MIGRATION_63_64)
             .allowMainThreadQueries()
             .build()
         val db = room.openHelper.writableDatabase
