@@ -31,6 +31,7 @@ import com.example.optoapp.domain.ImpactoRecomendacion
 import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.domain.ResultadoOperativoConfiabilidad
 import com.example.optoapp.domain.SeguimientoEstado
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.common.CostCoverageBadge
@@ -563,6 +564,13 @@ private fun ContextoBreveCard(analisis: AnalisisMensual) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            if (ResultadoOperativoConfiabilidad.esIncompleto(facts.cobertura)) {
+                Text(
+                    stringResource(R.string.analisis_resultado_incompleto_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.warningAmber,
+                )
+            }
             MetricItem(
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(R.string.analisis_vendiste),
@@ -627,7 +635,22 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    Text(stringResource(R.string.analisis_margen_neto), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.analisis_margen_neto),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        if (ResultadoOperativoConfiabilidad.esIncompleto(analisis.marginFacts.cobertura)) {
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                stringResource(R.string.analisis_resultado_incompleto),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.warningAmber,
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text(
                         stringResource(
@@ -638,6 +661,14 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                         fontWeight = FontWeight.SemiBold,
                         color = if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
                     )
+                    if (ResultadoOperativoConfiabilidad.esIncompleto(analisis.marginFacts.cobertura)) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.analisis_resultado_incompleto_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.warningAmber,
+                        )
+                    }
                 }
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

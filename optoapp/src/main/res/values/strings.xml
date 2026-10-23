@@ -410,6 +410,8 @@
     <string name="analisis_saldo_pendiente">Saldo pendiente</string>
     <string name="analisis_margen_neto">Resultado operativo</string>
     <string name="analisis_margen_neto_explicacion">De cada S/ 100 que vendes, te quedan S/ %1$s (resultado operativo)</string>
+    <string name="analisis_resultado_incompleto">incompleto</string>
+    <string name="analisis_resultado_incompleto_hint">Cobertura de costos baja; el % es estimado hasta completar costos.</string>
     <string name="analisis_objetivo_resultado_operativo">Objetivo de resultado operativo</string>
     <string name="analisis_ticket_promedio">Ticket prom.</string>
     <string name="analisis_ventas">Ventas</string>

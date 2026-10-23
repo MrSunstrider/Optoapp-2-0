@@ -32,8 +32,8 @@ Assumptions: `margenNetoObjetivo` field name may stay in DB/API; UI label become
 
 ## Tasks
 
-- [x] T1 S3–S4 S1 — Glossary rename: Resultado operativo (+ disclaimer IGV); objetivo label; % to 1 decimal in Análisis display — route: inline — commit: pending-hash
-- [ ] T2 S5 — Mark resultado/margen incompleto when cost coverage below threshold; keep number visible — route: inline — commit:
+- [x] T1 S3–S4 S1 — Glossary rename: Resultado operativo (+ disclaimer IGV); objetivo label; % to 1 decimal in Análisis display — route: inline — commit: e9ceb651
+- [x] T2 S5 — Mark resultado/margen incompleto when cost coverage below threshold; keep number visible — route: inline — commit: pending-hash
 - [ ] T3 S6 S8 — Home: separate P&L vs Caja; KPI strip; waterfall Ventas→COGS→Bruto→Opex→Resultado — route: inline — commit:
 - [ ] T4 S1 S10 — Remove gastos CRUD from Análisis home; gasto-out-of-range alert + CTA to Costos — route: inline — commit:
 - [ ] T5 S7 — Plan cards: Hallazgo→Causa→Acción→Impacto+editable supuesto→Esfuerzo→CTA; surface Impacto assumptions in config — route: inline — commit:
@@ -44,4 +44,5 @@ Assumptions: `margenNetoObjetivo` field name may stay in DB/API; UI label become
 
 L1. User (2026-10-22): full diagnosis + Fase 1 plan; decisions `1a 2a 3b 4a 5c`.
 L2. User (2026-10-23): `empezemos fase 1 odd` — authorized ODD implementation on `feat/analisis-financiero-fase1` from `origin/main` @ 7f755b7b.
-L3. T1 GREEN: AnalisisPercentFormatter (1 decimal); coach/strings “resultado operativo”; disclaimer IGV; offline bruto/serie % → 1 decimal. Focused tests BUILD SUCCESSFUL.
+L3. T1 GREEN: AnalisisPercentFormatter (1 decimal); coach/strings “resultado operativo”; disclaimer IGV; offline bruto/serie % → 1 decimal. Focused tests BUILD SUCCESSFUL. Commit e9ceb651.
+L4. T2 GREEN: ResultadoOperativoConfiabilidad (umbral 80% / sinDatos); chip “incompleto” + hint in resumen/contexto. Focused tests BUILD SUCCESSFUL.
