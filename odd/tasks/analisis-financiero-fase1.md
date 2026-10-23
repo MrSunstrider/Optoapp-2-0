@@ -37,8 +37,8 @@ Assumptions: `margenNetoObjetivo` field name may stay in DB/API; UI label become
 - [x] T3 S6 S8 — Home: separate P&L vs Caja; KPI strip; waterfall Ventas→COGS→Bruto→Opex→Resultado — route: inline — commit: e8b7251f
 - [x] T4 S1 S10 — Remove gastos CRUD from Análisis home; gasto-out-of-range alert + CTA to Costos — route: inline — commit: a0237d5b
 - [x] T5 S7 — Plan cards: Hallazgo→Causa→Acción→Impacto+editable supuesto→Esfuerzo→CTA; surface Impacto assumptions in config — route: inline — commit: f032b286
-- [ ] T6 S6 — Typed alerts rojo/ámbar (3–5) from recommendation/priority model — route: inline — commit:
-- [ ] T7 S1 S10 — Seguimiento: En curso label; sync-ready entity/ID shape only (no Supabase sync) — route: inline — commit:
+- [x] T6 S6 — Typed alerts rojo/ámbar (3–5) from recommendation/priority model — route: inline — commit: 2c5e1cc5
+- [x] T7 S1 S10 — Seguimiento: En curso label; sync-ready entity/ID shape only (no Supabase sync) — route: inline — commit: acec4ff7
 
 ## Log
 
@@ -49,3 +49,5 @@ L4. T2 GREEN: ResultadoOperativoConfiabilidad (umbral 80% / sinDatos); chip “i
 L5. T3 GREEN: AnalisisDecisionLayout (waterfall + KPIs + caja) from rpc fields; DecisionHomeSection on AnalisisNegocioScreen. Focused tests BUILD SUCCESSFUL.
 L6. T4 GREEN: Removed gastos CRUD from AnalisisNegocioScreen; GastoFueraDeRango alert (>40%) + CTA to Costos; REDUCIR_GASTO shares threshold. Focused tests BUILD SUCCESSFUL.
 L7. T5 GREEN: SupuestosImpacto + Room 61→62 local impacto columns; plan cards Hallazgo→Causa→Acción→Impacto+supuesto→Esfuerzo→CTA; download merge preserves local supuestos. Focused tests BUILD SUCCESSFUL. Commit f032b286.
+L8. T6 GREEN: AlertasDesdeRecomendaciones (ALTA→ROJO, MEDIA→AMBAR, max 5); Alertas strip on home; GastoFueraDeRangoCard folded into typed alerts via plan priority. Focused tests BUILD SUCCESSFUL. Commit 2c5e1cc5.
+L9. T7 GREEN: MAS_TARDE→EN_CURSO (label En curso; storage alias + migration backfill); feedback_recomendaciones.updatedAt for LWW sync-ready; Room 62→63. Focused tests BUILD SUCCESSFUL. Commit acec4ff7. Fase 1 tasks T1–T7 complete on branch.
