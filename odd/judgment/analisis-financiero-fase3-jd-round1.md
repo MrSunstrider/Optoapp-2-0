@@ -42,5 +42,14 @@ none
 
 ## Judge refs
 
-- Judge A: 92900d5d-4f95-4abb-8d34-8da007a918be
-- Judge B: f45366af-7ad9-4f0c-9457-ee9275e2758e
+- Judge A round1: 92900d5d-4f95-4abb-8d34-8da007a918be
+- Judge B round1: f45366af-7ad9-4f0c-9457-ee9275e2758e
+- Fix actor: 2fe1104f-0344-4f48-9983-595324877640 → 38378cd8, 93e831a4, df2778f8
+- Rejudge A: 6d0a054b-dbb0-4339-8bd1-6cae2a53f3aa findings:[]
+- Rejudge B: 3b3735ae-30c7-45f0-a150-2f5731409088 findings:[]
+
+## Terminal
+
+scoped_rejudgment: approved  
+terminal_state: approved  
+JUDGMENT: APPROVED
