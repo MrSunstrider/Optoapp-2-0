@@ -78,7 +78,8 @@ object InterpretacionAnalista {
     private fun titularDe(facts: MarginFacts): String {
         val pct = AnalisisPercentFormatter.formatWithSymbol(facts.margenNetoPct)
         val objetivo = AnalisisPercentFormatter.formatWithSymbol(facts.margenNetoObjetivo)
-        return when {
+        val incompleto = ResultadoOperativoConfiabilidad.esIncompleto(facts.cobertura)
+        val base = when {
             facts.brechaMargenNetoPp < -0.5 ->
                 "El resultado operativo del mes ($pct) está debajo del objetivo ($objetivo)."
             facts.brechaMargenNetoPp > 0.5 ->
@@ -86,6 +87,7 @@ object InterpretacionAnalista {
             else ->
                 "El resultado operativo del mes ($pct) está cerca del objetivo ($objetivo)."
         }
+        return if (incompleto) "$base (incompleto)" else base
     }
 
     private fun MutableList<String>.addBrecha(facts: MarginFacts) {

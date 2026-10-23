@@ -59,6 +59,20 @@ class InterpretacionAnalistaTest {
     }
 
     @Test
+    fun from_incompleto_qualifiesTitular() {
+        val facts = MarginFacts(
+            margenNetoPct = 12.0,
+            margenNetoObjetivo = 15.0,
+            brechaMargenNetoPp = -3.0,
+            cobertura = CoberturaCosto(lineasTotal = 10, lineasReales = 4, pctReal = 40.0, pctFaltante = 60.0),
+        )
+
+        val out = InterpretacionAnalista.from(facts, topRecTitulo = null)
+
+        assertTrue(out.titular.contains("incompleto", ignoreCase = true))
+    }
+
+    @Test
     fun from_serie6m_addsTendenciaWhenEnoughPoints() {
         val mes = YearMonth.of(2026, 10)
         val facts = MarginFacts(
