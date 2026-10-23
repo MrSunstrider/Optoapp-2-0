@@ -35,6 +35,7 @@ import com.example.optoapp.domain.CtaRecomendacion
 import com.example.optoapp.domain.AgingBucketKey
 import com.example.optoapp.domain.AlertaNegocio
 import com.example.optoapp.domain.AlertasDesdeRecomendaciones
+import com.example.optoapp.domain.CumplimientoPlan
 import com.example.optoapp.domain.CxcAgingResumen
 import com.example.optoapp.domain.DriverTipo
 import com.example.optoapp.domain.EsfuerzoRecomendacion
@@ -172,6 +173,10 @@ fun AnalisisNegocioScreen(
 
             uiState.driversMom?.let { drivers ->
                 DriversMomSection(drivers)
+            }
+
+            uiState.cumplimientoPlan?.let { cumplimiento ->
+                CumplimientoPlanSection(cumplimiento)
             }
 
             uiState.cxcAging?.let { aging ->
@@ -363,8 +368,37 @@ private fun DriversMomSection(drivers: ResultadoDriversMom) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        drivers.top(3).forEach { driver ->
+        drivers.top(4).forEach { driver ->
             DriverMomRow(driver)
+        }
+    }
+}
+
+@Composable
+private fun CumplimientoPlanSection(cumplimiento: CumplimientoPlan) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(R.string.analisis_cumplimiento_titulo),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (cumplimiento.total == 0) {
+            Text(
+                stringResource(R.string.analisis_cumplimiento_vacio),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(
+                stringResource(
+                    R.string.analisis_cumplimiento_detalle,
+                    cumplimiento.hechas,
+                    cumplimiento.enCurso,
+                    cumplimiento.noAplica,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }
@@ -375,6 +409,7 @@ private fun DriverMomRow(driver: ResultadoDriver) {
         DriverTipo.VOLUMEN -> stringResource(R.string.analisis_driver_volumen)
         DriverTipo.TICKET -> stringResource(R.string.analisis_driver_ticket)
         DriverTipo.COSTO -> stringResource(R.string.analisis_driver_costo)
+        DriverTipo.MIX -> stringResource(R.string.analisis_driver_mix)
     }
     Card(
         modifier = Modifier.fillMaxWidth(),

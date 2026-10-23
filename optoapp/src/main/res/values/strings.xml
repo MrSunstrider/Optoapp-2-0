@@ -454,6 +454,10 @@
     <string name="analisis_driver_volumen">Volumen</string>
     <string name="analisis_driver_ticket">Ticket</string>
     <string name="analisis_driver_costo">Costo (COGS)</string>
+    <string name="analisis_driver_mix">Mix por categoría</string>
+    <string name="analisis_cumplimiento_titulo">Cumplimiento del plan</string>
+    <string name="analisis_cumplimiento_detalle">Hechas %1$d · En curso %2$d · No aplica %3$d</string>
+    <string name="analisis_cumplimiento_vacio">Todavía no marcaste seguimiento en el plan.</string>
     <string name="analisis_driver_efecto">Efecto ilustrativo: %1$s</string>
     <string name="analisis_cxc_titulo">Cuentas por cobrar</string>
     <string name="analisis_cxc_vacio">Sin deudores con saldo pendiente.</string>

@@ -8,6 +8,7 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.domain.AnalisisMensual
+import com.example.optoapp.domain.CumplimientoPlan
 import com.example.optoapp.domain.CxcAging
 import com.example.optoapp.domain.CxcAgingResumen
 import com.example.optoapp.domain.Deudor
@@ -58,6 +59,7 @@ data class AnalisisNegocioUiState(
     val supuestosError: String? = null,
     val driversMom: ResultadoDriversMom? = null,
     val cxcAging: CxcAgingResumen? = null,
+    val cumplimientoPlan: CumplimientoPlan? = null,
 )
 
 @HiltViewModel
@@ -116,8 +118,10 @@ class AnalisisNegocioViewModel @Inject constructor(
                 val periodo = _uiState.value.mesSeleccionado.format(PERIODO_FMT)
                 seguimientoMutex.withLock {
                     feedbackRecomendacion.marcarSeguimiento(recomendacionId, opticaId, periodo, estado)
+                    val seguimientos = _uiState.value.seguimientos + (recomendacionId to estado)
                     _uiState.value = _uiState.value.copy(
-                        seguimientos = _uiState.value.seguimientos + (recomendacionId to estado),
+                        seguimientos = seguimientos,
+                        cumplimientoPlan = CumplimientoPlan.from(seguimientos),
                         feedbackErrorRecId = null,
                     )
                 }
@@ -254,6 +258,7 @@ class AnalisisNegocioViewModel @Inject constructor(
                             supuestosImpacto = supuestos,
                             driversMom = driversMom,
                             cxcAging = cxcAging,
+                            cumplimientoPlan = CumplimientoPlan.from(seguimientos),
                         )
                     }
                 } catch (e: CancellationException) {

@@ -34,8 +34,10 @@ object MarginFactsParser {
         fuente = FuenteDatos.SERVIDOR,
     )
 
-    private fun JsonObject.parseMargenPorCategoria(): List<MargenCategoria> =
-        optArray("margen_por_categoria").orEmpty().mapNotNull { item ->
+    private fun JsonObject.parseMargenPorCategoria(
+        key: String = "margen_por_categoria",
+    ): List<MargenCategoria> =
+        optArray(key).orEmpty().mapNotNull { item ->
             val row = item as? JsonObject ?: return@mapNotNull null
             val ventas = row.optDouble("ventas")
             val costos = row.optDouble("costos")
@@ -47,6 +49,9 @@ object MarginFactsParser {
                 margen = row.optDoubleNullable("margen") ?: (ventas - costos),
             )
         }
+
+    fun parseMargenPorCategoriaMesAnterior(obj: JsonObject): List<MargenCategoria> =
+        obj.parseMargenPorCategoria("margen_por_categoria_mes_anterior")
 
     private fun JsonObject.parseCostosPorLinea() = CostosPorLinea(
         lentes = optDouble("lentes"),
