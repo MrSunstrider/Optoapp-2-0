@@ -40,3 +40,5 @@ S10. Thresholds to promote from hardcoded (authorized plan): `margenBajoAlertaPc
 L1. User request (verbatim package): Fase 2 — Por qué cambió el resultado; Extender RPC / agregados MoM: volumen, ticket, costo (no mix todavía). Top drivers en home con S/ ilustrativos derivados de esos tres. Umbrales de alerta restantes en ConfiguracionFinanciera. DSO / aging CxC en coach (si los datos de deudores alcanzan). Mix deferred. Fuente de verdad resumen_diario / rpc_analisis_mensual.
 
 L2. 2026-10-23 — Implemented T1–T4 on `feat/analisis-financiero-fase2`. Suite `testDebugUnitTest` BUILD SUCCESSFUL. Room 65; RPC MoM keys; drivers+aging on home; alert thresholds editor. Pending: none for Fase 2 scope. Deferred Fase 3: sync seguimiento, mix, utilidad neta.
+
+L3. 2026-10-23 — Judgment Day APPROVED. Round-1 fix `96999351` (JD-C1 MoM unrounded priors, JD-C2 DSO from deudores sum, JD-C3 no default config upsert, JD-W1/W2/W3). Scoped re-judgment findings:[]. INFO deferred: local-only alert sync, opex-not-in-drivers (Spec S8).
