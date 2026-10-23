@@ -154,7 +154,7 @@ class CostosYGastosViewModelTest {
 
     @Test
     fun saveCosto_persistsLookupCompatibleMatrixKeys() = runTest(testDispatcher) {
-        coEvery { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(emptyList())
+        coEvery { costoProductoDao.getByBloque(opticaId, "fabricacion") } returns flowOf(emptyList())
 
         viewModel = buildViewModel()
         viewModel.loadBlock("Stock Monofocal")
@@ -169,6 +169,9 @@ class CostosYGastosViewModelTest {
         viewModel.updateCostoCurvaBase("6")
         viewModel.updateCostoCostoUnitario("155.00")
 
+        assertEquals("fabricacion", viewModel.uiState.value.costoStockOFabricacion)
+        assertEquals("", viewModel.uiState.value.costoSerie)
+
         viewModel.saveCosto()
         advanceUntilIdle()
 
@@ -179,8 +182,8 @@ class CostosYGastosViewModelTest {
                     val entity = entities[0]
                     assertEquals("Resina", entity.material)
                     assertEquals("Monofocal", entity.tipoLente)
-                    assertEquals("stock", entity.stockOFabricacion)
-                    assertEquals(1, entity.serie)
+                    assertEquals("fabricacion", entity.stockOFabricacion)
+                    assertNull(entity.serie)
                     assertEquals("Filtro Discromatopsia + Solar (550 Rojo)", entity.tratamiento)
                     assertEquals("6", entity.curvaBase)
                     assertNull(entity.indiceRefraccion)
@@ -188,6 +191,7 @@ class CostosYGastosViewModelTest {
             )
         }
         assertNull(viewModel.uiState.value.costoSaveError)
+        assertEquals("Fabricación", viewModel.uiState.value.selectedBlock)
     }
 
     @Test

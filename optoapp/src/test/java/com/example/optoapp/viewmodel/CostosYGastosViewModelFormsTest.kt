@@ -308,6 +308,38 @@ class CostosYGastosViewModelFormsTest {
     }
 
     @Test
+    fun forceFabricacionTreatmentClearsStockSerieInForm() = runTest(testDispatcher) {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+        viewModel.loadBlock("Stock Monofocal")
+        viewModel.showNewCosto()
+        viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("2")
+        assertEquals("stock", viewModel.uiState.value.costoStockOFabricacion)
+        assertEquals("2", viewModel.uiState.value.costoSerie)
+
+        viewModel.toggleCostoTratamiento("Solar")
+
+        assertEquals("fabricacion", viewModel.uiState.value.costoStockOFabricacion)
+        assertEquals("", viewModel.uiState.value.costoSerie)
+        viewModel.updateCostoStockOFabricacion("stock")
+        assertEquals("fabricacion", viewModel.uiState.value.costoStockOFabricacion)
+    }
+
+    @Test
+    fun alwaysFabricacionFamilyLocksModalityOnMaterialSelect() = runTest(testDispatcher) {
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+        viewModel.loadBlock("Stock Monofocal")
+        viewModel.showNewCosto()
+        viewModel.updateCostoSerie("1")
+        viewModel.updateCostoMaterial("Resina antireflejo alto indice")
+
+        assertEquals("fabricacion", viewModel.uiState.value.costoStockOFabricacion)
+        assertEquals("", viewModel.uiState.value.costoSerie)
+    }
+
+    @Test
     fun savingANewCostoMarksItForUploadAndResetsTheForm() = runTest(testDispatcher) {
         val filas = slot<List<CostoProductoEntity>>()
         coEvery { costoProductoDao.upsertAll(capture(filas)) } returns Unit

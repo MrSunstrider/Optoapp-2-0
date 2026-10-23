@@ -104,6 +104,56 @@ class LensCatalogRulesTest {
     }
 
     @Test
+    fun forcesFabricacionIndependentOfRx_extrasFamilyAndCristalIr() {
+        val solar = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_MONOFOCAL,
+            familia = "Resina",
+            tratamientos = listOf(LensTreatments.SOLAR, LensTreatments.DISCROMATOPSIA),
+        )
+        assertTrue(LensCatalogRules.forcesFabricacionIndependentOfRx(solar))
+
+        val uvOnly = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_MONOFOCAL,
+            familia = "Resina",
+            tratamientos = listOf(LensTreatments.UV_400),
+        )
+        assertFalse(LensCatalogRules.forcesFabricacionIndependentOfRx(uvOnly))
+
+        val alwaysFab = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_MONOFOCAL,
+            familia = "Resina antireflejo alto indice",
+        )
+        assertTrue(LensCatalogRules.forcesFabricacionIndependentOfRx(alwaysFab))
+
+        val bifocalBlueAlwaysFab = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_BIFOCAL,
+            subTipoBifocal = LensProductCatalog.SUB_FLAPTOP,
+            familia = "Resina antireflejo Blue Def/Prot",
+        )
+        assertTrue(LensCatalogRules.forcesFabricacionIndependentOfRx(bifocalBlueAlwaysFab))
+
+        val cristalNoIr = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_MONOFOCAL,
+            familia = "Cristal alto indice",
+            indiceRefraccion = "1.8",
+        )
+        assertTrue(LensCatalogRules.forcesFabricacionIndependentOfRx(cristalNoIr))
+
+        val cristal17 = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_MONOFOCAL,
+            familia = "Cristal alto indice",
+            indiceRefraccion = "1.7",
+        )
+        assertFalse(LensCatalogRules.forcesFabricacionIndependentOfRx(cristal17))
+
+        val plainResina = LensCatalogSelection(
+            tipoLente = LensProductCatalog.TIPO_MONOFOCAL,
+            familia = "Resina",
+        )
+        assertFalse(LensCatalogRules.forcesFabricacionIndependentOfRx(plainResina))
+    }
+
+    @Test
     fun monofocal_solar_requiresCurvaBase_andForcesFab() {
         val resolution = LensCatalogRules.resolve(
             LensCatalogSelection(

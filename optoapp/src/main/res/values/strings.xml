@@ -575,6 +575,7 @@
     <string name="costos_distancia_requerida">Distancia *</string>
     <string name="costos_stock_fabricacion">Stock o fabricación</string>
     <string name="costos_stock_fabricacion_requerido">Stock o fabricación *</string>
+    <string name="costos_modalidad_forzada_fabricacion">Este catálogo solo admite fabricación (sin serie)</string>
     <string name="costos_serie_requerida">Serie *</string>
     <string name="costos_tratamiento_opcional">Tratamiento (opcional)</string>
     <string name="costos_tratamientos_adicionales">Tratamientos adicionales</string>

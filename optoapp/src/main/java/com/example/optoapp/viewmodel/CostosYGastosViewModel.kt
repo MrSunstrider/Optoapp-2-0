@@ -950,7 +950,7 @@ class CostosYGastosViewModel @Inject constructor(
                 costoDiscromatopsiaTipo = "",
                 costoCurvaBase = "",
                 costoIndiceRefraccion = "",
-            )
+            ).withForcedFabricacionIfNeeded()
         }
     }
     fun updateCostoTipoLente(value: String) {
@@ -984,10 +984,16 @@ class CostosYGastosViewModel @Inject constructor(
     }
 
     fun updateCostoStockOFabricacion(value: String) {
+        val s = _uiState.value
+        if (costoCatalogSelection(s).let { LensCatalogRules.forcesFabricacionIndependentOfRx(it) } &&
+            value != LensCatalogRules.FABRICACION
+        ) {
+            return
+        }
         _uiState.update {
             it.copy(
                 costoStockOFabricacion = value,
-                costoSerie = if (value == "fabricacion") "" else it.costoSerie,
+                costoSerie = if (value == LensCatalogRules.FABRICACION) "" else it.costoSerie,
             )
         }
     }
@@ -998,7 +1004,7 @@ class CostosYGastosViewModel @Inject constructor(
                 costoTratamientos = updated,
                 costoDiscromatopsiaTipo = if (LensTreatments.DISCROMATOPSIA !in updated) "" else it.costoDiscromatopsiaTipo,
                 costoCurvaBase = if (LensTreatments.SOLAR !in updated) "" else it.costoCurvaBase,
-            )
+            ).withForcedFabricacionIfNeeded()
         }
     }
     fun updateCostoDiscromatopsiaTipo(value: String) {
@@ -1021,7 +1027,9 @@ class CostosYGastosViewModel @Inject constructor(
         }
     }
     fun updateCostoIndiceRefraccion(value: String) {
-        _uiState.update { it.copy(costoIndiceRefraccion = value) }
+        _uiState.update {
+            it.copy(costoIndiceRefraccion = value).withForcedFabricacionIfNeeded()
+        }
     }
     fun updateCostoCurvaBase(value: String) {
         _uiState.update { it.copy(costoCurvaBase = value) }
@@ -1032,6 +1040,7 @@ class CostosYGastosViewModel @Inject constructor(
 
     fun saveCosto() {
         val s = _uiState.value
+        if (!s.puedeEditarMatrices) return
         if (s.costoMaterial.isBlank()) {
             _uiState.update { it.copy(costoSaveError = "Selecciona un material") }
             return
@@ -1040,16 +1049,20 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona un tipo de lente") }
             return
         }
-        if (s.costoStockOFabricacion !in MODALIDADES_COSTO_LENTE) {
-            _uiState.update { it.copy(costoSaveError = "Selecciona stock o fabricación") }
-            return
-        }
         if (s.costoTipoLente == LensProductCatalog.TIPO_BIFOCAL && s.costoSubtipoBifocal.isBlank()) {
             _uiState.update { it.copy(costoSaveError = "Selecciona el subtipo bifocal") }
             return
         }
+        // WHY: Distancia is not a lookupVigente key; matrixFamilia/tratamiento must match OT resolve.
+        val selection = costoCatalogSelection(s)
+        val forcedFab = LensCatalogRules.forcesFabricacionIndependentOfRx(selection)
+        val stockFab = if (forcedFab) LensCatalogRules.FABRICACION else s.costoStockOFabricacion
+        if (stockFab !in MODALIDADES_COSTO_LENTE) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona stock o fabricación") }
+            return
+        }
         val serieStock = s.costoSerie.toIntOrNull()
-        if (s.costoStockOFabricacion == "stock" && (serieStock == null || serieStock <= 0)) {
+        if (stockFab == LensCatalogRules.STOCK && (serieStock == null || serieStock <= 0)) {
             _uiState.update { it.copy(costoSaveError = "Ingresa la serie") }
             return
         }
@@ -1062,18 +1075,6 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona el tipo de filtro discromatopsia") }
             return
         }
-        // WHY: Distancia is not a lookupVigente key; matrixFamilia/tratamiento must match OT resolve.
-        val selection = LensCatalogSelection(
-            tipoLente = s.costoTipoLente,
-            distancia = null,
-            subTipoBifocal = s.costoSubtipoBifocal.takeIf { it.isNotBlank() },
-            familia = s.costoMaterial,
-            tratamientos = s.costoTratamientos,
-            discromatopsiaTipo = s.costoDiscromatopsiaTipo.takeIf { it.isNotBlank() },
-            curvaBase = s.costoCurvaBase.takeIf { it.isNotBlank() },
-            indiceRefraccion = s.costoIndiceRefraccion.takeIf { it.isNotBlank() },
-            forzarStockIgnorandoAstigmatismo = false,
-        )
         val resolution = LensCatalogRules.resolve(selection, null)
         if (resolution.requiresManualIrCost && s.costoIndiceRefraccion.isBlank()) {
             _uiState.update { it.copy(costoSaveError = "Selecciona el índice de refracción") }
@@ -1083,7 +1084,7 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona la curva base") }
             return
         }
-        val serie = if (s.costoStockOFabricacion == "stock") serieStock else null
+        val serie = if (stockFab == LensCatalogRules.STOCK) serieStock else null
         val subtipo = s.costoSubtipoBifocal.ifBlank { null }
         val indice = if (resolution.requiresManualIrCost) s.costoIndiceRefraccion.ifBlank { null } else null
         val curva = if (resolution.requiresCurvaBase) s.costoCurvaBase.ifBlank { null } else null
@@ -1096,7 +1097,7 @@ class CostosYGastosViewModel @Inject constructor(
                     opticaId = opticaId,
                     material = resolution.matrixFamilia,
                     tipoLente = s.costoTipoLente,
-                    stockOFabricacion = s.costoStockOFabricacion,
+                    stockOFabricacion = stockFab,
                     tratamiento = resolution.matrixTratamiento,
                     serie = serie,
                     fecha = fechaIso,
@@ -1131,7 +1132,7 @@ class CostosYGastosViewModel @Inject constructor(
                             opticaId = opticaId,
                             material = resolution.matrixFamilia,
                             tipoLente = s.costoTipoLente,
-                            stockOFabricacion = s.costoStockOFabricacion,
+                            stockOFabricacion = stockFab,
                             tratamiento = resolution.matrixTratamiento,
                             serie = serie,
                             subtipoBifocal = subtipo,
@@ -1145,7 +1146,7 @@ class CostosYGastosViewModel @Inject constructor(
                     }
                 }
 
-                val targetBlock = blockForCosto(s.costoStockOFabricacion, s.costoTipoLente)
+                val targetBlock = blockForCosto(stockFab, s.costoTipoLente)
                 val filter = blockFilter(targetBlock)
                 val refreshed = aplicarFiltroBloque(
                     costoProductoDao.getByBloque(opticaId, filter.stockOFabricacion).first(),
@@ -1176,6 +1177,28 @@ class CostosYGastosViewModel @Inject constructor(
                 _uiState.update { it.copy(costoSaveError = "Error al guardar: ${e.message}") }
             }
         }
+    }
+
+    private fun costoCatalogSelection(s: CostosYGastosUiState): LensCatalogSelection =
+        LensCatalogSelection(
+            tipoLente = s.costoTipoLente,
+            distancia = null,
+            subTipoBifocal = s.costoSubtipoBifocal.takeIf { it.isNotBlank() },
+            familia = s.costoMaterial,
+            tratamientos = s.costoTratamientos,
+            discromatopsiaTipo = s.costoDiscromatopsiaTipo.takeIf { it.isNotBlank() },
+            curvaBase = s.costoCurvaBase.takeIf { it.isNotBlank() },
+            indiceRefraccion = s.costoIndiceRefraccion.takeIf { it.isNotBlank() },
+            forzarStockIgnorandoAstigmatismo = false,
+        )
+
+    private fun CostosYGastosUiState.withForcedFabricacionIfNeeded(): CostosYGastosUiState {
+        if (costoTipoLente.isBlank() || costoMaterial.isBlank()) return this
+        if (!LensCatalogRules.forcesFabricacionIndependentOfRx(costoCatalogSelection(this))) return this
+        return copy(
+            costoStockOFabricacion = LensCatalogRules.FABRICACION,
+            costoSerie = "",
+        )
     }
 
     // WHY: Matrix upload sends only rows marked here, so a price edit without the mark would never leave the device.
