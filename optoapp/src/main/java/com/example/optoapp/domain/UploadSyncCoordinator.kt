@@ -4,6 +4,7 @@ import com.example.optoapp.data.OptoDatabase
 import com.example.optoapp.data.OptoRepository
 import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.DispensacionOptica
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.costobiselado.CostoBiseladoDao
 import com.example.optoapp.data.costolc.CostoLcDao
 import com.example.optoapp.data.costoproducto.CostoProductoDao
@@ -37,6 +38,7 @@ open class UploadSyncCoordinator @Inject constructor(
     private val costoBiseladoDao: CostoBiseladoDao,
     private val costoLcDao: CostoLcDao,
     private val servicioTipoDao: ServicioTipoDao,
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -52,6 +54,7 @@ open class UploadSyncCoordinator @Inject constructor(
         private const val TABLE_COSTOS_BISELADO = "costos_biselado"
         private const val TABLE_COSTOS_LC = "costos_lc"
         private const val TABLE_SERVICIO_TIPOS = "servicio_tipos"
+        private const val TABLE_CONFIGURACION_FINANCIERA = "configuracion_financiera"
         private const val UPSERT_BATCH_SIZE = 80
     }
 
@@ -772,6 +775,21 @@ open class UploadSyncCoordinator @Inject constructor(
             rows,
             { it.id },
         ) { supabase.postgrest[TABLE_GASTOS_OPERATIVOS].upsert(it) }
+    }
+
+    /**
+     * Pushes the local optica config row before download so Room edits (biselado defaults, targets)
+     * are not overwritten by a stale remote copy.
+     */
+    suspend fun uploadConfiguracionFinanciera(opticaId: String): Int {
+        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
+        val local = configuracionFinancieraDao.getByOpticaIdOnce(opticaId) ?: return 0
+        val remoto = local.toRemoto()
+        networkRetryHelper.retryNetwork("upload:$TABLE_CONFIGURACION_FINANCIERA") {
+            supabase.postgrest[TABLE_CONFIGURACION_FINANCIERA].upsert(listOf(remoto))
+        }
+        syncStateTracker.markSynced(opticaId, "configuracion_financiera", local.opticaId)
+        return 1
     }
 
     suspend fun uploadRegalos(opticaId: String): Int {

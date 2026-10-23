@@ -13,10 +13,12 @@ import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
 import com.example.optoapp.data.regalodispensacion.RegaloDispensacionEntity
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionEntity
 import com.example.optoapp.data.serviciotipo.ServicioTipoEntity
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
 
@@ -729,6 +731,41 @@ fun ServicioExtra.toRemoto(aCuentaSum: Double = aCuenta): ServicioRemoto = Servi
     realizadoPorNombre = realizadoPorNombre,
     costoReal = costoReal,
     vendedorUserId = vendedorUserId.normalizeOptionalFk(),
+)
+
+@Serializable
+data class FeedbackRecomendacionRemoto(
+    val id: String,
+    @SerialName("optica_id") val opticaId: String,
+    @SerialName("recomendacion_id") val recomendacionId: String,
+    @SerialName("fue_util") val fueUtil: Boolean,
+    val fecha: String? = null,
+    val estado: String = "",
+    val periodo: String = "",
+    @SerialName("updated_at") val updatedAt: String? = null,
+) {
+    fun toEntity(): FeedbackRecomendacionEntity = FeedbackRecomendacionEntity(
+        id = id,
+        recomendacionId = recomendacionId,
+        opticaId = opticaId,
+        fueUtil = fueUtil,
+        fecha = fecha?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
+            ?: System.currentTimeMillis(),
+        estado = estado,
+        periodo = periodo,
+        updatedAt = updatedAt.orEmpty(),
+    )
+}
+
+fun FeedbackRecomendacionEntity.toRemoto() = FeedbackRecomendacionRemoto(
+    id = id,
+    opticaId = opticaId,
+    recomendacionId = recomendacionId,
+    fueUtil = fueUtil,
+    fecha = Instant.ofEpochMilli(fecha).toString(),
+    estado = estado,
+    periodo = periodo,
+    updatedAt = updatedAt.ifBlank { Instant.ofEpochMilli(fecha).toString() },
 )
 
 internal fun String?.normalizeOptionalFk(): String? = this?.trim()?.takeIf { it.isNotBlank() }

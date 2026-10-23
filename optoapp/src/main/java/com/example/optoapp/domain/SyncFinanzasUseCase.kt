@@ -27,6 +27,7 @@ open class SyncFinanzasUseCase @Inject constructor(
     private val downloadSyncCoordinator: DownloadSyncCoordinator,
     private val discardLosingClaim: DiscardLosingClaimUseCase,
     private val resumenRecalcCoordinator: ResumenRecalcCoordinator,
+    private val syncSeguimientoUseCase: SyncSeguimientoUseCase,
 ) {
     companion object {
         private const val TAG = "SyncFinanzas"
@@ -91,10 +92,13 @@ open class SyncFinanzasUseCase @Inject constructor(
             val r8 = safeUpload("regalos") { uploadSyncCoordinator.uploadRegalos(opticaId) }
             regalosUp = r8.count; hadPartialUpload = hadPartialUpload || r8.partial
             AppLogger.d(TAG, "Finanzas: upload regalos=$regalosUp")
+            val rSeg = safeUpload("feedback_recomendaciones") { syncSeguimientoUseCase.upload(opticaId) }
+            hadPartialUpload = hadPartialUpload || rSeg.partial
+            AppLogger.d(TAG, "Finanzas: upload feedback_recomendaciones=${rSeg.count}")
             // WHY: config is Room-edited without a dedicated upload path; push before download
             // so downloadConfiguracionFinanciera cannot wipe local biselado defaults/rates.
             val rConfig = safeUpload("configuracion_financiera") {
-                downloadSyncCoordinator.uploadConfiguracionFinanciera(opticaId)
+                uploadSyncCoordinator.uploadConfiguracionFinanciera(opticaId)
             }
             hadPartialUpload = hadPartialUpload || rConfig.partial
             AppLogger.d(TAG, "Finanzas: upload configuracion_financiera=${rConfig.count}")
@@ -143,6 +147,8 @@ open class SyncFinanzasUseCase @Inject constructor(
             AppLogger.d(TAG, "Finanzas: download regalos=$regalosDown")
             gastosDown = safeDownload("gastos_operativos") { downloadSyncCoordinator.downloadGastosOperativos(opticaId) }
             AppLogger.d(TAG, "Finanzas: download gastos_operativos=$gastosDown")
+            val feedbackDown = safeDownload("feedback_recomendaciones") { syncSeguimientoUseCase.download(opticaId) }
+            AppLogger.d(TAG, "Finanzas: download feedback_recomendaciones=$feedbackDown")
             hadPartialUpload = !transferResidualClaimCredit(opticaId) || hadPartialUpload
         } else {
             dispDown = 0

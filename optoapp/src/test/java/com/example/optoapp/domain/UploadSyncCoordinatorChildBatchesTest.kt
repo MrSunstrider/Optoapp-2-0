@@ -67,6 +67,7 @@ class UploadSyncCoordinatorChildBatchesTest {
             costoBiseladoDao = mockk(relaxed = true),
             costoLcDao = mockk(relaxed = true),
             servicioTipoDao = mockk(relaxed = true),
+            configuracionFinancieraDao = mockk(relaxed = true),
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
         }

@@ -66,6 +66,7 @@ class ServicioTiposSyncTest {
             costoBiseladoDao = db.costoBiseladoDao(),
             costoLcDao = db.costoLcDao(),
             servicioTipoDao = db.servicioTipoDao(),
+            configuracionFinancieraDao = db.configuracionFinancieraDao(),
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
 
@@ -89,7 +90,7 @@ class ServicioTiposSyncTest {
             deletionSyncHelper = mockk<DeletionSyncHelper>(relaxed = true),
             networkRetryHelper = mockk<NetworkRetryHelper>(relaxed = true),
             resumenDiarioDao = mockk<ResumenDiarioDao>(relaxed = true),
-            configuracionFinancieraDao = mockk<ConfiguracionFinancieraDao>(relaxed = true),
+            configuracionFinancieraDao = db.configuracionFinancieraDao(),
             costoProductoDao = db.costoProductoDao(),
             costoBiseladoDao = db.costoBiseladoDao(),
             costoLcDao = db.costoLcDao(),
@@ -135,6 +136,7 @@ class ServicioTiposSyncTest {
             downloadSyncCoordinator = downloadCoordinator,
             discardLosingClaim = mockk(relaxed = true),
             resumenRecalcCoordinator = mockk(relaxed = true),
+            syncSeguimientoUseCase = mockk(relaxed = true),
         )
 
         val result = useCase(opticaId) as com.example.optoapp.data.Resource.Success

@@ -311,21 +311,6 @@ class DownloadSyncCoordinator @Inject constructor(
         repository.upsertGastoOperativoFromRemote(r.toEntity())
     }
 
-    /**
-     * Pushes the local optica config row before download so Room edits (biselado defaults, targets)
-     * are not overwritten by a stale remote copy.
-     */
-    suspend fun uploadConfiguracionFinanciera(opticaId: String): Int {
-        require(opticaId.isNotBlank()) { "opticaId must not be blank for upload" }
-        val local = configuracionFinancieraDao.getByOpticaIdOnce(opticaId) ?: return 0
-        val remoto = local.toRemoto()
-        networkRetryHelper.retryNetwork("upload:$TABLE_CONFIGURACION_FINANCIERA") {
-            supabase.postgrest[TABLE_CONFIGURACION_FINANCIERA].upsert(listOf(remoto))
-        }
-        syncStateTracker.markSynced(opticaId, "configuracion_financiera", local.opticaId)
-        return 1
-    }
-
     suspend fun downloadConfiguracionFinanciera(opticaId: String): Int = try {
         var remotos: List<ConfiguracionFinancieraRemoto> = emptyList()
         networkRetryHelper.retryNetwork("download:$TABLE_CONFIGURACION_FINANCIERA") {

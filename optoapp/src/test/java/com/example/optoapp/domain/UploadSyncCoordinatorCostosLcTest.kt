@@ -57,6 +57,7 @@ class UploadSyncCoordinatorCostosLcTest {
             costoBiseladoDao = db.costoBiseladoDao(),
             costoLcDao = db.costoLcDao(),
             servicioTipoDao = db.servicioTipoDao(),
+            configuracionFinancieraDao = db.configuracionFinancieraDao(),
         ) {
             override suspend fun <T> runInTransaction(block: suspend () -> T): T = block()
 
