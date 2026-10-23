@@ -14,9 +14,14 @@ class SeguimientoEstadoTest {
     }
 
     @Test
-    fun masTardeAndNoAplica_mapToFueUtilFalse() {
-        assertFalse(SeguimientoEstado.MAS_TARDE.fueUtil)
+    fun enCursoAndNoAplica_mapToFueUtilFalse() {
+        assertFalse(SeguimientoEstado.EN_CURSO.fueUtil)
         assertFalse(SeguimientoEstado.NO_APLICA.fueUtil)
+    }
+
+    @Test
+    fun fromStorage_legacyMasTarde_mapsToEnCurso() {
+        assertEquals(SeguimientoEstado.EN_CURSO, SeguimientoEstado.fromStorage("MAS_TARDE"))
     }
 
     @Test

@@ -44,14 +44,15 @@ class FeedbackRecomendacionUseCaseSeguimientoTest {
     }
 
     @Test
-    fun marcarSeguimiento_masTarde_setsFueUtilFalse() = runBlocking {
+    fun marcarSeguimiento_enCurso_setsFueUtilFalseAndUpdatedAt() = runBlocking {
         val entitySlot = slot<FeedbackRecomendacionEntity>()
 
-        useCase.marcarSeguimiento("rec-1", "optica1", "2026-10", SeguimientoEstado.MAS_TARDE)
+        useCase.marcarSeguimiento("rec-1", "optica1", "2026-10", SeguimientoEstado.EN_CURSO)
 
         coVerify { dao.upsert(capture(entitySlot)) }
-        assertEquals(SeguimientoEstado.MAS_TARDE.name, entitySlot.captured.estado)
+        assertEquals(SeguimientoEstado.EN_CURSO.name, entitySlot.captured.estado)
         assertEquals(false, entitySlot.captured.fueUtil)
+        assertTrue(entitySlot.captured.updatedAt.isNotBlank())
     }
 
     @Test

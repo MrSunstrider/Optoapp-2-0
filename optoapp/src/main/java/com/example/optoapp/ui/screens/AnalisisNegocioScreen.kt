@@ -1014,9 +1014,9 @@ internal fun RecomendacionCard(
                     modifier = Modifier.weight(1f),
                 )
                 SeguimientoChip(
-                    label = stringResource(R.string.analisis_seguimiento_mas_tarde),
-                    selected = seguimiento == SeguimientoEstado.MAS_TARDE,
-                    onClick = { onSeguimiento(SeguimientoEstado.MAS_TARDE) },
+                    label = stringResource(R.string.analisis_seguimiento_en_curso),
+                    selected = seguimiento == SeguimientoEstado.EN_CURSO,
+                    onClick = { onSeguimiento(SeguimientoEstado.EN_CURSO) },
                     modifier = Modifier.weight(1f),
                 )
                 SeguimientoChip(

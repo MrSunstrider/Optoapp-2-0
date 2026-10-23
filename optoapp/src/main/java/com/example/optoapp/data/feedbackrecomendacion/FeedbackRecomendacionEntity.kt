@@ -17,4 +17,5 @@ data class FeedbackRecomendacionEntity(
     val estado: String = "",
     /** Month key yyyy-MM; blank on legacy rows. */
     val periodo: String = "",
+    val updatedAt: String = "",
 )

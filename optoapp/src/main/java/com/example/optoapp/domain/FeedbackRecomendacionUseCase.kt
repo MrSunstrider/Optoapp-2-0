@@ -2,6 +2,7 @@ package com.example.optoapp.domain
 
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionEntity
+import java.time.Instant
 import javax.inject.Inject
 
 open class FeedbackRecomendacionUseCase @Inject constructor(
@@ -26,6 +27,7 @@ open class FeedbackRecomendacionUseCase @Inject constructor(
                 fueUtil = estado.fueUtil,
                 estado = estado.name,
                 periodo = periodo,
+                updatedAt = Instant.now().toString(),
             ),
         )
     }

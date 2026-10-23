@@ -363,13 +363,13 @@ class AnalisisNegocioViewModelTest {
     fun `loadData hydrates seguimientos for periodo`() = runTest(testDispatcher) {
         primeUseCases()
         coEvery { feedbackRecomendacion.listarPorPeriodo(opticaId, "2026-07") } returns mapOf(
-            "r1" to SeguimientoEstado.MAS_TARDE,
+            "r1" to SeguimientoEstado.EN_CURSO,
         )
 
         viewModel = createViewModel()
         advanceUntilIdle()
 
-        assertEquals(SeguimientoEstado.MAS_TARDE, viewModel.uiState.first().seguimientos["r1"])
+        assertEquals(SeguimientoEstado.EN_CURSO, viewModel.uiState.first().seguimientos["r1"])
     }
 
     @Test
