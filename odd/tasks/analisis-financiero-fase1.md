@@ -35,7 +35,7 @@ Assumptions: `margenNetoObjetivo` field name may stay in DB/API; UI label become
 - [x] T1 S3–S4 S1 — Glossary rename: Resultado operativo (+ disclaimer IGV); objetivo label; % to 1 decimal in Análisis display — route: inline — commit: e9ceb651
 - [x] T2 S5 — Mark resultado/margen incompleto when cost coverage below threshold; keep number visible — route: inline — commit: 83ad6f7d
 - [x] T3 S6 S8 — Home: separate P&L vs Caja; KPI strip; waterfall Ventas→COGS→Bruto→Opex→Resultado — route: inline — commit: e8b7251f
-- [ ] T4 S1 S10 — Remove gastos CRUD from Análisis home; gasto-out-of-range alert + CTA to Costos — route: inline — commit:
+- [x] T4 S1 S10 — Remove gastos CRUD from Análisis home; gasto-out-of-range alert + CTA to Costos — route: inline — commit: pending-hash
 - [ ] T5 S7 — Plan cards: Hallazgo→Causa→Acción→Impacto+editable supuesto→Esfuerzo→CTA; surface Impacto assumptions in config — route: inline — commit:
 - [ ] T6 S6 — Typed alerts rojo/ámbar (3–5) from recommendation/priority model — route: inline — commit:
 - [ ] T7 S1 S10 — Seguimiento: En curso label; sync-ready entity/ID shape only (no Supabase sync) — route: inline — commit:
@@ -47,3 +47,4 @@ L2. User (2026-10-23): `empezemos fase 1 odd` — authorized ODD implementation 
 L3. T1 GREEN: AnalisisPercentFormatter (1 decimal); coach/strings “resultado operativo”; disclaimer IGV; offline bruto/serie % → 1 decimal. Focused tests BUILD SUCCESSFUL. Commit e9ceb651.
 L4. T2 GREEN: ResultadoOperativoConfiabilidad (umbral 80% / sinDatos); chip “incompleto” + hint in resumen/contexto. Focused tests BUILD SUCCESSFUL.
 L5. T3 GREEN: AnalisisDecisionLayout (waterfall + KPIs + caja) from rpc fields; DecisionHomeSection on AnalisisNegocioScreen. Focused tests BUILD SUCCESSFUL.
+L6. T4 GREEN: Removed gastos CRUD from AnalisisNegocioScreen; GastoFueraDeRango alert (>40%) + CTA to Costos; REDUCIR_GASTO shares threshold. Focused tests BUILD SUCCESSFUL.

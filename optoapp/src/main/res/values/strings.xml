@@ -378,6 +378,9 @@
     <string name="analisis_recomendacion_impacto">Impacto: %1$s</string>
     <string name="analisis_sin_datos_mes">Sin datos para este mes</string>
     <string name="analisis_gastos_mes">Gastos del mes</string>
+    <string name="analisis_gasto_alerta_titulo">Gasto fuera de rango</string>
+    <string name="analisis_gasto_alerta_detalle">Los gastos son el %1$s%% de las ventas (%2$s). Revisa y ajusta en Costos.</string>
+    <string name="analisis_gasto_alerta_cta">Abrir Costos · Gastos</string>
     <string name="analisis_gasto_etiqueta">%1$s · %2$s</string>
     <string name="analisis_gasto_recurrente_chip">Recurrente</string>
     <string name="analisis_sin_gastos">No hay gastos registrados</string>

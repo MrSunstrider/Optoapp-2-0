@@ -16,7 +16,6 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         private const val MARGEN_BAJO_PCT = 10.0
         private const val MARGEN_ALTO_PCT = 35.0
         private const val CONTRIBUCION_ALTA_PCT = 0.25
-        private const val GASTOS_VENTAS_RATIO_ALERTA = 0.4
     }
 
     suspend operator fun invoke(
@@ -255,11 +254,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
     private fun evaluarReducirGasto(
         analisis: AnalisisMensual,
     ): Recomendacion? {
-        if (analisis.ventasMes <= 0.0) return null
-        val ratio = analisis.gastosMes / analisis.ventasMes
-        if (ratio <= GASTOS_VENTAS_RATIO_ALERTA) return null
-
-        val ratioPct = AnalisisPercentFormatter.format(ratio * 100)
+        val alerta = GastoFueraDeRango.evaluar(analisis.ventasMes, analisis.gastosMes) ?: return null
+        val ratioPct = AnalisisPercentFormatter.format(alerta.ratioPct)
         val titulo = "Reducir gastos operativos"
         val impacto = ImpactoRecomendacion.reducirGasto(analisis.gastosMes)
         return Recomendacion(
