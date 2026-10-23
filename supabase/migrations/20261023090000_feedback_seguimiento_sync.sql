@@ -1,5 +1,6 @@
 -- Seguimiento sync: align remote feedback_recomendaciones with Room sync-ready shape + LWW.
 -- Local PK is text stableId (optica|periodo|recomendacionId); remote was UUID-only with SELECT+INSERT.
+-- INSERT/SELECT RLS stay from 20260706041220; this migration only adds UPDATE/DELETE for LWW upserts.
 
 ALTER TABLE public.feedback_recomendaciones
     ALTER COLUMN id TYPE TEXT USING id::text;
