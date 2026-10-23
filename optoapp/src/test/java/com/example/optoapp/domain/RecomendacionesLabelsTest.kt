@@ -81,7 +81,8 @@ class RecomendacionesLabelsTest {
 
         assertTrue(reducir.detalle, reducir.detalle.contains("S/ 3,900.00"))
         assertTrue(reducir.detalle, reducir.detalle.contains("S/ 9,400.00"))
-        assertTrue(reducir.detalle, reducir.detalle.contains("S/ 390.00"))
+        assertTrue(reducir.detalle, reducir.detalle.contains("41.5%"))
+        assertTrue(reducir.impactoEstimado.orEmpty(), reducir.impactoEstimado.orEmpty().contains("S/ 390.00"))
     }
 
     private fun listaDe(result: Resource<List<Recomendacion>>): List<Recomendacion> =

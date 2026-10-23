@@ -25,7 +25,7 @@ class ChartDataTableTest {
         assertEquals(6, state.rows.size)
         assertEquals(months, state.rows.map { it.label })
         assertEquals(listOf("Ingresos", "Costos"), state.seriesNames)
-        assertEquals(listOf("S/ 100.00", "\u2014"), state.rows.first().values)
+        assertEquals(listOf("S/ 100.00", "-"), state.rows.first().values)
         assertEquals(listOf("S/ 600.00", "-S/ 25.00"), state.rows.last().values)
     }
 
