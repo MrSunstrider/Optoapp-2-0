@@ -373,6 +373,9 @@
     <string name="analisis_confianza_baja">Confianza baja en los costos</string>
     <string name="analisis_proxima_accion">Próxima acción: %1$s</string>
     <string name="analisis_interpretacion_punto">• %1$s</string>
+    <string name="analisis_alertas">Alertas</string>
+    <string name="analisis_alerta_rojo">Urgente</string>
+    <string name="analisis_alerta_ambar">Atención</string>
     <string name="analisis_recomendaciones">Plan de acción</string>
     <string name="analisis_sin_recomendaciones">Sin acciones prioritarias por ahora — tus métricas están dentro de lo esperado.</string>
     <string name="analisis_recomendacion_impacto">Impacto: %1$s</string>

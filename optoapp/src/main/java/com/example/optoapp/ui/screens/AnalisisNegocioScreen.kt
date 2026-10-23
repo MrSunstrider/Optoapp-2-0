@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MoneyOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,14 +32,16 @@ import com.example.optoapp.domain.AnalisisDecisionLayout
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.ConfianzaInterpretacion
 import com.example.optoapp.domain.CtaRecomendacion
+import com.example.optoapp.domain.AlertaNegocio
+import com.example.optoapp.domain.AlertasDesdeRecomendaciones
 import com.example.optoapp.domain.EsfuerzoRecomendacion
-import com.example.optoapp.domain.GastoFueraDeRango
 import com.example.optoapp.domain.ImpactoRecomendacion
 import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.ResultadoOperativoConfiabilidad
 import com.example.optoapp.domain.SeguimientoEstado
+import com.example.optoapp.domain.SeveridadAlerta
 import com.example.optoapp.domain.SupuestosImpacto
 import com.example.optoapp.domain.WaterfallStep
 import com.example.optoapp.ui.components.OptoTopAppBar
@@ -184,6 +185,21 @@ fun AnalisisNegocioScreen(
                 }
             }
 
+            val alertas = remember(uiState.recomendaciones) {
+                AlertasDesdeRecomendaciones.from(uiState.recomendaciones)
+            }
+            if (alertas.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.analisis_alertas),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                alertas.forEach { alerta ->
+                    AlertaTipadaCard(alerta = alerta)
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -303,17 +319,6 @@ fun AnalisisNegocioScreen(
                 }
             }
 
-            uiState.analisis?.let { analisis ->
-                GastoFueraDeRango.evaluar(analisis.ventasMes, analisis.gastosMes)?.let { alerta ->
-                    GastoFueraDeRangoCard(
-                        ratioPct = alerta.ratioPct,
-                        gastosMes = alerta.gastosMes,
-                        onAbrirCostos = {
-                            navController.navigate(rutaVerTodosGastos(YearMonth.from(uiState.mesSeleccionado)))
-                        },
-                    )
-                }
-            }
         }
 
         if (uiState.supuestosDialogVisible) {
@@ -330,42 +335,48 @@ fun AnalisisNegocioScreen(
 internal fun rutaVerTodosGastos(mes: YearMonth): String = Route.CostosYGastos.createRoute(CostosTab.GASTOS, mes)
 
 @Composable
-private fun GastoFueraDeRangoCard(
-    ratioPct: Double,
-    gastosMes: Double,
-    onAbrirCostos: () -> Unit,
-) {
+private fun AlertaTipadaCard(alerta: AlertaNegocio) {
+    val color = when (alerta.severidad) {
+        SeveridadAlerta.ROJO -> MaterialTheme.colorScheme.alertRed
+        SeveridadAlerta.AMBAR -> MaterialTheme.colorScheme.warningAmber
+    }
+    val badge = when (alerta.severidad) {
+        SeveridadAlerta.ROJO -> stringResource(R.string.analisis_alerta_rojo)
+        SeveridadAlerta.AMBAR -> stringResource(R.string.analisis_alerta_ambar)
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.alertRed.copy(alpha = 0.1f)),
+        colors = CardDefaults.cardColors(containerColor = color.copy(alpha = 0.1f)),
         shape = RoundedCornerShape(12.dp),
     ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Default.MoneyOff,
+                    Icons.Default.Warning,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.alertRed,
-                    modifier = Modifier.size(20.dp),
+                    tint = color,
+                    modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    stringResource(R.string.analisis_gasto_alerta_titulo),
+                    badge,
+                    style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.alertRed,
+                    color = color,
                 )
             }
             Text(
-                stringResource(
-                    R.string.analisis_gasto_alerta_detalle,
-                    AnalisisPercentFormatter.format(ratioPct),
-                    MoneyFormatter.format(gastosMes),
-                ),
-                style = MaterialTheme.typography.bodySmall,
+                alerta.titulo,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            OutlinedButton(onClick = onAbrirCostos, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.analisis_gasto_alerta_cta))
+            if (alerta.detalle.isNotBlank()) {
+                Text(
+                    alerta.detalle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -433,9 +444,7 @@ private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
 @Composable
 private fun ContextoBreveCard(analisis: AnalisisMensual) {
     val facts = analisis.marginFacts
-    val margenPct = AnalisisPercentFormatter.format(
-        if (facts.margenNetoPct != 0.0) facts.margenNetoPct else analisis.margenNetoPct,
-    )
+    val margenPct = AnalisisPercentFormatter.format(facts.margenNetoPct)
     val objetivoPct = AnalisisPercentFormatter.format(facts.margenNetoObjetivo)
     val pe = facts.puntoEquilibrio
     Card(
