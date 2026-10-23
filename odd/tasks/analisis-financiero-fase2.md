@@ -30,11 +30,13 @@ S10. Thresholds to promote from hardcoded (authorized plan): `margenBajoAlertaPc
 
 ## Tasks
 
-- [ ] T1 S1 S6 S8 — RPC + AnalisisMensual + offline Room MoM priors (qty/ticket/costo) — route: inline — commit:
-- [ ] T2 S2 S8 — ResultadoDrivers calculator + home top drivers UI — route: inline — commit:
-- [ ] T3 S3 S10 — Config thresholds migration + editor UI + wire GenerarRecomendaciones — route: inline — commit:
-- [ ] T4 S4 S9 — Aging buckets + DSO ilustrativo on coach from List&lt;Deudor&gt; — route: inline — commit:
+- [x] T1 S1 S6 S8 — RPC + AnalisisMensual + offline Room MoM priors (qty/ticket/costo) — route: inline — commit: a18544d8
+- [x] T2 S2 S8 — ResultadoDrivers calculator + home top drivers UI — route: inline — commit: 56956231 (with T4)
+- [x] T3 S3 S10 — Config thresholds migration + editor UI + wire GenerarRecomendaciones — route: inline — commit: f390008b
+- [x] T4 S4 S9 — Aging buckets + DSO ilustrativo on coach from List&lt;Deudor&gt; — route: inline — commit: 56956231 (with T2)
 
 ## Log
 
 L1. User request (verbatim package): Fase 2 — Por qué cambió el resultado; Extender RPC / agregados MoM: volumen, ticket, costo (no mix todavía). Top drivers en home con S/ ilustrativos derivados de esos tres. Umbrales de alerta restantes en ConfiguracionFinanciera. DSO / aging CxC en coach (si los datos de deudores alcanzan). Mix deferred. Fuente de verdad resumen_diario / rpc_analisis_mensual.
+
+L2. 2026-10-23 — Implemented T1–T4 on `feat/analisis-financiero-fase2`. Suite `testDebugUnitTest` BUILD SUCCESSFUL. Room 65; RPC MoM keys; drivers+aging on home; alert thresholds editor. Pending: none for Fase 2 scope. Deferred Fase 3: sync seguimiento, mix, utilidad neta.
