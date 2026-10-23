@@ -36,6 +36,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.domain.AnalisisMensual
+import com.example.optoapp.domain.ResultadoOperativoConfiabilidad
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
@@ -237,8 +238,21 @@ private fun ExpandableSection(
 
 @Composable
 private fun BarraIngresosEgresos(analisis: AnalisisMensual) {
-    val ganancia = analisis.ventasMes - analisis.costoDeVentas() - analisis.gastosMes
-    val maxValor = maxOf(analisis.ventasMes, analisis.cobrosMes, analisis.costoDeVentas(), analisis.gastosMes, ganancia, 1.0)
+    val resultado = analisis.ventasMes - analisis.costoDeVentas() - analisis.gastosMes
+    val incompleto = ResultadoOperativoConfiabilidad.esIncompleto(analisis.marginFacts.cobertura)
+    val maxValor = maxOf(analisis.ventasMes, analisis.cobrosMes, analisis.costoDeVentas(), analisis.gastosMes, resultado, 1.0)
+    val resultadoLabel = buildString {
+        append(stringResource(R.string.analisis_ganancia))
+        if (incompleto) {
+            append(" · ")
+            append(stringResource(R.string.analisis_resultado_incompleto))
+        }
+    }
+    val resultadoColor = when {
+        incompleto -> MaterialTheme.colorScheme.warningAmber
+        resultado >= 0 -> MaterialTheme.colorScheme.positiveGreen
+        else -> MaterialTheme.colorScheme.alertRed
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         BarItem(label = stringResource(R.string.analisis_ventas), value = analisis.ventasMes, max = maxValor, color = MaterialTheme.colorScheme.positiveGreen)
@@ -246,7 +260,14 @@ private fun BarraIngresosEgresos(analisis: AnalisisMensual) {
         BarItem(label = stringResource(R.string.analisis_costos), value = analisis.costoDeVentas(), max = maxValor, color = MaterialTheme.colorScheme.warningAmber)
         BarItem(label = stringResource(R.string.analisis_gastos), value = analisis.gastosMes, max = maxValor, color = MaterialTheme.colorScheme.alertRed)
         HorizontalDivider()
-        BarItem(label = stringResource(R.string.analisis_ganancia), value = ganancia, max = maxValor, color = if (ganancia >= 0) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.alertRed)
+        BarItem(label = resultadoLabel, value = resultado, max = maxValor, color = resultadoColor)
+        if (incompleto) {
+            Text(
+                stringResource(R.string.analisis_barra_resultado_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.warningAmber,
+            )
+        }
     }
 }
 

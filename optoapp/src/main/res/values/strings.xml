@@ -395,6 +395,7 @@
     <string name="analisis_supuestos_cobranza">Recupero cobranza (0–1)</string>
     <string name="analisis_supuestos_guardar">Guardar supuestos</string>
     <string name="analisis_supuestos_error">No se pudieron guardar los supuestos</string>
+    <string name="analisis_supuestos_error_fraccion">Los supuestos de recupero, upside, corte y cobranza deben estar entre 0 y 1 (no uses porcentajes como 70).</string>
     <string name="analisis_sin_datos_mes">Sin datos para este mes</string>
     <string name="analisis_gastos_mes">Gastos del mes</string>
     <string name="analisis_gasto_alerta_titulo">Gasto fuera de rango</string>
@@ -476,7 +477,8 @@
     <string name="analisis_cobros">Cobros</string>
     <string name="analisis_costos">Costos</string>
     <string name="analisis_gastos">Gastos</string>
-    <string name="analisis_ganancia">Ganancia</string>
+    <string name="analisis_ganancia">Resultado operativo</string>
+    <string name="analisis_barra_resultado_hint">Cobertura de costos baja; el resultado es estimado hasta completar costos.</string>
     <plurals name="analisis_dias_deuda">
         <item quantity="one">%1$d día de deuda</item>
         <item quantity="many">%1$d días de deuda</item>

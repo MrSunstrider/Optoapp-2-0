@@ -602,13 +602,14 @@ private fun DecisionHomeSection(analisis: AnalisisMensual) {
 @Composable
 private fun KpiStrip(layout: AnalisisDecisionLayout) {
     val kpis = layout.kpis
-    val roLabel = buildString {
-        append(AnalisisPercentFormatter.formatWithSymbol(kpis.resultadoOperativoPct))
-        if (kpis.resultadoIncompleto) {
-            append(" · ")
-            append(stringResource(R.string.analisis_resultado_incompleto))
-        }
+    val incompletoSuffix = if (kpis.resultadoIncompleto) {
+        " · " + stringResource(R.string.analisis_resultado_incompleto)
+    } else {
+        ""
     }
+    val brutoLabel = MoneyFormatter.format(kpis.utilidadBruta) + incompletoSuffix
+    val roLabel = AnalisisPercentFormatter.formatWithSymbol(kpis.resultadoOperativoPct) + incompletoSuffix
+    val incompletoColor = MaterialTheme.colorScheme.warningAmber
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -618,18 +619,14 @@ private fun KpiStrip(layout: AnalisisDecisionLayout) {
         MetricItem(
             modifier = Modifier.widthIn(min = 120.dp),
             label = stringResource(R.string.analisis_kpi_utilidad_bruta),
-            value = MoneyFormatter.format(kpis.utilidadBruta),
-            color = MaterialTheme.colorScheme.positiveGreen,
+            value = brutoLabel,
+            color = if (kpis.resultadoIncompleto) incompletoColor else MaterialTheme.colorScheme.positiveGreen,
         )
         MetricItem(
             modifier = Modifier.widthIn(min = 120.dp),
             label = stringResource(R.string.analisis_kpi_ro),
             value = roLabel,
-            color = if (kpis.resultadoIncompleto) {
-                MaterialTheme.colorScheme.warningAmber
-            } else {
-                MaterialTheme.colorScheme.primary
-            },
+            color = if (kpis.resultadoIncompleto) incompletoColor else MaterialTheme.colorScheme.primary,
         )
         MetricItem(
             modifier = Modifier.widthIn(min = 120.dp),
@@ -850,7 +847,14 @@ private fun SupuestosImpactoDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (error != null) {
-                    Text(stringResource(R.string.analisis_supuestos_error), color = MaterialTheme.colorScheme.error)
+                    Text(
+                        when (error) {
+                            AnalisisNegocioViewModel.SUPUESTOS_ERROR_FRACCION ->
+                                stringResource(R.string.analisis_supuestos_error_fraccion)
+                            else -> stringResource(R.string.analisis_supuestos_error)
+                        },
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         },
