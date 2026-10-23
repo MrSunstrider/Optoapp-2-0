@@ -574,6 +574,8 @@
     <string name="costos_tipo_lente_requerido">Tipo de lente *</string>
     <string name="costos_distancia_requerida">Distancia *</string>
     <string name="costos_stock_fabricacion">Stock o fabricación</string>
+    <string name="costos_stock_fabricacion_requerido">Stock o fabricación *</string>
+    <string name="costos_serie_requerida">Serie *</string>
     <string name="costos_tratamiento_opcional">Tratamiento (opcional)</string>
     <string name="costos_tratamientos_adicionales">Tratamientos adicionales</string>
     <string name="costos_tratamiento_ninguno">Ninguno</string>

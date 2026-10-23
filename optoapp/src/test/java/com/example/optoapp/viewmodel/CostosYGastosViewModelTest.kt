@@ -82,6 +82,9 @@ class CostosYGastosViewModelTest {
         every { repository.getGastosOperativos(opticaId) } returns emptyFlow()
         coEvery { repository.withTransaction(any<suspend () -> Any?>()) } coAnswers { firstArg<suspend () -> Any?>().invoke() }
         coEvery { costoProductoDao.getByBloque(any(), any()) } returns flowOf(emptyList())
+        coEvery {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns null
     }
 
     private fun buildViewModel() = CostosYGastosViewModel(
@@ -113,9 +116,9 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        // Catalog chain: tipo (prefilled) → distancia → material → cost
-        viewModel.updateCostoDistancia("Lejos")
+        // Catalog chain: tipo (prefilled) → material → serie (stock) → cost
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
         viewModel.updateCostoCostoUnitario("150.00")
 
         viewModel.saveCosto()
@@ -130,6 +133,7 @@ class CostosYGastosViewModelTest {
                     assertEquals("Resina", entity.material)
                     assertEquals("Monofocal", entity.tipoLente)
                     assertEquals("stock", entity.stockOFabricacion)
+                    assertEquals(1, entity.serie)
                     assertEquals(150.0, entity.costoUnitario, 0.001)
                     assertEquals("2026-07-16", entity.vigenteDesde)
                     assertNotNull("Entity must have a generated UUID", entity.id)
@@ -157,8 +161,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
         viewModel.toggleCostoTratamiento("Solar")
         viewModel.toggleCostoTratamiento("Filtro Discromatopsia")
         viewModel.updateCostoDiscromatopsiaTipo("550 Rojo")
@@ -176,6 +180,7 @@ class CostosYGastosViewModelTest {
                     assertEquals("Resina", entity.material)
                     assertEquals("Monofocal", entity.tipoLente)
                     assertEquals("stock", entity.stockOFabricacion)
+                    assertEquals(1, entity.serie)
                     assertEquals("Filtro Discromatopsia + Solar (550 Rojo)", entity.tratamiento)
                     assertEquals("6", entity.curvaBase)
                     assertNull(entity.indiceRefraccion)
@@ -206,8 +211,8 @@ class CostosYGastosViewModelTest {
     fun saveCosto_rejectsEmptyTipoLente_setsCostoSaveError() = runTest(testDispatcher) {
         viewModel = buildViewModel()
 
-        // Fabricación Resina does not prefill tipo — Stock Monofocal would.
-        viewModel.loadBlock("Fabricación Resina")
+        // Fabricación does not prefill tipo — Stock Monofocal would.
+        viewModel.loadBlock("Fabricación")
         advanceUntilIdle()
 
         viewModel.showNewCosto()
@@ -228,8 +233,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
         viewModel.updateCostoCostoUnitario("0")
 
         viewModel.saveCosto()
@@ -246,8 +251,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
         viewModel.updateCostoCostoUnitario("-50")
 
         viewModel.saveCosto()
@@ -263,8 +268,8 @@ class CostosYGastosViewModelTest {
         advanceUntilIdle()
 
         viewModel.showNewCosto()
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
         viewModel.updateCostoCostoUnitario("abc")
 
         viewModel.saveCosto()
@@ -338,7 +343,7 @@ class CostosYGastosViewModelTest {
 
         viewModel = buildViewModel()
 
-        viewModel.loadBlock("Fabricación Resina")
+        viewModel.loadBlock("Fabricación")
         advanceUntilIdle()
 
         viewModel.confirmDeleteCosto(existing)

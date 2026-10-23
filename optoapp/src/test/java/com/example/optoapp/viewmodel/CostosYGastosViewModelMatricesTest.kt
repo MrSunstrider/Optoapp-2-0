@@ -150,9 +150,9 @@ class CostosYGastosViewModelMatricesTest {
     }
 
     @Test
-    fun editableBlocksAreTheFiveLensBlocksPlusBiseladoAndLcWithoutMonturas() {
-        assertEquals(7, MATRIZ_BLOQUES_EDITABLES.size)
-        assertEquals(COST_BLOCKS, MATRIZ_BLOQUES_EDITABLES.take(5))
+    fun editableBlocksAreTheFourLensBlocksPlusBiseladoAndLcWithoutMonturas() {
+        assertEquals(6, MATRIZ_BLOQUES_EDITABLES.size)
+        assertEquals(COST_BLOCKS, MATRIZ_BLOQUES_EDITABLES.take(4))
         assertTrue(MATRIZ_BLOQUES_EDITABLES.containsAll(listOf("Biselado", "Lentes de Contacto")))
         assertTrue(MATRIZ_BLOQUES_EDITABLES.none { it.contains("montura", ignoreCase = true) })
     }

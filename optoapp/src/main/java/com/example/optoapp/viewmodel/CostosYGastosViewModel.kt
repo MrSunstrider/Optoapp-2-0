@@ -47,9 +47,10 @@ val COST_BLOCKS = listOf(
     "Stock Monofocal",
     "Stock Bifocal",
     "Stock Multifocal",
-    "Fabricación Resina",
-    "Fabricación Cristal",
+    "Fabricación",
 )
+
+val MODALIDADES_COSTO_LENTE = listOf("stock", "fabricacion")
 
 /** Stock|fab key only — prefer [blockFilter] when tipo/material matter. */
 fun blockToFilter(block: String): String = blockFilter(block).stockOFabricacion
@@ -65,9 +66,19 @@ fun blockFilter(block: String): CostBlockFilter = when (block) {
     "Stock Monofocal" -> CostBlockFilter("stock", tipoLente = "Monofocal")
     "Stock Bifocal" -> CostBlockFilter("stock", tipoLente = "Bifocal")
     "Stock Multifocal" -> CostBlockFilter("stock", tipoLente = "Multifocal")
-    "Fabricación Resina" -> CostBlockFilter("fabricacion", materialContains = "Resina")
-    "Fabricación Cristal" -> CostBlockFilter("fabricacion", materialContains = "Cristal")
+    // WHY: Legacy block labels still resolve so a restored SavedStateHandle keeps working.
+    "Fabricación", "Fabricación Resina", "Fabricación Cristal" -> CostBlockFilter("fabricacion")
     else -> CostBlockFilter(block)
+}
+
+fun blockForCosto(stockOFabricacion: String, tipoLente: String): String = when (stockOFabricacion) {
+    "stock" -> when (tipoLente) {
+        "Monofocal" -> "Stock Monofocal"
+        "Bifocal" -> "Stock Bifocal"
+        "Multifocal" -> "Stock Multifocal"
+        else -> "Fabricación"
+    }
+    else -> "Fabricación"
 }
 
 fun aplicarFiltroBloque(
@@ -971,6 +982,15 @@ class CostosYGastosViewModel @Inject constructor(
             )
         }
     }
+
+    fun updateCostoStockOFabricacion(value: String) {
+        _uiState.update {
+            it.copy(
+                costoStockOFabricacion = value,
+                costoSerie = if (value == "fabricacion") "" else it.costoSerie,
+            )
+        }
+    }
     fun toggleCostoTratamiento(value: String) {
         _uiState.update {
             val updated = if (value in it.costoTratamientos) it.costoTratamientos - value else it.costoTratamientos + value
@@ -1020,12 +1040,17 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona un tipo de lente") }
             return
         }
-        if (s.costoTipoLente == LensProductCatalog.TIPO_MONOFOCAL && s.costoDistancia.isBlank()) {
-            _uiState.update { it.copy(costoSaveError = "Selecciona la distancia") }
+        if (s.costoStockOFabricacion !in MODALIDADES_COSTO_LENTE) {
+            _uiState.update { it.copy(costoSaveError = "Selecciona stock o fabricación") }
             return
         }
         if (s.costoTipoLente == LensProductCatalog.TIPO_BIFOCAL && s.costoSubtipoBifocal.isBlank()) {
             _uiState.update { it.copy(costoSaveError = "Selecciona el subtipo bifocal") }
+            return
+        }
+        val serieStock = s.costoSerie.toIntOrNull()
+        if (s.costoStockOFabricacion == "stock" && (serieStock == null || serieStock <= 0)) {
+            _uiState.update { it.copy(costoSaveError = "Ingresa la serie") }
             return
         }
         val costoUnitario = s.costoCostoUnitario.toDoubleOrNull()
@@ -1037,9 +1062,10 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona el tipo de filtro discromatopsia") }
             return
         }
+        // WHY: Distancia is not a lookupVigente key; matrixFamilia/tratamiento must match OT resolve.
         val selection = LensCatalogSelection(
             tipoLente = s.costoTipoLente,
-            distancia = s.costoDistancia.takeIf { it.isNotBlank() },
+            distancia = null,
             subTipoBifocal = s.costoSubtipoBifocal.takeIf { it.isNotBlank() },
             familia = s.costoMaterial,
             tratamientos = s.costoTratamientos,
@@ -1057,26 +1083,70 @@ class CostosYGastosViewModel @Inject constructor(
             _uiState.update { it.copy(costoSaveError = "Selecciona la curva base") }
             return
         }
+        val serie = if (s.costoStockOFabricacion == "stock") serieStock else null
+        val subtipo = s.costoSubtipoBifocal.ifBlank { null }
+        val indice = if (resolution.requiresManualIrCost) s.costoIndiceRefraccion.ifBlank { null } else null
+        val curva = if (resolution.requiresCurvaBase) s.costoCurvaBase.ifBlank { null } else null
         viewModelScope.launch {
             try {
                 val opticaId = sessionManager.opticaId.first()
-                val entity = CostoProductoEntity(
-                    id = UUID.randomUUID().toString(),
+                val hoy = DateUtils.today()
+                val fechaIso = DateUtils.toIso(hoy)
+                val abierto = costoProductoDao.lookupVigente(
                     opticaId = opticaId,
                     material = resolution.matrixFamilia,
                     tipoLente = s.costoTipoLente,
                     stockOFabricacion = s.costoStockOFabricacion,
                     tratamiento = resolution.matrixTratamiento,
-                    serie = s.costoSerie.toIntOrNull(),
-                    subtipoBifocal = s.costoSubtipoBifocal.ifBlank { null },
-                    indiceRefraccion = if (resolution.requiresManualIrCost) s.costoIndiceRefraccion.ifBlank { null } else null,
-                    curvaBase = if (resolution.requiresCurvaBase) s.costoCurvaBase.ifBlank { null } else null,
-                    costoUnitario = costoUnitario,
-                    vigenteDesde = DateUtils.toIso(DateUtils.today()),
-                )
-                saveCostoLocal(opticaId, entity)
-                val block = s.selectedBlock ?: return@launch
-                val filter = blockFilter(block)
+                    serie = serie,
+                    fecha = fechaIso,
+                    subtipoBifocal = subtipo,
+                    indiceRefraccion = indice,
+                    curvaBase = curva,
+                )?.takeIf { it.vigenteHasta == null }
+
+                var wrote = false
+                when {
+                    abierto != null && kotlin.math.abs(abierto.costoUnitario - costoUnitario) < 0.005 -> {
+                        // WHY: Same open lookup key+price must not insert another Resina·serie row.
+                    }
+                    abierto != null -> {
+                        when (val r = matrizVigenciaUseCase.editarProducto(abierto, costoUnitario, hoy, hoy)) {
+                            is ResultadoVigencia.Aplicado -> wrote = true
+                            is ResultadoVigencia.Rechazado -> {
+                                _uiState.update {
+                                    it.copy(costoSaveError = "Fecha mínima de vigencia: ${r.fechaMinima}")
+                                }
+                                return@launch
+                            }
+                            ResultadoVigencia.YaNoVigente -> {
+                                _uiState.update { it.copy(costoSaveError = "La fila ya no está vigente") }
+                                return@launch
+                            }
+                        }
+                    }
+                    else -> {
+                        val entity = CostoProductoEntity(
+                            id = UUID.randomUUID().toString(),
+                            opticaId = opticaId,
+                            material = resolution.matrixFamilia,
+                            tipoLente = s.costoTipoLente,
+                            stockOFabricacion = s.costoStockOFabricacion,
+                            tratamiento = resolution.matrixTratamiento,
+                            serie = serie,
+                            subtipoBifocal = subtipo,
+                            indiceRefraccion = indice,
+                            curvaBase = curva,
+                            costoUnitario = costoUnitario,
+                            vigenteDesde = fechaIso,
+                        )
+                        saveCostoLocal(opticaId, entity)
+                        wrote = true
+                    }
+                }
+
+                val targetBlock = blockForCosto(s.costoStockOFabricacion, s.costoTipoLente)
+                val filter = blockFilter(targetBlock)
                 val refreshed = aplicarFiltroBloque(
                     costoProductoDao.getByBloque(opticaId, filter.stockOFabricacion).first(),
                     filter,
@@ -1085,6 +1155,7 @@ class CostosYGastosViewModel @Inject constructor(
                     it.copy(
                         isCostoDialogVisible = false,
                         creatingCosto = false,
+                        selectedBlock = targetBlock,
                         costosDelBloque = refreshed,
                         costoSaveError = null,
                         costoMaterial = "",
@@ -1100,7 +1171,7 @@ class CostosYGastosViewModel @Inject constructor(
                         costoCostoUnitario = "",
                     )
                 }
-                postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
+                if (wrote) postSaveSyncScheduler.scheduleFinanzasSync(opticaId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(costoSaveError = "Error al guardar: ${e.message}") }
             }

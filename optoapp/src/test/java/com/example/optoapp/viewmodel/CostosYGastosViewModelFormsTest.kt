@@ -88,6 +88,9 @@ class CostosYGastosViewModelFormsTest {
         coEvery { costoBiseladoDao.getByOpticaIdList(opticaId) } returns emptyList()
         coEvery { costoLcDao.getByOpticaIdList(opticaId) } returns emptyList()
         every { costoProductoDao.getByBloque(any(), any()) } returns flowOf(emptyList())
+        coEvery {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns null
     }
 
     @After
@@ -216,7 +219,7 @@ class CostosYGastosViewModelFormsTest {
     fun newCostoPreselectsTheModalityOfTheOpenBlock() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
         advanceUntilIdle()
-        viewModel.loadBlock("Fabricación Resina")
+        viewModel.loadBlock("Fabricación")
         advanceUntilIdle()
 
         viewModel.showNewCosto()
@@ -228,11 +231,11 @@ class CostosYGastosViewModelFormsTest {
     }
 
     @Test
-    fun newCostoValidatesMaterialThenLensTypeThenUnitCost() = runTest(testDispatcher) {
+    fun newCostoValidatesMaterialThenLensTypeThenSerieThenUnitCost() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
         advanceUntilIdle()
-        // Fabricación Resina prefills modality only — tipo stays empty for the full chain.
-        viewModel.loadBlock("Fabricación Resina")
+        // Fabricación prefills modality only — tipo stays empty for the full chain.
+        viewModel.loadBlock("Fabricación")
         viewModel.showNewCosto()
 
         viewModel.saveCosto()
@@ -242,13 +245,17 @@ class CostosYGastosViewModelFormsTest {
         viewModel.saveCosto()
         assertEquals("Selecciona un tipo de lente", viewModel.uiState.value.costoSaveError)
 
-        // Changing tipo resets material/distancia (catalog chain).
+        // Changing tipo resets material (catalog chain).
         viewModel.updateCostoTipoLente("Monofocal")
         viewModel.saveCosto()
         assertEquals("Selecciona un material", viewModel.uiState.value.costoSaveError)
 
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoStockOFabricacion("stock")
+        viewModel.saveCosto()
+        assertEquals("Ingresa la serie", viewModel.uiState.value.costoSaveError)
+
+        viewModel.updateCostoSerie("1")
         viewModel.saveCosto()
         assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
 
@@ -260,20 +267,44 @@ class CostosYGastosViewModelFormsTest {
     }
 
     @Test
-    fun newCostoOnStockMonofocalPrefillsTipoAndSkipsTipoValidation() = runTest(testDispatcher) {
+    fun newCostoOnStockMonofocalPrefillsTipoAndRequiresSerie() = runTest(testDispatcher) {
         val viewModel = buildViewModel()
         advanceUntilIdle()
         viewModel.loadBlock("Stock Monofocal")
         viewModel.showNewCosto()
         assertEquals("Monofocal", viewModel.uiState.value.costoTipoLente)
+        assertEquals("stock", viewModel.uiState.value.costoStockOFabricacion)
 
         viewModel.saveCosto()
         assertEquals("Selecciona un material", viewModel.uiState.value.costoSaveError)
 
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
         viewModel.saveCosto()
+        assertEquals("Ingresa la serie", viewModel.uiState.value.costoSaveError)
+
+        viewModel.updateCostoSerie("1")
+        viewModel.saveCosto()
         assertEquals("Ingresa un costo unitario válido", viewModel.uiState.value.costoSaveError)
+    }
+
+    @Test
+    fun fabricacionAllowsSaveWithoutSerie() = runTest(testDispatcher) {
+        val filas = slot<List<CostoProductoEntity>>()
+        coEvery { costoProductoDao.upsertAll(capture(filas)) } returns Unit
+        every { costoProductoDao.getByBloque(opticaId, "fabricacion") } returns flowOf(emptyList())
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+        viewModel.loadBlock("Fabricación")
+        viewModel.showNewCosto()
+        viewModel.updateCostoTipoLente("Monofocal")
+        viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoCostoUnitario("40")
+        viewModel.saveCosto()
+        advanceUntilIdle()
+
+        assertNull(filas.captured.single().serie)
+        assertEquals("fabricacion", filas.captured.single().stockOFabricacion)
+        assertEquals("Fabricación", viewModel.uiState.value.selectedBlock)
     }
 
     @Test
@@ -288,7 +319,6 @@ class CostosYGastosViewModelFormsTest {
         every { costoProductoDao.getByBloque(opticaId, "stock") } returns flowOf(refrescado)
 
         viewModel.showNewCosto()
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
         viewModel.updateCostoSerie("2")
         viewModel.updateCostoCostoUnitario("18.5")
@@ -308,8 +338,32 @@ class CostosYGastosViewModelFormsTest {
         assertFalse(estado.isCostoDialogVisible)
         assertEquals(refrescado, estado.costosDelBloque)
         assertEquals("", estado.costoMaterial)
-        assertEquals("", estado.costoDistancia)
         assertEquals("", estado.costoCostoUnitario)
+    }
+
+    @Test
+    fun savingOpenKeyVersionsPriceInsteadOfDuplicating() = runTest(testDispatcher) {
+        val abierto = costo("open-1", serie = 1).copy(costoUnitario = 10.0)
+        coEvery {
+            costoProductoDao.lookupVigente(any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
+        } returns abierto
+        coEvery {
+            matrizVigenciaUseCase.editarProducto(abierto, 22.0, hoy, hoy)
+        } returns ResultadoVigencia.Aplicado("nuevo-1")
+        val viewModel = buildViewModel()
+        advanceUntilIdle()
+        viewModel.loadBlock("Stock Monofocal")
+        viewModel.showNewCosto()
+        viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
+        viewModel.updateCostoCostoUnitario("22")
+        viewModel.saveCosto()
+        advanceUntilIdle()
+
+        coVerify { matrizVigenciaUseCase.editarProducto(abierto, 22.0, hoy, hoy) }
+        coVerify(exactly = 0) { costoProductoDao.upsertAll(any()) }
+        coVerify { scheduler.scheduleFinanzasSync(opticaId) }
+        assertFalse(viewModel.uiState.value.isCostoDialogVisible)
     }
 
     @Test
@@ -319,8 +373,8 @@ class CostosYGastosViewModelFormsTest {
         advanceUntilIdle()
         viewModel.loadBlock("Stock Monofocal")
         viewModel.showNewCosto()
-        viewModel.updateCostoDistancia("Lejos")
         viewModel.updateCostoMaterial("Resina")
+        viewModel.updateCostoSerie("1")
         viewModel.updateCostoCostoUnitario("10")
 
         viewModel.saveCosto()

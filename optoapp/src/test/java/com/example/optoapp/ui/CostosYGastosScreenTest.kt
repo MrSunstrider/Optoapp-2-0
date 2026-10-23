@@ -50,10 +50,10 @@ class CostosYGastosScreenTest {
 
     @Test
     fun costBlocks_mapToTheirStockOrFabricationFilter() {
-        assertEquals(listOf("stock", "stock", "stock", "fabricacion", "fabricacion"), COST_BLOCKS.map(::blockToFilter))
+        assertEquals(listOf("stock", "stock", "stock", "fabricacion"), COST_BLOCKS.map(::blockToFilter))
         assertEquals("Monofocal", blockFilter("Stock Monofocal").tipoLente)
         assertEquals("Bifocal", blockFilter("Stock Bifocal").tipoLente)
-        assertEquals("Resina", blockFilter("Fabricación Resina").materialContains)
+        assertEquals(null, blockFilter("Fabricación").materialContains)
     }
 
     @Test

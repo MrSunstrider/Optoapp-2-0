@@ -288,7 +288,6 @@ private fun MatrizDeCostosTab(
                 text = {
                     CostoLenteCatalogForm(
                         tipoLente = uiState.costoTipoLente,
-                        distancia = uiState.costoDistancia,
                         subtipoBifocal = uiState.costoSubtipoBifocal,
                         material = uiState.costoMaterial,
                         tratamientos = uiState.costoTratamientos,
@@ -299,13 +298,13 @@ private fun MatrizDeCostosTab(
                         costoUnitario = uiState.costoCostoUnitario,
                         stockOFabricacion = uiState.costoStockOFabricacion,
                         onTipoLenteChange = viewModel::updateCostoTipoLente,
-                        onDistanciaChange = viewModel::updateCostoDistancia,
                         onSubtipoBifocalChange = viewModel::updateCostoSubtipoBifocal,
                         onMaterialChange = viewModel::updateCostoMaterial,
                         onToggleTratamiento = viewModel::toggleCostoTratamiento,
                         onDiscromatopsiaTipoChange = viewModel::updateCostoDiscromatopsiaTipo,
                         onCurvaBaseChange = viewModel::updateCostoCurvaBase,
                         onIndiceRefraccionChange = viewModel::updateCostoIndiceRefraccion,
+                        onStockOFabricacionChange = viewModel::updateCostoStockOFabricacion,
                         onSerieChange = viewModel::updateCostoSerie,
                         onCostoUnitarioChange = viewModel::updateCostoCostoUnitario,
                     )
@@ -428,7 +427,7 @@ private fun GastosOperativosTab(
                     val esDerivadoOt = fila.gasto.origenDispensacionItemId != null
                     GastoOperativoCard(
                         fila = fila,
-                        // Linked OT bevel rows are managed from the dispensación, not here.
+                        // WHY: Linked OT bevel rows are managed from dispensación, not this matrix screen.
                         puedeEditar = uiState.puedeEditarGastos && !esDerivadoOt,
                         onEdit = { viewModel.editGasto(fila.gasto) },
                         onDelete = { viewModel.confirmDeleteGasto(fila.gasto) },
