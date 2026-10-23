@@ -1,14 +1,24 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.DispensacionItem
+import com.example.optoapp.data.DispensacionItemDao
+import com.example.optoapp.data.DispensacionDao
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.servicio.ServicioExtraItemDao
 import com.example.optoapp.util.AppLogger
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -24,6 +34,13 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
     private val resumenDiarioDao: ResumenDiarioDao,
     private val gastoOperativoDao: GastoOperativoDao,
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
+    private val dispensacionDao: DispensacionDao,
+    private val dispensacionItemDao: DispensacionItemDao,
+    private val regaloDispensacionDao: RegaloDispensacionDao,
+    private val servicioExtraDao: ServicioExtraDao,
+    private val servicioExtraItemDao: ServicioExtraItemDao,
+    private val regaloServicioExtraDao: RegaloServicioExtraDao,
+    private val categoriaProductoDao: CategoriaProductoDao,
 ) {
     companion object {
         private const val TAG = "ObtenerAnalisisMensual"
@@ -92,13 +109,17 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
         val gastosFacts = gastosFacts(gastosDelMes, ventasMes, costoMes)
         val objetivo = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)?.margenNetoObjetivo
             ?: MarginFacts.DEFAULT_MARGEN_NETO_OBJETIVO
+        // Offline MIX needs the same category priors the RPC returns online.
+        val margenPorCategoria = margenPorCategoriaOffline(opticaId, mesActual)
+        val margenPorCategoriaMesAnterior = margenPorCategoriaOffline(opticaId, mesAnterior)
 
         return Resource.Success(
             AnalisisMensual(
                 ventasMes = ventasMes,
                 cobrosMes = cobrosMes,
                 margenNetoPct = margenNetoPct,
-                margenPorCategoria = emptyList(),
+                margenPorCategoria = margenPorCategoria,
+                margenPorCategoriaMesAnterior = margenPorCategoriaMesAnterior,
                 deudores = DeudoresResumen(0, 0.0),
                 proyeccionCaja = null,
                 stockEstancado = emptyList(),
@@ -119,13 +140,14 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
                     costoMes = costoMes,
                     margenBruto = margenBruto,
                     margenBrutoPct = margenBrutoPct,
-                    margenNetoPct = margenNetoPct,
+                    margenPorCategoria = margenPorCategoria,
                     gastosPorCategoria = gastosFacts.porCategoria,
                     gastosPorTipo = GastosPorTipo(fijo = gastosFacts.fijos, variable = gastosFacts.variables),
                     gastosFijos = gastosFacts.fijos,
                     margenContribucion = gastosFacts.margenContribucion,
                     margenContribucionPct = gastosFacts.margenContribucionPct,
                     puntoEquilibrio = gastosFacts.puntoEquilibrio,
+                    margenNetoPct = margenNetoPct,
                     margenNetoObjetivo = redondear(objetivo),
                     brechaMargenNetoPp = redondear(margenNetoPct - objetivo),
                     serie6m = serie6m(inicioSerie, resumenes, gastos),
@@ -134,6 +156,70 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
             ),
         )
     }
+
+    /** Room-side category margins so offline drivers stay consistent with the RPC. */
+    private suspend fun margenPorCategoriaOffline(opticaId: String, mes: YearMonth): List<MargenCategoria> {
+        val desde = mes.atDay(1)
+        val hasta = mes.atEndOfMonth()
+        val ots = dispensacionDao.getDispensacionesListByOptica(opticaId)
+            .filter { it.fecha in desde..hasta && it.estadoEntrega != "Anulado" && it.estadoEntrega != "Reclamada" }
+        val itemsByOt = dispensacionItemDao.getItemsListByOptica(opticaId).groupBy { it.dispensacionId }
+        val regalosByOt = regaloDispensacionDao.getByOpticaId(opticaId).groupBy { it.dispensacionId }
+        val agg = mutableMapOf<String, Pair<Double, Double>>() // categoriaId -> ventas, costo
+
+        for (ot in ots) {
+            val catId = categoriaIdDeOt(ot)
+            val items = itemsByOt[ot.id].orEmpty()
+            val itemCosto = items.sumOf { itemCosto(it) }
+            val regalo = regalosByOt[ot.id].orEmpty().sumOf { it.cantidad * it.costoUnitario }
+            val prev = agg[catId] ?: (0.0 to 0.0)
+            agg[catId] = (prev.first + ot.montoTotal) to (prev.second + itemCosto + regalo)
+        }
+
+        val servicios = servicioExtraDao.getServiciosListByOptica(opticaId)
+            .filter { it.fecha in desde..hasta && it.estado != "Anulado" }
+        val itemsByServicio = servicioExtraItemDao.getByOpticaId(opticaId).groupBy { it.servicioExtraId }
+        val regalosByServicio = regaloServicioExtraDao.getByOpticaId(opticaId).groupBy { it.servicioExtraId }
+        for (sv in servicios) {
+            val itemCosto = itemsByServicio[sv.id].orEmpty().sumOf { it.costoReal }
+            val regalo = regalosByServicio[sv.id].orEmpty().sumOf { it.cantidad * it.costoUnitario }
+            val prev = agg["servicio_extra"] ?: (0.0 to 0.0)
+            agg["servicio_extra"] = (prev.first + sv.montoTotal) to (prev.second + sv.costoReal + itemCosto + regalo)
+        }
+
+        val catalog = categoriaProductoDao.getAll().first()
+        if (catalog.isEmpty()) return emptyList()
+        return catalog.map { cat ->
+            val (ventas, costos) = agg[cat.id] ?: (0.0 to 0.0)
+            val ventasR = redondear(ventas)
+            val costosR = redondear(costos)
+            MargenCategoria(
+                categoria = cat.nombre,
+                ventas = ventasR,
+                costos = costosR,
+                margenPct = if (ventasR > 0.0) {
+                    BigDecimal.valueOf((ventasR - costosR) / ventasR * 100)
+                        .setScale(2, RoundingMode.HALF_UP)
+                        .toDouble()
+                } else {
+                    null
+                },
+                margen = redondear(ventasR - costosR),
+            )
+        }
+    }
+
+    private fun categoriaIdDeOt(ot: DispensacionOptica): String = when {
+        ot.tipoLente == "Progresivo" -> "lente_progresivo"
+        ot.tipoLente == "Bifocal" -> "lente_bifocal"
+        ot.tipoLente == "Monofocal" && ot.materialLente == "Resina" -> "lente_monofocal"
+        else -> "lente_otro"
+    }
+
+    private fun itemCosto(item: DispensacionItem): Double =
+        (item.costoRealOd ?: 0.0) + (item.costoRealOi ?: 0.0) +
+            (item.costoRealMontura ?: 0.0) + (item.costoRealLc ?: 0.0) +
+            (item.costoRealBiselado ?: 0.0)
 
     private class GastosFacts(
         val porCategoria: List<GastoCategoria>,

@@ -1,19 +1,27 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.DispensacionDao
+import com.example.optoapp.data.DispensacionItemDao
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.servicio.ServicioExtraItemDao
 import io.github.jan.supabase.postgrest.Postgrest
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import org.junit.After
@@ -63,7 +71,33 @@ class GastosFactsOfflineTest {
         coEvery { gastoDao.getByOpticaBetween("optica1", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 7, 31)) } returns gastos
         val configDao = mockk<ConfiguracionFinancieraDao>()
         coEvery { configDao.getByOpticaIdOnce("optica1") } returns config
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), resumenDao, gastoDao, configDao) {
+        val dispensacionDao = mockk<DispensacionDao>()
+        coEvery { dispensacionDao.getDispensacionesListByOptica(any()) } returns emptyList()
+        val itemDao = mockk<DispensacionItemDao>()
+        coEvery { itemDao.getItemsListByOptica(any()) } returns emptyList()
+        val regaloDao = mockk<RegaloDispensacionDao>()
+        coEvery { regaloDao.getByOpticaId(any()) } returns emptyList()
+        val servicioDao = mockk<ServicioExtraDao>()
+        coEvery { servicioDao.getServiciosListByOptica(any()) } returns emptyList()
+        val servicioItemDao = mockk<ServicioExtraItemDao>()
+        coEvery { servicioItemDao.getByOpticaId(any()) } returns emptyList()
+        val regaloServicioDao = mockk<RegaloServicioExtraDao>()
+        coEvery { regaloServicioDao.getByOpticaId(any()) } returns emptyList()
+        val categoriaDao = mockk<CategoriaProductoDao>()
+        every { categoriaDao.getAll() } returns flowOf(emptyList())
+        val useCase = object : ObtenerAnalisisMensualUseCase(
+            mockk<Postgrest>(),
+            resumenDao,
+            gastoDao,
+            configDao,
+            dispensacionDao,
+            itemDao,
+            regaloDao,
+            servicioDao,
+            servicioItemDao,
+            regaloServicioDao,
+            categoriaDao,
+        ) {
             override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw IOException("No network")
         }
         return (useCase("optica1", julio) as Resource.Success).data!!.marginFacts

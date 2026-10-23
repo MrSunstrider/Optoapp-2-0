@@ -1,17 +1,28 @@
 package com.example.optoapp.domain
 
 import android.util.Log
+import com.example.optoapp.data.DispensacionDao
+import com.example.optoapp.data.DispensacionItem
+import com.example.optoapp.data.DispensacionItemDao
+import com.example.optoapp.data.DispensacionOptica
 import com.example.optoapp.data.Resource
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoDao
+import com.example.optoapp.data.categoriaproducto.CategoriaProductoEntity
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoDao
 import com.example.optoapp.data.gastooperativo.GastoOperativoEntity
+import com.example.optoapp.data.regalodispensacion.RegaloDispensacionDao
+import com.example.optoapp.data.regaloservicio.RegaloServicioExtraDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioDao
 import com.example.optoapp.data.resumendiario.ResumenDiarioEntity
+import com.example.optoapp.data.servicio.ServicioExtraDao
+import com.example.optoapp.data.servicio.ServicioExtraItemDao
 import io.github.jan.supabase.postgrest.Postgrest
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -101,9 +112,56 @@ class ObtenerAnalisisMensualUseCaseTest {
         fecha = julio.plusDays(4),
     )
 
+    private fun emptyOfflineDeps(): Array<Any> {
+        val dispensacionDao = mockk<DispensacionDao>()
+        coEvery { dispensacionDao.getDispensacionesListByOptica(any()) } returns emptyList()
+        val itemDao = mockk<DispensacionItemDao>()
+        coEvery { itemDao.getItemsListByOptica(any()) } returns emptyList()
+        val regaloDao = mockk<RegaloDispensacionDao>()
+        coEvery { regaloDao.getByOpticaId(any()) } returns emptyList()
+        val servicioDao = mockk<ServicioExtraDao>()
+        coEvery { servicioDao.getServiciosListByOptica(any()) } returns emptyList()
+        val servicioItemDao = mockk<ServicioExtraItemDao>()
+        coEvery { servicioItemDao.getByOpticaId(any()) } returns emptyList()
+        val regaloServicioDao = mockk<RegaloServicioExtraDao>()
+        coEvery { regaloServicioDao.getByOpticaId(any()) } returns emptyList()
+        val categoriaDao = mockk<CategoriaProductoDao>()
+        every { categoriaDao.getAll() } returns flowOf(emptyList())
+        return arrayOf(
+            dispensacionDao, itemDao, regaloDao, servicioDao, servicioItemDao, regaloServicioDao, categoriaDao,
+        )
+    }
+
+    private fun buildUseCase(
+        postgrest: Postgrest = mockk(),
+        resumenDao: ResumenDiarioDao = mockk(),
+        gastoDao: GastoOperativoDao = mockk(),
+        configDao: ConfiguracionFinancieraDao = mockk(),
+        offlineDeps: Array<Any> = emptyOfflineDeps(),
+        rpc: suspend (String, JsonObject) -> JsonObject,
+    ): ObtenerAnalisisMensualUseCase {
+        @Suppress("UNCHECKED_CAST")
+        return object : ObtenerAnalisisMensualUseCase(
+            postgrest,
+            resumenDao,
+            gastoDao,
+            configDao,
+            offlineDeps[0] as DispensacionDao,
+            offlineDeps[1] as DispensacionItemDao,
+            offlineDeps[2] as RegaloDispensacionDao,
+            offlineDeps[3] as ServicioExtraDao,
+            offlineDeps[4] as ServicioExtraItemDao,
+            offlineDeps[5] as RegaloServicioExtraDao,
+            offlineDeps[6] as CategoriaProductoDao,
+        ) {
+            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = rpc(function, params)
+        }
+    }
+
     private fun offlineUseCase(
         resumenes: List<ResumenDiarioEntity>,
         gastos: List<GastoOperativoEntity> = emptyList(),
+        offlineDeps: Array<Any> = emptyOfflineDeps(),
     ): ObtenerAnalisisMensualUseCase {
         val resumenDao = mockk<ResumenDiarioDao>()
         coEvery { resumenDao.getByOpticaBetween("optica1", "2026-02-01", "2026-07-31") } returns resumenes
@@ -111,16 +169,17 @@ class ObtenerAnalisisMensualUseCaseTest {
         coEvery { gastoDao.getByOpticaBetween("optica1", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 7, 31)) } returns gastos
         val configDao = mockk<ConfiguracionFinancieraDao>()
         coEvery { configDao.getByOpticaIdOnce("optica1") } returns null
-        return object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), resumenDao, gastoDao, configDao) {
-            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw IOException("No network")
-        }
+        return buildUseCase(
+            resumenDao = resumenDao,
+            gastoDao = gastoDao,
+            configDao = configDao,
+            offlineDeps = offlineDeps,
+        ) { _, _ -> throw IOException("No network") }
     }
 
     @Test
     fun online_rpcSuccess_returnsAnalisisMensual() = runTest {
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
-            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = rpcSuccessJson()
-        }
+        val useCase = buildUseCase { _, _ -> rpcSuccessJson() }
 
         val result = useCase("optica1", julio)
 
@@ -270,12 +329,89 @@ class ObtenerAnalisisMensualUseCaseTest {
 
     @Test
     fun unexpectedError_returnsResourceError() = runTest {
-        val useCase = object : ObtenerAnalisisMensualUseCase(mockk<Postgrest>(), mockk(), mockk(), mockk()) {
-            override suspend fun callRpc(function: String, params: JsonObject): JsonObject = throw RuntimeException("Unexpected")
-        }
+        val useCase = buildUseCase { _, _ -> throw RuntimeException("Unexpected") }
 
         val result = useCase("optica1", julio)
         assertTrue(result is Resource.Error)
         assertEquals("No se pudieron cargar los datos del mes", (result as Resource.Error).message)
+    }
+
+    @Test
+    fun offline_computesMargenPorCategoriaFromLocalDispensaciones() = runTest {
+        val dispensacionDao = mockk<DispensacionDao>()
+        coEvery { dispensacionDao.getDispensacionesListByOptica("optica1") } returns listOf(
+            DispensacionOptica(
+                id = "d1",
+                pacienteId = "p1",
+                fecha = LocalDate.of(2026, 7, 10),
+                opticaId = "optica1",
+                tipoLente = "Progresivo",
+                materialLente = "Resina",
+                montoTotal = 1000.0,
+                estadoEntrega = "Entregado",
+            ),
+            DispensacionOptica(
+                id = "d0",
+                pacienteId = "p1",
+                fecha = LocalDate.of(2026, 6, 10),
+                opticaId = "optica1",
+                tipoLente = "Progresivo",
+                materialLente = "Resina",
+                montoTotal = 800.0,
+                estadoEntrega = "Entregado",
+            ),
+        )
+        val itemDao = mockk<DispensacionItemDao>()
+        coEvery { itemDao.getItemsListByOptica("optica1") } returns listOf(
+            DispensacionItem(
+                id = "i1",
+                dispensacionId = "d1",
+                opticaId = "optica1",
+                costoRealOd = 200.0,
+                costoRealOi = 200.0,
+            ),
+            DispensacionItem(
+                id = "i0",
+                dispensacionId = "d0",
+                opticaId = "optica1",
+                costoRealOd = 150.0,
+                costoRealOi = 150.0,
+            ),
+        )
+        val regaloDao = mockk<RegaloDispensacionDao>()
+        coEvery { regaloDao.getByOpticaId("optica1") } returns emptyList()
+        val servicioDao = mockk<ServicioExtraDao>()
+        coEvery { servicioDao.getServiciosListByOptica("optica1") } returns emptyList()
+        val servicioItemDao = mockk<ServicioExtraItemDao>()
+        coEvery { servicioItemDao.getByOpticaId("optica1") } returns emptyList()
+        val regaloServicioDao = mockk<RegaloServicioExtraDao>()
+        coEvery { regaloServicioDao.getByOpticaId("optica1") } returns emptyList()
+        val categoriaDao = mockk<CategoriaProductoDao>()
+        every { categoriaDao.getAll() } returns flowOf(
+            listOf(
+                CategoriaProductoEntity("lente_progresivo", "Lentes Progresivos", "lente", 1),
+                CategoriaProductoEntity("servicio_extra", "Servicios Extra", "servicio", 7),
+            ),
+        )
+        val deps = arrayOf(
+            dispensacionDao, itemDao, regaloDao, servicioDao, servicioItemDao, regaloServicioDao, categoriaDao,
+        )
+        val useCase = offlineUseCase(
+            resumenes = listOf(
+                resumen("jun", "2026-06-15", ventas = 800.0, costo = 300.0, cantidad = 1),
+                resumen("jul", "2026-07-10", ventas = 1000.0, costo = 400.0, cantidad = 1),
+            ),
+            offlineDeps = deps,
+        )
+
+        val analisis = (useCase("optica1", julio) as Resource.Success).data!!
+        val actual = analisis.margenPorCategoria.first { it.categoria == "Lentes Progresivos" }
+        val prior = analisis.margenPorCategoriaMesAnterior.first { it.categoria == "Lentes Progresivos" }
+        assertEquals(1000.0, actual.ventas, 0.001)
+        assertEquals(400.0, actual.costos, 0.001)
+        assertEquals(800.0, prior.ventas, 0.001)
+        assertEquals(300.0, prior.costos, 0.001)
+        val mix = ResultadoDrivers.fromAnalisis(analisis).drivers.find { it.tipo == DriverTipo.MIX }
+        assertTrue(mix != null)
     }
 }
