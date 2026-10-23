@@ -22,23 +22,22 @@ spotless {
         ktlint(libs.versions.ktlint.get())
             .editorConfigOverride(
                 mapOf(
-                    // Compose @Composable functions use PascalCase — canonical convention
+                    // Compose @Composable uses PascalCase by platform convention
                     "ktlint_standard_function-naming" to "disabled",
-                    // Test classes with underscores (MIGRATION_33_34_Test), ViewModel backing props, constants
+                    // Legacy Room/ViewModel names and migration test class underscores
                     "ktlint_standard_class-naming" to "disabled",
                     "ktlint_standard_property-naming" to "disabled",
                     "ktlint_standard_backing-property-naming" to "disabled",
-                    // Package cierre-caja uses hyphen for readability
+                    // Existing hyphenated package ids must keep matching source folders
                     "ktlint_standard_package-name" to "disabled",
-                    // Strict comment-wrapping too noisy for existing codebase
+                    // Enabling wrap would churn thousands of existing comments
                     "ktlint_standard_comment-wrapping" to "disabled",
-                    // 130+ legacy files use wildcard imports; enforcing it would block unrelated changes
+                    // Enforcing would force mass rewrites of legacy wildcard imports
                     "ktlint_standard_no-wildcard-imports" to "disabled",
-                    // Entity files keep the Entity suffix while the class does not (Paciente in PacienteEntity.kt)
+                    // Room file names keep Entity suffix while the type name does not
                     "ktlint_standard_filename" to "disabled",
-                    // Daos.kt and Entities.kt only hold comments pointing to the split per-module files
+                    // Split-module stub files are intentionally empty of declarations
                     "ktlint_standard_no-empty-file" to "disabled",
-                    // Formatting
                     "indent_size" to "4",
                     "ij_kotlin_allow_trailing_comma" to "true",
                     "ij_kotlin_allow_trailing_comma_on_call_site" to "true",
@@ -67,8 +66,8 @@ android {
         applicationId = "com.example.optoapp"
         minSdk = 24
         targetSdk = 36
-        versionCode = 69
-        versionName = "1.16.20"
+        versionCode = 70
+        versionName = "1.16.21"
 
         multiDexEnabled = true
 
@@ -76,10 +75,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        val supabaseTestUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.test.url", ""))
-        val supabaseTestAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.test.anon.key", ""))
-        val supabaseTestServiceKey = escapeForBuildConfigField(localProperties.getProperty("supabase.test.service.key", ""))
 
         val supabaseUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.url", ""))
         val supabaseAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.anon.key", ""))
@@ -91,15 +86,15 @@ android {
             escapeForBuildConfigField(
                 localProperties.getProperty("supabase.redirect.host", "auth"),
             )
-        val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
-        buildConfigField("String", "SUPABASE_TEST_URL", "\"$supabaseTestUrl\"")
-        buildConfigField("String", "SUPABASE_TEST_ANON_KEY", "\"$supabaseTestAnonKey\"")
-        buildConfigField("String", "SUPABASE_TEST_SERVICE_KEY", "\"$supabaseTestServiceKey\"")
+        // Service-role / test keys must not ship in release APKs (debug overrides below).
+        buildConfigField("String", "SUPABASE_TEST_URL", "\"\"")
+        buildConfigField("String", "SUPABASE_TEST_ANON_KEY", "\"\"")
+        buildConfigField("String", "SUPABASE_TEST_SERVICE_KEY", "\"\"")
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "SUPABASE_REDIRECT_SCHEME", "\"$supabaseRedirectScheme\"")
         buildConfigField("String", "SUPABASE_REDIRECT_HOST", "\"$supabaseRedirectHost\"")
-        buildConfigField("Boolean", "FORCE_PRO_DEV", "$forceProDev")
+        buildConfigField("Boolean", "FORCE_PRO_DEV", "false")
         manifestPlaceholders["SUPABASE_REDIRECT_SCHEME"] = supabaseRedirectScheme
         manifestPlaceholders["SUPABASE_REDIRECT_HOST"] = supabaseRedirectHost
     }
@@ -121,6 +116,15 @@ android {
         debug {
             enableAndroidTestCoverage = true
             enableUnitTestCoverage = true
+            val supabaseTestUrl = escapeForBuildConfigField(localProperties.getProperty("supabase.test.url", ""))
+            val supabaseTestAnonKey = escapeForBuildConfigField(localProperties.getProperty("supabase.test.anon.key", ""))
+            val supabaseTestServiceKey =
+                escapeForBuildConfigField(localProperties.getProperty("supabase.test.service.key", ""))
+            val forceProDev = localProperties.getProperty("optoapp.dev.force_pro", "false").equals("true", ignoreCase = true)
+            buildConfigField("String", "SUPABASE_TEST_URL", "\"$supabaseTestUrl\"")
+            buildConfigField("String", "SUPABASE_TEST_ANON_KEY", "\"$supabaseTestAnonKey\"")
+            buildConfigField("String", "SUPABASE_TEST_SERVICE_KEY", "\"$supabaseTestServiceKey\"")
+            buildConfigField("Boolean", "FORCE_PRO_DEV", "$forceProDev")
         }
         release {
             signingConfig = signingConfigs.getByName("release")
