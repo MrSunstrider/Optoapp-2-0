@@ -69,6 +69,8 @@ class AnalisisNegocioViewModel @Inject constructor(
     companion object {
         private const val TAG = "AnalisisNegocioVM"
         private val PERIODO_FMT = DateTimeFormatter.ofPattern("yyyy-MM")
+        const val SUPUESTOS_ERROR_FRACCION = "fraccion"
+        const val SUPUESTOS_ERROR_NO_CONFIG = "no_config"
     }
 
     private val _uiState = MutableStateFlow(
@@ -133,16 +135,23 @@ class AnalisisNegocioViewModel @Inject constructor(
     fun saveSupuestos(supuestos: SupuestosImpacto) {
         viewModelScope.launch {
             try {
+                if (!fractionsInRange(supuestos)) {
+                    _uiState.value = _uiState.value.copy(supuestosError = SUPUESTOS_ERROR_FRACCION)
+                    return@launch
+                }
                 val opticaId = sessionManager.opticaId.first()
                 val current = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
-                    ?: return@launch
+                if (current == null) {
+                    _uiState.value = _uiState.value.copy(supuestosError = SUPUESTOS_ERROR_NO_CONFIG)
+                    return@launch
+                }
                 configuracionFinancieraDao.upsert(
                     current.copy(
                         impactoMargenObjetivoPct = supuestos.margenObjetivoPct,
-                        impactoRecuperoStockPct = supuestos.recuperoStockPct.coerceIn(0.0, 1.0),
-                        impactoUpsideVentasPct = supuestos.upsideVentasPct.coerceIn(0.0, 1.0),
-                        impactoCorteGastoPct = supuestos.corteGastoPct.coerceIn(0.0, 1.0),
-                        impactoRecuperoCobranzaPct = supuestos.recuperoCobranzaPct.coerceIn(0.0, 1.0),
+                        impactoRecuperoStockPct = supuestos.recuperoStockPct,
+                        impactoUpsideVentasPct = supuestos.upsideVentasPct,
+                        impactoCorteGastoPct = supuestos.corteGastoPct,
+                        impactoRecuperoCobranzaPct = supuestos.recuperoCobranzaPct,
                     ),
                 )
                 _uiState.value = _uiState.value.copy(
@@ -159,6 +168,14 @@ class AnalisisNegocioViewModel @Inject constructor(
             }
         }
     }
+
+    private fun fractionsInRange(supuestos: SupuestosImpacto): Boolean =
+        listOf(
+            supuestos.recuperoStockPct,
+            supuestos.upsideVentasPct,
+            supuestos.corteGastoPct,
+            supuestos.recuperoCobranzaPct,
+        ).all { it in 0.0..1.0 }
 
     private fun loadData(mes: LocalDate) {
         loadJob?.cancel()

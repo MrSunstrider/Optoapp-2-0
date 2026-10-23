@@ -15,6 +15,7 @@ import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.RecomendacionTipo
 import com.example.optoapp.domain.SeguimientoEstado
+import com.example.optoapp.domain.SupuestosImpacto
 import androidx.lifecycle.SavedStateHandle
 import com.example.optoapp.util.CurrentMonthProvider
 import com.example.optoapp.util.MesArg
@@ -398,5 +399,71 @@ class AnalisisNegocioViewModelTest {
         val state = viewModel.uiState.first()
         assertNull("error should be null after cancellation", state.error)
         assertEquals("isLoading should be true (cancelled before completion)", true, state.isLoading)
+    }
+
+    @Test
+    fun saveSupuestos_noConfig_setsErrorWithoutUpsert() = runTest(testDispatcher) {
+        primeUseCases()
+        coEvery { configuracionFinancieraDao.getByOpticaIdOnce(opticaId) } returns null
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.showSupuestosDialog()
+        viewModel.saveSupuestos(SupuestosImpacto())
+        advanceUntilIdle()
+
+        assertEquals(
+            AnalisisNegocioViewModel.SUPUESTOS_ERROR_NO_CONFIG,
+            viewModel.uiState.first().supuestosError,
+        )
+        coVerify(exactly = 0) { configuracionFinancieraDao.upsert(any()) }
+    }
+
+    @Test
+    fun saveSupuestos_fractionAboveOne_setsErrorWithoutUpsert() = runTest(testDispatcher) {
+        primeUseCases()
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.showSupuestosDialog()
+        viewModel.saveSupuestos(SupuestosImpacto(recuperoStockPct = 70.0))
+        advanceUntilIdle()
+
+        assertEquals(
+            AnalisisNegocioViewModel.SUPUESTOS_ERROR_FRACCION,
+            viewModel.uiState.first().supuestosError,
+        )
+        coVerify(exactly = 0) { configuracionFinancieraDao.upsert(any()) }
+    }
+
+    @Test
+    fun saveSupuestos_validFractions_upsertsWithoutCoerce() = runTest(testDispatcher) {
+        primeUseCases()
+        val supuestos = SupuestosImpacto(
+            margenObjetivoPct = 30.0,
+            recuperoStockPct = 0.7,
+            upsideVentasPct = 0.1,
+            corteGastoPct = 0.1,
+            recuperoCobranzaPct = 1.0,
+        )
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+        viewModel.saveSupuestos(supuestos)
+        advanceUntilIdle()
+
+        coVerify {
+            configuracionFinancieraDao.upsert(
+                match {
+                    it.impactoMargenObjetivoPct == 30.0 &&
+                        it.impactoRecuperoStockPct == 0.7 &&
+                        it.impactoUpsideVentasPct == 0.1 &&
+                        it.impactoCorteGastoPct == 0.1 &&
+                        it.impactoRecuperoCobranzaPct == 1.0
+                },
+            )
+        }
+        assertNull(viewModel.uiState.first().supuestosError)
+        assertEquals(false, viewModel.uiState.first().supuestosDialogVisible)
     }
 }
