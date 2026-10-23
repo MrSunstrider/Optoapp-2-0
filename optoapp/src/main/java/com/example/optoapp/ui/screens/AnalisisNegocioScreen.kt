@@ -2,6 +2,7 @@ package com.example.optoapp.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,6 +26,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
+import com.example.optoapp.domain.AnalisisDecisionLayout
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.ConfianzaInterpretacion
 import com.example.optoapp.domain.ImpactoRecomendacion
@@ -33,6 +35,7 @@ import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.ResultadoOperativoConfiabilidad
 import com.example.optoapp.domain.SeguimientoEstado
+import com.example.optoapp.domain.WaterfallStep
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.common.CostCoverageBadge
 import com.example.optoapp.ui.components.common.MonthSelector
@@ -212,6 +215,7 @@ fun AnalisisNegocioScreen(
 
             uiState.analisis?.let { analisis ->
                 ContextoBreveCard(analisis = analisis)
+                DecisionHomeSection(analisis = analisis)
             }
 
             if (!uiState.isLoading && uiState.analisis == null && uiState.error == null) {
@@ -683,6 +687,175 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                     label = stringResource(R.string.analisis_ventas),
                     value = analisis.cantidadVentas.toString(),
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DecisionHomeSection(analisis: AnalisisMensual) {
+    val layout = AnalisisDecisionLayout.from(analisis)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        KpiStrip(layout = layout)
+        WaterfallPlCard(steps = layout.waterfall, incompleto = layout.kpis.resultadoIncompleto)
+        CajaSectionCard(layout = layout)
+    }
+}
+
+@Composable
+private fun KpiStrip(layout: AnalisisDecisionLayout) {
+    val kpis = layout.kpis
+    val roLabel = buildString {
+        append(AnalisisPercentFormatter.formatWithSymbol(kpis.resultadoOperativoPct))
+        if (kpis.resultadoIncompleto) {
+            append(" · ")
+            append(stringResource(R.string.analisis_resultado_incompleto))
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        MetricItem(
+            modifier = Modifier.widthIn(min = 120.dp),
+            label = stringResource(R.string.analisis_kpi_utilidad_bruta),
+            value = MoneyFormatter.format(kpis.utilidadBruta),
+            color = MaterialTheme.colorScheme.positiveGreen,
+        )
+        MetricItem(
+            modifier = Modifier.widthIn(min = 120.dp),
+            label = stringResource(R.string.analisis_kpi_ro),
+            value = roLabel,
+            color = if (kpis.resultadoIncompleto) {
+                MaterialTheme.colorScheme.warningAmber
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+        )
+        MetricItem(
+            modifier = Modifier.widthIn(min = 120.dp),
+            label = stringResource(R.string.analisis_ticket_promedio),
+            value = MoneyFormatter.format(kpis.ticket),
+            color = MaterialTheme.colorScheme.primary,
+        )
+        MetricItem(
+            modifier = Modifier.widthIn(min = 120.dp),
+            label = stringResource(R.string.analisis_kpi_cxc),
+            value = MoneyFormatter.format(kpis.cxc),
+            color = if (kpis.cxc > 0) MaterialTheme.colorScheme.alertRed else MaterialTheme.colorScheme.positiveGreen,
+        )
+        kpis.puntoEquilibrio?.takeIf { it > 0.0 }?.let { pe ->
+            MetricItem(
+                modifier = Modifier.widthIn(min = 120.dp),
+                label = stringResource(R.string.analisis_kpi_pe),
+                value = MoneyFormatter.format(pe),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WaterfallPlCard(steps: List<WaterfallStep>, incompleto: Boolean) {
+    val labelRes = mapOf(
+        "ventas" to R.string.analisis_wf_ventas,
+        "cogs" to R.string.analisis_wf_cogs,
+        "bruto" to R.string.analisis_wf_bruto,
+        "opex" to R.string.analisis_wf_opex,
+        "resultado" to R.string.analisis_wf_resultado,
+    )
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.analisis_seccion_pl),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            steps.forEach { step ->
+                val isResultado = step.key == "resultado"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        stringResource(labelRes.getValue(step.key)),
+                        style = if (isResultado) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
+                        fontWeight = if (isResultado) FontWeight.Bold else FontWeight.Normal,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        MoneyFormatter.format(step.monto),
+                        style = if (isResultado) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
+                        fontWeight = if (isResultado) FontWeight.Bold else FontWeight.Medium,
+                        color = when {
+                            isResultado && incompleto -> MaterialTheme.colorScheme.warningAmber
+                            isResultado && step.monto >= 0 -> MaterialTheme.colorScheme.positiveGreen
+                            isResultado -> MaterialTheme.colorScheme.alertRed
+                            step.key == "cogs" || step.key == "opex" -> MaterialTheme.colorScheme.alertRed
+                            else -> MaterialTheme.colorScheme.onSurface
+                        },
+                    )
+                }
+            }
+            if (incompleto) {
+                Text(
+                    stringResource(R.string.analisis_resultado_incompleto_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.warningAmber,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CajaSectionCard(layout: AnalisisDecisionLayout) {
+    val caja = layout.caja
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.analisis_seccion_caja),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+            )
+            MetricItem(
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.analisis_cobraste),
+                value = MoneyFormatter.format(caja.cobrado),
+                color = MaterialTheme.colorScheme.primary,
+            )
+            MetricItem(
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(R.string.analisis_saldo_pendiente),
+                value = MoneyFormatter.format(caja.saldoPendiente),
+                color = if (caja.saldoPendiente > 0) {
+                    MaterialTheme.colorScheme.alertRed
+                } else {
+                    MaterialTheme.colorScheme.positiveGreen
+                },
+            )
+            caja.proyeccionSaldoNeto?.let { neto ->
+                MetricItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    label = stringResource(R.string.analisis_caja_proyeccion_neta),
+                    value = MoneyFormatter.format(neto),
+                    color = if (neto >= 0) {
+                        MaterialTheme.colorScheme.positiveGreen
+                    } else {
+                        MaterialTheme.colorScheme.alertRed
+                    },
                 )
             }
         }
