@@ -1,10 +1,10 @@
 package com.example.optoapp.domain
 
+// Product "abiertas" = enCurso; NO_APLICA is dismissed, not open work.
 data class CumplimientoPlan(
     val hechas: Int,
     val enCurso: Int,
     val noAplica: Int,
-    val abiertas: Int,
     val total: Int,
 ) {
     companion object {
@@ -19,13 +19,11 @@ data class CumplimientoPlan(
                     SeguimientoEstado.NO_APLICA -> noAplica++
                 }
             }
-            val total = hechas + enCurso + noAplica
             return CumplimientoPlan(
                 hechas = hechas,
                 enCurso = enCurso,
                 noAplica = noAplica,
-                abiertas = enCurso,
-                total = total,
+                total = hechas + enCurso + noAplica,
             )
         }
     }

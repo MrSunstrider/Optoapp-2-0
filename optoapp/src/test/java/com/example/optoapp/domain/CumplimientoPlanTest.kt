@@ -17,7 +17,6 @@ class CumplimientoPlanTest {
         assertEquals(2, c.hechas)
         assertEquals(1, c.enCurso)
         assertEquals(1, c.noAplica)
-        assertEquals(1, c.abiertas)
         assertEquals(4, c.total)
     }
 
@@ -25,6 +24,6 @@ class CumplimientoPlanTest {
     fun from_empty_isZero() {
         val c = CumplimientoPlan.from(emptyMap())
         assertEquals(0, c.total)
-        assertEquals(0, c.abiertas)
+        assertEquals(0, c.enCurso)
     }
 }

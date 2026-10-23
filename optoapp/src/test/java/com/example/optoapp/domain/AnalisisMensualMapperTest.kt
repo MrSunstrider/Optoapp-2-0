@@ -151,6 +151,30 @@ class AnalisisMensualMapperTest {
     }
 
     @Test
+    fun fromJson_rpcNullVariacionVentasPct_whenPriorSalesZero_staysNullNotZero() {
+        // Mirrors rpc_analisis_mensual: ELSE NULL when v_ventas_mes_anterior <= 0.
+        val json = buildJsonObject {
+            put("ventas_mes", 10000.0)
+            put("cobros_mes", 8000.0)
+            put("margen_neto_pct", 20.0)
+            putJsonArray("margen_por_categoria") {}
+            putJsonObject("deudores") {
+                put("cantidad", 0)
+                put("saldo_total", 0.0)
+            }
+            putJsonArray("stock_estancado") {}
+            put("valor_inventario", 0.0)
+            put("ventas_mes_anterior", 0.0)
+            put("variacion_ventas_pct", null)
+        }
+
+        val result = AnalisisMensual.fromJson(json)
+
+        assertNull(result.variacionVentasPct)
+        assertEquals(0.0, result.ventasMesAnterior, 0.001)
+    }
+
+    @Test
     fun fromJson_missingKeys_defaultsToZero() {
         // Minimal JSON with only required top-level keys missing
         val json = buildJsonObject {
