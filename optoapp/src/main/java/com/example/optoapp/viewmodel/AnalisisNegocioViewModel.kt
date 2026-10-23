@@ -8,6 +8,8 @@ import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.domain.AnalisisMensual
+import com.example.optoapp.domain.CxcAging
+import com.example.optoapp.domain.CxcAgingResumen
 import com.example.optoapp.domain.Deudor
 import com.example.optoapp.domain.FeedbackRecomendacionUseCase
 import com.example.optoapp.domain.GenerarRecomendacionesUseCase
@@ -16,6 +18,8 @@ import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
 import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.domain.ResultadoDrivers
+import com.example.optoapp.domain.ResultadoDriversMom
 import com.example.optoapp.domain.SeguimientoEstado
 import com.example.optoapp.domain.SupuestosImpacto
 import com.example.optoapp.util.CurrentMonthProvider
@@ -52,6 +56,8 @@ data class AnalisisNegocioUiState(
     val supuestosImpacto: SupuestosImpacto = SupuestosImpacto(),
     val supuestosDialogVisible: Boolean = false,
     val supuestosError: String? = null,
+    val driversMom: ResultadoDriversMom? = null,
+    val cxcAging: CxcAgingResumen? = null,
 )
 
 @HiltViewModel
@@ -219,6 +225,13 @@ class AnalisisNegocioViewModel @Inject constructor(
                     val interpretacion = analisis?.let {
                         InterpretacionAnalista.fromAnalisis(it, recomendaciones.firstOrNull()?.titulo)
                     }
+                    val driversMom = analisis?.let { ResultadoDrivers.fromAnalisis(it) }
+                    val cxcAging = CxcAging.from(
+                        deudores = deudores,
+                        saldoPendiente = analisis?.saldoPendiente ?: 0.0,
+                        ventasMes = analisis?.ventasMes ?: 0.0,
+                        mes = YearMonth.from(mes),
+                    )
                     val periodo = mes.format(PERIODO_FMT)
                     if (_uiState.value.mesSeleccionado != mes) return@launch
 
@@ -237,6 +250,8 @@ class AnalisisNegocioViewModel @Inject constructor(
                             seguimientos = seguimientos,
                             feedbackErrorRecId = null,
                             supuestosImpacto = supuestos,
+                            driversMom = driversMom,
+                            cxcAging = cxcAging,
                         )
                     }
                 } catch (e: CancellationException) {

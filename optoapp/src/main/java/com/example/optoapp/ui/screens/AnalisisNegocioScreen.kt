@@ -32,13 +32,18 @@ import com.example.optoapp.domain.AnalisisDecisionLayout
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.ConfianzaInterpretacion
 import com.example.optoapp.domain.CtaRecomendacion
+import com.example.optoapp.domain.AgingBucketKey
 import com.example.optoapp.domain.AlertaNegocio
 import com.example.optoapp.domain.AlertasDesdeRecomendaciones
+import com.example.optoapp.domain.CxcAgingResumen
+import com.example.optoapp.domain.DriverTipo
 import com.example.optoapp.domain.EsfuerzoRecomendacion
 import com.example.optoapp.domain.ImpactoRecomendacion
 import com.example.optoapp.domain.InterpretacionMes
 import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
+import com.example.optoapp.domain.ResultadoDriver
+import com.example.optoapp.domain.ResultadoDriversMom
 import com.example.optoapp.domain.ResultadoOperativoConfiabilidad
 import com.example.optoapp.domain.SeguimientoEstado
 import com.example.optoapp.domain.SeveridadAlerta
@@ -163,6 +168,14 @@ fun AnalisisNegocioScreen(
 
             uiState.interpretacion?.let { interpretacion ->
                 InterpretacionCoachCard(interpretacion = interpretacion)
+            }
+
+            uiState.driversMom?.let { drivers ->
+                DriversMomSection(drivers)
+            }
+
+            uiState.cxcAging?.let { aging ->
+                CxcAgingSection(aging)
             }
 
             if (uiState.isSeasonalityWarning) {
@@ -333,6 +346,109 @@ fun AnalisisNegocioScreen(
 }
 
 internal fun rutaVerTodosGastos(mes: YearMonth): String = Route.CostosYGastos.createRoute(CostosTab.GASTOS, mes)
+
+@Composable
+private fun DriversMomSection(drivers: ResultadoDriversMom) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(R.string.analisis_drivers_titulo),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (drivers.sinBaseMom) {
+            Text(
+                stringResource(R.string.analisis_drivers_sin_base),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        drivers.top(3).forEach { driver ->
+            DriverMomRow(driver)
+        }
+    }
+}
+
+@Composable
+private fun DriverMomRow(driver: ResultadoDriver) {
+    val label = when (driver.tipo) {
+        DriverTipo.VOLUMEN -> stringResource(R.string.analisis_driver_volumen)
+        DriverTipo.TICKET -> stringResource(R.string.analisis_driver_ticket)
+        DriverTipo.COSTO -> stringResource(R.string.analisis_driver_costo)
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                stringResource(R.string.analisis_driver_efecto, MoneyFormatter.format(driver.soles)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CxcAgingSection(aging: CxcAgingResumen) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Text(
+            stringResource(R.string.analisis_cxc_titulo),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (aging.vacio) {
+            Text(
+                stringResource(R.string.analisis_cxc_vacio),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return
+        }
+        aging.buckets.forEach { bucket ->
+            val bucketLabel = when (bucket.labelKey) {
+                AgingBucketKey.D0_30 -> stringResource(R.string.analisis_cxc_bucket_0_30)
+                AgingBucketKey.D31_60 -> stringResource(R.string.analisis_cxc_bucket_31_60)
+                AgingBucketKey.D61_90 -> stringResource(R.string.analisis_cxc_bucket_61_90)
+                AgingBucketKey.D90_PLUS -> stringResource(R.string.analisis_cxc_bucket_90_plus)
+            }
+            Text(
+                stringResource(
+                    R.string.analisis_cxc_bucket_fila,
+                    bucketLabel,
+                    MoneyFormatter.format(bucket.saldo),
+                    bucket.cantidad,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        val dso = aging.dsoIlustrativo
+        if (dso != null) {
+            Text(
+                stringResource(R.string.analisis_cxc_dso, AnalisisPercentFormatter.format(dso)),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+            )
+        } else {
+            Text(
+                stringResource(R.string.analisis_cxc_dso_sin_ventas),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        aging.diasPromedioPonderado?.let { dias ->
+            Text(
+                stringResource(R.string.analisis_cxc_dias_ponderado, AnalisisPercentFormatter.format(dias)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
 
 @Composable
 private fun AlertaTipadaCard(alerta: AlertaNegocio) {
