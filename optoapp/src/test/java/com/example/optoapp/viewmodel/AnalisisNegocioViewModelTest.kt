@@ -2,6 +2,8 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Deudor
 import com.example.optoapp.domain.FeedbackRecomendacionUseCase
@@ -50,6 +52,7 @@ class AnalisisNegocioViewModelTest {
     private lateinit var obtenerDeudores: ObtenerDeudoresUseCase
     private lateinit var generarRecomendaciones: GenerarRecomendacionesUseCase
     private lateinit var feedbackRecomendacion: FeedbackRecomendacionUseCase
+    private lateinit var configuracionFinancieraDao: ConfiguracionFinancieraDao
     private lateinit var sessionManager: SessionManager
     private lateinit var viewModel: AnalisisNegocioViewModel
 
@@ -64,6 +67,7 @@ class AnalisisNegocioViewModelTest {
         obtenerDeudores,
         generarRecomendaciones,
         feedbackRecomendacion,
+        configuracionFinancieraDao,
         sessionManager,
         currentMonthProvider,
         SavedStateHandle(if (mes == null) emptyMap() else mapOf(MesArg.KEY to mes)),
@@ -81,11 +85,13 @@ class AnalisisNegocioViewModelTest {
         obtenerDeudores = mockk()
         generarRecomendaciones = mockk()
         feedbackRecomendacion = mockk(relaxed = true)
+        configuracionFinancieraDao = mockk(relaxed = true)
         sessionManager = mockk(relaxed = true)
         currentMonthProvider = mockk()
 
         every { sessionManager.opticaId } returns flowOf(opticaId)
         every { currentMonthProvider.current() } returns currentYearMonth
+        coEvery { configuracionFinancieraDao.getByOpticaIdOnce(opticaId) } returns ConfiguracionFinancieraEntity(opticaId = opticaId)
     }
 
     @After

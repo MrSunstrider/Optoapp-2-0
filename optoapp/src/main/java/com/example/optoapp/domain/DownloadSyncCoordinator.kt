@@ -336,7 +336,8 @@ class DownloadSyncCoordinator @Inject constructor(
         remotos.forEach { r ->
             try {
                 repository.withTransaction {
-                    configuracionFinancieraDao.upsert(r.toEntity())
+                    val local = configuracionFinancieraDao.getByOpticaIdOnce(r.opticaId)
+                    configuracionFinancieraDao.upsert(r.toEntityPreservingLocalImpacto(local))
                     syncStateTracker.markSynced(opticaId, "configuracion_financiera", r.opticaId)
                 }
             } catch (e: CancellationException) {

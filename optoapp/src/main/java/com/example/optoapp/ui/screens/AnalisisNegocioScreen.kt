@@ -32,6 +32,8 @@ import com.example.optoapp.data.AppRoles
 import com.example.optoapp.domain.AnalisisDecisionLayout
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.ConfianzaInterpretacion
+import com.example.optoapp.domain.CtaRecomendacion
+import com.example.optoapp.domain.EsfuerzoRecomendacion
 import com.example.optoapp.domain.GastoFueraDeRango
 import com.example.optoapp.domain.ImpactoRecomendacion
 import com.example.optoapp.domain.InterpretacionMes
@@ -39,6 +41,7 @@ import com.example.optoapp.domain.Prioridad
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.ResultadoOperativoConfiabilidad
 import com.example.optoapp.domain.SeguimientoEstado
+import com.example.optoapp.domain.SupuestosImpacto
 import com.example.optoapp.domain.WaterfallStep
 import com.example.optoapp.ui.components.OptoTopAppBar
 import com.example.optoapp.ui.components.common.CostCoverageBadge
@@ -181,12 +184,21 @@ fun AnalisisNegocioScreen(
                 }
             }
 
-            Text(
-                stringResource(R.string.analisis_recomendaciones),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.analisis_recomendaciones),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                TextButton(onClick = { viewModel.showSupuestosDialog() }) {
+                    Text(stringResource(R.string.analisis_supuestos_editar))
+                }
+            }
             if (uiState.recomendaciones.isNotEmpty()) {
                 uiState.recomendaciones.take(5).forEach { rec ->
                     RecomendacionCard(
@@ -194,6 +206,19 @@ fun AnalisisNegocioScreen(
                         seguimiento = uiState.seguimientos[rec.id],
                         feedbackErrorRecId = uiState.feedbackErrorRecId,
                         onSeguimiento = { estado -> viewModel.onSeguimiento(rec.id, estado) },
+                        onCta = { cta ->
+                            when (cta) {
+                                CtaRecomendacion.DEUDORES,
+                                CtaRecomendacion.DETALLE,
+                                -> navController.navigate(
+                                    Route.AnalisisDetalle.createRoute(YearMonth.from(uiState.mesSeleccionado)),
+                                )
+                                CtaRecomendacion.COSTOS -> navController.navigate(
+                                    rutaVerTodosGastos(YearMonth.from(uiState.mesSeleccionado)),
+                                )
+                                CtaRecomendacion.NINGUNA -> Unit
+                            }
+                        },
                     )
                 }
             } else if (!uiState.isLoading && uiState.analisis != null) {
@@ -289,6 +314,15 @@ fun AnalisisNegocioScreen(
                     )
                 }
             }
+        }
+
+        if (uiState.supuestosDialogVisible) {
+            SupuestosImpactoDialog(
+                iniciales = uiState.supuestosImpacto,
+                error = uiState.supuestosError,
+                onDismiss = { viewModel.dismissSupuestosDialog() },
+                onSave = { viewModel.saveSupuestos(it) },
+            )
         }
     }
 }
@@ -633,13 +667,14 @@ private fun WaterfallPlCard(steps: List<WaterfallStep>, incompleto: Boolean) {
                 fontWeight = FontWeight.SemiBold,
             )
             steps.forEach { step ->
+                val labelId = labelRes[step.key] ?: return@forEach
                 val isResultado = step.key == "resultado"
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        stringResource(labelRes.getValue(step.key)),
+                        stringResource(labelId),
                         style = if (isResultado) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.bodySmall,
                         fontWeight = if (isResultado) FontWeight.Bold else FontWeight.Normal,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -753,6 +788,86 @@ private fun SeguimientoChip(
     }
 }
 
+@Composable
+private fun SupuestosImpactoDialog(
+    iniciales: SupuestosImpacto,
+    error: String?,
+    onDismiss: () -> Unit,
+    onSave: (SupuestosImpacto) -> Unit,
+) {
+    var margen by remember { mutableStateOf(iniciales.margenObjetivoPct.toString()) }
+    var stock by remember { mutableStateOf(iniciales.recuperoStockPct.toString()) }
+    var upside by remember { mutableStateOf(iniciales.upsideVentasPct.toString()) }
+    var corte by remember { mutableStateOf(iniciales.corteGastoPct.toString()) }
+    var cobranza by remember { mutableStateOf(iniciales.recuperoCobranzaPct.toString()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.analisis_supuestos_titulo), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = margen,
+                    onValueChange = { margen = it },
+                    label = { Text(stringResource(R.string.analisis_supuestos_margen)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = stock,
+                    onValueChange = { stock = it },
+                    label = { Text(stringResource(R.string.analisis_supuestos_stock)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = upside,
+                    onValueChange = { upside = it },
+                    label = { Text(stringResource(R.string.analisis_supuestos_ventas)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = corte,
+                    onValueChange = { corte = it },
+                    label = { Text(stringResource(R.string.analisis_supuestos_gasto)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = cobranza,
+                    onValueChange = { cobranza = it },
+                    label = { Text(stringResource(R.string.analisis_supuestos_cobranza)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (error != null) {
+                    Text(stringResource(R.string.analisis_supuestos_error), color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onSave(
+                        SupuestosImpacto(
+                            margenObjetivoPct = margen.toDoubleOrNull() ?: iniciales.margenObjetivoPct,
+                            recuperoStockPct = stock.toDoubleOrNull() ?: iniciales.recuperoStockPct,
+                            upsideVentasPct = upside.toDoubleOrNull() ?: iniciales.upsideVentasPct,
+                            corteGastoPct = corte.toDoubleOrNull() ?: iniciales.corteGastoPct,
+                            recuperoCobranzaPct = cobranza.toDoubleOrNull() ?: iniciales.recuperoCobranzaPct,
+                        ),
+                    )
+                },
+            ) {
+                Text(stringResource(R.string.analisis_supuestos_guardar))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.analisis_cancelar)) }
+        },
+    )
+}
+
 @androidx.annotation.VisibleForTesting
 @Composable
 internal fun RecomendacionCard(
@@ -760,6 +875,7 @@ internal fun RecomendacionCard(
     seguimiento: SeguimientoEstado?,
     feedbackErrorRecId: String?,
     onSeguimiento: (SeguimientoEstado) -> Unit,
+    onCta: (CtaRecomendacion) -> Unit = {},
 ) {
     val hasError = feedbackErrorRecId == rec.id
     val tracked = seguimiento != null
@@ -773,6 +889,11 @@ internal fun RecomendacionCard(
         Prioridad.ALTA -> MaterialTheme.colorScheme.alertRed
         Prioridad.MEDIA -> MaterialTheme.colorScheme.warningAmber
         Prioridad.BAJA -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val esfuerzoLabel = when (rec.esfuerzo) {
+        EsfuerzoRecomendacion.BAJO -> stringResource(R.string.analisis_esfuerzo_bajo)
+        EsfuerzoRecomendacion.MEDIO -> stringResource(R.string.analisis_esfuerzo_medio)
+        EsfuerzoRecomendacion.ALTO -> stringResource(R.string.analisis_esfuerzo_alto)
     }
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -795,20 +916,29 @@ internal fun RecomendacionCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        rec.detalle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    val impactoLabel = rec.impactoEstimado ?: ImpactoRecomendacion.SIN_IMPACTO
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.analisis_recomendacion_impacto, impactoLabel),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Medium,
-                    )
+                    if (rec.hallazgo.isNotBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.analisis_recomendacion_hallazgo, rec.hallazgo),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            rec.detalle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    if (rec.causaProbable.isNotBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.analisis_recomendacion_causa, rec.causaProbable),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     rec.accion?.let { accion ->
                         Spacer(Modifier.height(4.dp))
                         Text(
@@ -817,6 +947,34 @@ internal fun RecomendacionCard(
                             color = accentColor,
                             fontWeight = FontWeight.Medium,
                         )
+                    }
+                    val impactoLabel = rec.impactoEstimado ?: ImpactoRecomendacion.SIN_IMPACTO
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(R.string.analisis_recomendacion_impacto, impactoLabel),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    if (rec.supuestoVisible.isNotBlank()) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            stringResource(R.string.analisis_recomendacion_supuesto, rec.supuestoVisible),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        stringResource(R.string.analisis_recomendacion_esfuerzo, esfuerzoLabel),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (rec.cta != CtaRecomendacion.NINGUNA && !rec.ctaLabel.isNullOrBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedButton(onClick = { onCta(rec.cta) }) {
+                            Text(rec.ctaLabel)
+                        }
                     }
                 }
                 val prioridadLabel = stringResource(rec.prioridad.labelRes())

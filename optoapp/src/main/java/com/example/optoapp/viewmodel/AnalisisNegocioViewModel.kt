@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.SessionManager
+import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.domain.AnalisisMensual
 import com.example.optoapp.domain.Deudor
 import com.example.optoapp.domain.FeedbackRecomendacionUseCase
@@ -16,6 +17,7 @@ import com.example.optoapp.domain.ObtenerAnalisisMensualUseCase
 import com.example.optoapp.domain.ObtenerDeudoresUseCase
 import com.example.optoapp.domain.Recomendacion
 import com.example.optoapp.domain.SeguimientoEstado
+import com.example.optoapp.domain.SupuestosImpacto
 import com.example.optoapp.util.CurrentMonthProvider
 import com.example.optoapp.util.DateUtils
 import com.example.optoapp.util.MesArg
@@ -44,9 +46,12 @@ data class AnalisisNegocioUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSeasonalityWarning: Boolean = false,
-    val debtorsStale: Boolean = false,
+    val deudoresStale: Boolean = false,
     val seguimientos: Map<String, SeguimientoEstado> = emptyMap(),
     val feedbackErrorRecId: String? = null,
+    val supuestosImpacto: SupuestosImpacto = SupuestosImpacto(),
+    val supuestosDialogVisible: Boolean = false,
+    val supuestosError: String? = null,
 )
 
 @HiltViewModel
@@ -55,6 +60,7 @@ class AnalisisNegocioViewModel @Inject constructor(
     private val obtenerDeudores: ObtenerDeudoresUseCase,
     private val generarRecomendaciones: GenerarRecomendacionesUseCase,
     private val feedbackRecomendacion: FeedbackRecomendacionUseCase,
+    private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
     private val sessionManager: SessionManager,
     private val currentMonthProvider: CurrentMonthProvider,
     savedStateHandle: SavedStateHandle,
@@ -116,6 +122,44 @@ class AnalisisNegocioViewModel @Inject constructor(
         }
     }
 
+    fun showSupuestosDialog() {
+        _uiState.value = _uiState.value.copy(supuestosDialogVisible = true, supuestosError = null)
+    }
+
+    fun dismissSupuestosDialog() {
+        _uiState.value = _uiState.value.copy(supuestosDialogVisible = false, supuestosError = null)
+    }
+
+    fun saveSupuestos(supuestos: SupuestosImpacto) {
+        viewModelScope.launch {
+            try {
+                val opticaId = sessionManager.opticaId.first()
+                val current = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
+                    ?: return@launch
+                configuracionFinancieraDao.upsert(
+                    current.copy(
+                        impactoMargenObjetivoPct = supuestos.margenObjetivoPct,
+                        impactoRecuperoStockPct = supuestos.recuperoStockPct.coerceIn(0.0, 1.0),
+                        impactoUpsideVentasPct = supuestos.upsideVentasPct.coerceIn(0.0, 1.0),
+                        impactoCorteGastoPct = supuestos.corteGastoPct.coerceIn(0.0, 1.0),
+                        impactoRecuperoCobranzaPct = supuestos.recuperoCobranzaPct.coerceIn(0.0, 1.0),
+                    ),
+                )
+                _uiState.value = _uiState.value.copy(
+                    supuestosImpacto = supuestos,
+                    supuestosDialogVisible = false,
+                    supuestosError = null,
+                )
+                loadData(_uiState.value.mesSeleccionado)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving impact assumptions", e)
+                _uiState.value = _uiState.value.copy(supuestosError = e.message ?: "error")
+            }
+        }
+    }
+
     private fun loadData(mes: LocalDate) {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
@@ -126,6 +170,8 @@ class AnalisisNegocioViewModel @Inject constructor(
                 val opticaId = sessionManager.opticaId.first()
 
                 try {
+                    val config = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
+                    val supuestos = config?.let { SupuestosImpacto.from(it) } ?: SupuestosImpacto()
                     val analisisDeferred = async {
                         obtenerAnalisisMensual(opticaId, mes)
                     }
@@ -138,7 +184,7 @@ class AnalisisNegocioViewModel @Inject constructor(
 
                     val analisis = (analisisResult as? Resource.Success)?.data
                     val deudores = (deudoresResult as? Resource.Success)?.data ?: emptyList()
-                    val debtorsStale = (deudoresResult as? Resource.Success)?.stale ?: false
+                    val deudoresStale = (deudoresResult as? Resource.Success)?.stale ?: false
 
                     val recomendacionesResult = if (analisis != null || deudores.isNotEmpty()) {
                         generarRecomendaciones(analisis, deudores, opticaId, mes)
@@ -170,9 +216,10 @@ class AnalisisNegocioViewModel @Inject constructor(
                             isLoading = false,
                             error = errors.joinToString("; ").ifEmpty { null },
                             isSeasonalityWarning = analisis?.esOffline == true || (analisis != null && analisis.ventasMesAnterior == 0.0),
-                            debtorsStale = debtorsStale,
+                            deudoresStale = deudoresStale,
                             seguimientos = seguimientos,
                             feedbackErrorRecId = null,
+                            supuestosImpacto = supuestos,
                         )
                     }
                 } catch (e: CancellationException) {

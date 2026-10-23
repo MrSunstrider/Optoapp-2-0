@@ -30,19 +30,20 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val config = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
             ?: return Resource.Error("Configuracion financiera no encontrada")
+        val supuestos = SupuestosImpacto.from(config)
 
-        val cobrar = evaluarCobrar(deudores, config)
+        val cobrar = evaluarCobrar(deudores, config, supuestos)
 
         val recommendations = if (analisis == null) {
             listOfNotNull(cobrar)
         } else {
             listOfNotNull(
                 cobrar,
-                evaluarMejorarPrecio(analisis.margenPorCategoria, config),
-                evaluarLiquidarStock(analisis.stockEstancado, config),
-                evaluarVenderMasDe(analisis.margenPorCategoria, config),
+                evaluarMejorarPrecio(analisis.margenPorCategoria, config, supuestos),
+                evaluarLiquidarStock(analisis.stockEstancado, config, supuestos),
+                evaluarVenderMasDe(analisis.margenPorCategoria, config, supuestos),
                 evaluarAlertaCaida(analisis, config, mesAnalisis),
-                evaluarReducirGasto(analisis),
+                evaluarReducirGasto(analisis, supuestos),
             )
         }
 
@@ -58,6 +59,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
     private fun evaluarCobrar(
         deudores: List<Deudor>,
         config: ConfiguracionFinancieraEntity,
+        supuestos: SupuestosImpacto,
     ): Recomendacion? {
         if (deudores.isEmpty()) return null
 
@@ -69,29 +71,35 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         val top3 = deudores.sortedByDescending { it.saldo }.take(3)
         val nombres = top3.joinToString(", ") { it.pacienteNombre }
         val totalStr = MoneyFormatter.format(deudaTotal)
-
+        val hallazgo = "CxC de $totalStr en ${deudores.size} deudores (principales: $nombres)."
         val titulo = "Cobranza pendiente"
-        val impacto = ImpactoRecomendacion.cobrar(deudaTotal)
+        val impacto = ImpactoRecomendacion.cobrar(deudaTotal, supuestos)
         return Recomendacion(
             id = "${RecomendacionTipo.COBRAR.name}::$titulo",
             tipo = RecomendacionTipo.COBRAR,
             titulo = titulo,
-            detalle = "Deuda total de $totalStr en ${deudores.size} deudores. " +
-                "Principales: $nombres.",
+            detalle = hallazgo,
             impactoEstimado = impacto.etiqueta,
             impactoMonto = impacto.monto,
             prioridad = Prioridad.ALTA,
-            accion = "Contactar a los deudores para coordinar pagos pendientes",
+            accion = "Esta semana: contactar a los 3 mayores deudores y acordar fecha de pago",
             datosAccion = DatosAccion(
                 pacienteIds = top3.map { it.pacienteId },
                 montoTotal = top3.sumOf { it.saldo },
             ),
+            hallazgo = hallazgo,
+            causaProbable = "Pagos parciales o saldos viejos sin seguimiento activo",
+            esfuerzo = EsfuerzoRecomendacion.BAJO,
+            supuestoVisible = supuestos.labelCobrar(),
+            ctaLabel = "Abrir deudores",
+            cta = CtaRecomendacion.DEUDORES,
         )
     }
 
     private fun evaluarMejorarPrecio(
         categorias: List<MargenCategoria>,
         config: ConfiguracionFinancieraEntity,
+        supuestos: SupuestosImpacto,
     ): Recomendacion? {
         val minVentas = config.minVentasParaRecomendar.toDouble()
         val target = categorias.firstOrNull { cat ->
@@ -100,26 +108,34 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         } ?: return null
 
         val margenPctStr = AnalisisPercentFormatter.format(target.margenPct ?: 0.0)
+        val ventasStr = MoneyFormatter.format(target.ventas)
+        val targetPct = AnalisisPercentFormatter.format(supuestos.margenObjetivoPct)
+        val hallazgo = "${target.categoria}: margen $margenPctStr% sobre $ventasStr."
         val titulo = "Mejorar precio de ${target.categoria}"
-        val impacto = ImpactoRecomendacion.mejorarPrecio(target.ventas, target.margenPct)
+        val impacto = ImpactoRecomendacion.mejorarPrecio(target.ventas, target.margenPct, supuestos)
         return Recomendacion(
             id = "${RecomendacionTipo.MEJORAR_PRECIO.name}::$titulo",
             tipo = RecomendacionTipo.MEJORAR_PRECIO,
             titulo = titulo,
-            detalle = "La categoria ${target.categoria} tiene un margen bajo " +
-                "del $margenPctStr%. Considera ajustar precios para alcanzar " +
-                "al menos un 25% de margen.",
+            detalle = hallazgo,
             impactoEstimado = impacto?.etiqueta ?: ImpactoRecomendacion.SIN_IMPACTO,
             impactoMonto = impacto?.monto,
             prioridad = Prioridad.ALTA,
-            accion = "Revisar precios de ${target.categoria} y ajustar al alza",
+            accion = "Esta semana: revisar matriz de costos y subir precio efectivo hacia $targetPct%",
             datosAccion = null,
+            hallazgo = hallazgo,
+            causaProbable = "Precio por debajo de matriz o costo desactualizado",
+            esfuerzo = EsfuerzoRecomendacion.MEDIO,
+            supuestoVisible = supuestos.labelMejorarPrecio(),
+            ctaLabel = "Abrir Costos",
+            cta = CtaRecomendacion.COSTOS,
         )
     }
 
     private fun evaluarLiquidarStock(
         stockEstancado: List<StockEstancadoItem>,
         config: ConfiguracionFinancieraEntity,
+        supuestos: SupuestosImpacto,
     ): Recomendacion? {
         val estancados = stockEstancado.filter {
             it.diasSinVenta > config.stockEstancadoAlertaDias
@@ -128,29 +144,35 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val modelos = estancados.joinToString(", ") { it.modelo }
         val costoTotal = estancados.sumOf { it.costo * it.stockActual }
-
+        val hallazgo = "${estancados.size} items >${config.stockEstancadoAlertaDias} dias sin venta ($modelos); " +
+            "costo ${MoneyFormatter.format(costoTotal)}."
         val titulo = "Liquidar stock estancado"
-        val impacto = ImpactoRecomendacion.liquidarStock(costoTotal)
+        val impacto = ImpactoRecomendacion.liquidarStock(costoTotal, supuestos)
         return Recomendacion(
             id = "${RecomendacionTipo.LIQUIDAR_STOCK.name}::$titulo",
             tipo = RecomendacionTipo.LIQUIDAR_STOCK,
             titulo = titulo,
-            detalle = "${estancados.size} items llevan mas de ${config.stockEstancadoAlertaDias} " +
-                "dias sin venderse: $modelos. " +
-                "Costo total en inventario: ${MoneyFormatter.format(costoTotal)}.",
+            detalle = hallazgo,
             impactoEstimado = impacto.etiqueta,
             impactoMonto = impacto.monto,
             prioridad = Prioridad.MEDIA,
-            accion = "Ofrecer descuentos del 20-30% para liberar capital estancado",
+            accion = "Esta semana: ofrecer descuento 20-30% en esos modelos para liberar capital",
             datosAccion = DatosAccion(
                 productoIds = estancados.map { it.monturaId },
             ),
+            hallazgo = hallazgo,
+            causaProbable = "Compra sin rotacion o mix poco demandado",
+            esfuerzo = EsfuerzoRecomendacion.MEDIO,
+            supuestoVisible = supuestos.labelLiquidarStock(),
+            ctaLabel = "Ver detalle",
+            cta = CtaRecomendacion.DETALLE,
         )
     }
 
     private fun evaluarVenderMasDe(
         categorias: List<MargenCategoria>,
         config: ConfiguracionFinancieraEntity,
+        supuestos: SupuestosImpacto,
     ): Recomendacion? {
         val minVentas = config.minVentasParaRecomendar.toDouble()
         val gananciaTotal = categorias.sumOf { it.ventas - it.costos }
@@ -166,20 +188,25 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         } ?: return null
 
         val margenPctStr = AnalisisPercentFormatter.format(target.margenPct ?: 0.0)
+        val hallazgo = "${target.categoria}: margen $margenPctStr% con peso alto en la utilidad bruta."
         val titulo = "Vender mas de ${target.categoria}"
-        val impacto = ImpactoRecomendacion.venderMasDe(target.ventas, target.margenPct)
+        val impacto = ImpactoRecomendacion.venderMasDe(target.ventas, target.margenPct, supuestos)
         return Recomendacion(
             id = "${RecomendacionTipo.VENDER_MAS_DE.name}::$titulo",
             tipo = RecomendacionTipo.VENDER_MAS_DE,
             titulo = titulo,
-            detalle = "${target.categoria} tiene un margen alto del $margenPctStr% " +
-                "y contribuye significativamente a la ganancia total. " +
-                "Aumenta su promocion y visibilidad.",
+            detalle = hallazgo,
             impactoEstimado = impacto?.etiqueta ?: ImpactoRecomendacion.SIN_IMPACTO,
             impactoMonto = impacto?.monto,
             prioridad = Prioridad.MEDIA,
-            accion = "Crear promocion destacada para ${target.categoria}",
+            accion = "Esta semana: destacar ${target.categoria} en vitrina y pitch de venta",
             datosAccion = null,
+            hallazgo = hallazgo,
+            causaProbable = "Alta contribucion poco empujada en el piso de venta",
+            esfuerzo = EsfuerzoRecomendacion.BAJO,
+            supuestoVisible = supuestos.labelVenderMasDe(),
+            ctaLabel = "Ver detalle",
+            cta = CtaRecomendacion.DETALLE,
         )
     }
 
@@ -228,50 +255,59 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         val pctStr = AnalisisPercentFormatter.format(kotlin.math.abs(variacion))
         val titulo = "Caida en ventas detectada"
-        val detalleBase = if (esProporcional) {
-            "Las ventas cayeron un $pctStr% respecto al mismo periodo del mes pasado " +
-                "(proporcional a $diasProporcionales dias). "
+        val hallazgo = if (esProporcional) {
+            "Ventas -$pctStr% vs mismo tramo del mes pasado ($diasProporcionales dias): " +
+                "${MoneyFormatter.format(analisis.ventasMes)} vs ${MoneyFormatter.format(ventasReferencia)}."
         } else {
-            "Las ventas cayeron un $pctStr% respecto al mes pasado. "
+            "Ventas -$pctStr% vs mes pasado: " +
+                "${MoneyFormatter.format(analisis.ventasMes)} vs ${MoneyFormatter.format(ventasReferencia)}."
         }
         val impacto = ImpactoRecomendacion.alertaCaida(analisis.ventasMes, ventasReferencia)
         return Recomendacion(
             id = "${RecomendacionTipo.ALERTA_CAIDA.name}::$titulo",
             tipo = RecomendacionTipo.ALERTA_CAIDA,
             titulo = titulo,
-            detalle = detalleBase +
-                "¿Estacionalidad o tendencia? " +
-                "Ventas actuales: ${MoneyFormatter.format(analisis.ventasMes)} vs. " +
-                "${MoneyFormatter.format(ventasReferencia)} esperado.",
+            detalle = hallazgo,
             impactoEstimado = impacto?.etiqueta ?: ImpactoRecomendacion.SIN_IMPACTO,
             impactoMonto = impacto?.monto,
             prioridad = Prioridad.ALTA,
-            accion = "Revisar causas de la caida y evaluar acciones correctivas",
+            accion = "Esta semana: revisar agenda, ticket y mix de categorias con caida",
             datosAccion = null,
+            hallazgo = hallazgo,
+            causaProbable = "Estacionalidad, menor afluencia o ticket mas bajo",
+            esfuerzo = EsfuerzoRecomendacion.MEDIO,
+            supuestoVisible = "Comparacion vs periodo de referencia (sin supuesto de impacto extra)",
+            ctaLabel = "Ver detalle",
+            cta = CtaRecomendacion.DETALLE,
         )
     }
 
     private fun evaluarReducirGasto(
         analisis: AnalisisMensual,
+        supuestos: SupuestosImpacto,
     ): Recomendacion? {
         val alerta = GastoFueraDeRango.evaluar(analisis.ventasMes, analisis.gastosMes) ?: return null
         val ratioPct = AnalisisPercentFormatter.format(alerta.ratioPct)
+        val hallazgo = "Opex ${MoneyFormatter.format(analisis.gastosMes)} = $ratioPct% de ventas " +
+            "${MoneyFormatter.format(analisis.ventasMes)}."
         val titulo = "Reducir gastos operativos"
-        val impacto = ImpactoRecomendacion.reducirGasto(analisis.gastosMes)
+        val impacto = ImpactoRecomendacion.reducirGasto(analisis.gastosMes, supuestos)
         return Recomendacion(
             id = "${RecomendacionTipo.REDUCIR_GASTO.name}::$titulo",
             tipo = RecomendacionTipo.REDUCIR_GASTO,
             titulo = titulo,
-            detalle = "Los gastos representan el $ratioPct% de las ventas " +
-                "(${MoneyFormatter.format(analisis.gastosMes)} gastos vs. " +
-                "${MoneyFormatter.format(analisis.ventasMes)} ventas). " +
-                "Reducir un 10% los gastos liberaria aproximadamente " +
-                "${MoneyFormatter.format(analisis.gastosMes * 0.1)}.",
+            detalle = hallazgo,
             impactoEstimado = impacto.etiqueta,
             impactoMonto = impacto.monto,
             prioridad = Prioridad.MEDIA,
-            accion = "Analizar partidas de gasto y eliminar las no esenciales",
+            accion = "Esta semana: revisar partidas no esenciales en Costos · Gastos",
             datosAccion = null,
+            hallazgo = hallazgo,
+            causaProbable = "Opex crecio mas rapido que las ventas del mes",
+            esfuerzo = EsfuerzoRecomendacion.MEDIO,
+            supuestoVisible = supuestos.labelReducirGasto(),
+            ctaLabel = "Abrir Costos",
+            cta = CtaRecomendacion.COSTOS,
         )
     }
 }

@@ -28,4 +28,10 @@ data class Recomendacion(
     val prioridad: Prioridad,
     val accion: String? = null,
     val datosAccion: DatosAccion? = null,
+    val hallazgo: String = "",
+    val causaProbable: String = "",
+    val esfuerzo: EsfuerzoRecomendacion = EsfuerzoRecomendacion.MEDIO,
+    val supuestoVisible: String = "",
+    val ctaLabel: String? = null,
+    val cta: CtaRecomendacion = CtaRecomendacion.NINGUNA,
 )

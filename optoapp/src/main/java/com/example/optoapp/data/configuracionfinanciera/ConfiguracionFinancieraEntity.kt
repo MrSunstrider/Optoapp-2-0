@@ -19,4 +19,10 @@ data class ConfiguracionFinancieraEntity(
     val origenBiseladoDefault: String = "Tercero",
     /** Internal pair rate when origen biselado is Propio; 0 means no COGS. */
     val costoBiseladoPropio: Double = 0.0,
+    /** Plan-de-acción impact assumptions (local; preserved across config download merge). */
+    val impactoMargenObjetivoPct: Double = 25.0,
+    val impactoRecuperoStockPct: Double = 0.70,
+    val impactoUpsideVentasPct: Double = 0.10,
+    val impactoCorteGastoPct: Double = 0.10,
+    val impactoRecuperoCobranzaPct: Double = 1.0,
 )

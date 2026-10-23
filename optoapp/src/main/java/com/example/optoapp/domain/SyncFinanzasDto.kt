@@ -466,6 +466,15 @@ data class ConfiguracionFinancieraRemoto(
         origenBiseladoDefault = OrigenBiselado.normalize(origenBiseladoDefault),
         costoBiseladoPropio = costoBiseladoPropio.coerceAtLeast(0.0),
     )
+
+    fun toEntityPreservingLocalImpacto(local: ConfiguracionFinancieraEntity?): ConfiguracionFinancieraEntity =
+        toEntity().copy(
+            impactoMargenObjetivoPct = local?.impactoMargenObjetivoPct ?: 25.0,
+            impactoRecuperoStockPct = local?.impactoRecuperoStockPct ?: 0.70,
+            impactoUpsideVentasPct = local?.impactoUpsideVentasPct ?: 0.10,
+            impactoCorteGastoPct = local?.impactoCorteGastoPct ?: 0.10,
+            impactoRecuperoCobranzaPct = local?.impactoRecuperoCobranzaPct ?: 1.0,
+        )
 }
 
 fun ConfiguracionFinancieraEntity.toRemoto() = ConfiguracionFinancieraRemoto(
