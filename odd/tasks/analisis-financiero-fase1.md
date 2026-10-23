@@ -33,7 +33,7 @@ Assumptions: `margenNetoObjetivo` field name may stay in DB/API; UI label become
 ## Tasks
 
 - [x] T1 S3–S4 S1 — Glossary rename: Resultado operativo (+ disclaimer IGV); objetivo label; % to 1 decimal in Análisis display — route: inline — commit: e9ceb651
-- [x] T2 S5 — Mark resultado/margen incompleto when cost coverage below threshold; keep number visible — route: inline — commit: pending-hash
+- [x] T2 S5 — Mark resultado/margen incompleto when cost coverage below threshold; keep number visible — route: inline — commit: 83ad6f7d
 - [ ] T3 S6 S8 — Home: separate P&L vs Caja; KPI strip; waterfall Ventas→COGS→Bruto→Opex→Resultado — route: inline — commit:
 - [ ] T4 S1 S10 — Remove gastos CRUD from Análisis home; gasto-out-of-range alert + CTA to Costos — route: inline — commit:
 - [ ] T5 S7 — Plan cards: Hallazgo→Causa→Acción→Impacto+editable supuesto→Esfuerzo→CTA; surface Impacto assumptions in config — route: inline — commit:
