@@ -25,4 +25,9 @@ data class ConfiguracionFinancieraEntity(
     val impactoUpsideVentasPct: Double = 0.10,
     val impactoCorteGastoPct: Double = 0.10,
     val impactoRecuperoCobranzaPct: Double = 1.0,
+    /** Local alert gates (preserved across config download merge). */
+    val margenBajoAlertaPct: Double = 10.0,
+    val margenAltoAlertaPct: Double = 35.0,
+    val contribucionAltaRatio: Double = 0.25,
+    val gastoFueraRangoRatio: Double = 0.4,
 )

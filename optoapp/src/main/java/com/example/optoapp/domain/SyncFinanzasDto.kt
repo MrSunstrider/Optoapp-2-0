@@ -477,6 +477,10 @@ data class ConfiguracionFinancieraRemoto(
                 ?: SupuestosImpacto.DEFAULT_CORTE_GASTO_PCT,
             impactoRecuperoCobranzaPct = local?.impactoRecuperoCobranzaPct
                 ?: SupuestosImpacto.DEFAULT_RECUPERO_COBRANZA_PCT,
+            margenBajoAlertaPct = local?.margenBajoAlertaPct ?: 10.0,
+            margenAltoAlertaPct = local?.margenAltoAlertaPct ?: 35.0,
+            contribucionAltaRatio = local?.contribucionAltaRatio ?: 0.25,
+            gastoFueraRangoRatio = local?.gastoFueraRangoRatio ?: 0.4,
         )
 }
 

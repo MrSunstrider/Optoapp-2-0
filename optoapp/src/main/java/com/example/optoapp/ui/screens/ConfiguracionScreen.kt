@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import com.example.optoapp.R
 import com.example.optoapp.data.AppRoles
 import com.example.optoapp.ui.components.OptoTopAppBar
+import com.example.optoapp.ui.components.config.AlertasNegocioConfigSection
 import com.example.optoapp.ui.components.config.BiseladoConfigSection
 import com.example.optoapp.ui.components.config.BusinessHoursSection
 import com.example.optoapp.ui.components.config.ClinicalIntegritySection
@@ -42,6 +43,7 @@ import com.example.optoapp.ui.theme.OptoTokens
 import com.example.optoapp.viewmodel.AuthViewModel
 import com.example.optoapp.viewmodel.BusinessHoursConfigViewModel
 import com.example.optoapp.viewmodel.ConfiguracionViewModel
+import com.example.optoapp.viewmodel.AlertasNegocioConfigViewModel
 import com.example.optoapp.viewmodel.FinanzasBiseladoConfigViewModel
 import com.example.optoapp.viewmodel.FiscalConfigViewModel
 import com.example.optoapp.viewmodel.LaboratorioConfigViewModel
@@ -69,10 +71,12 @@ fun ConfiguracionScreen(
     roleVm: RoleManagementViewModel = hiltViewModel(),
     configVm: ConfiguracionViewModel = hiltViewModel(),
     biseladoVm: FinanzasBiseladoConfigViewModel = hiltViewModel(),
+    alertasVm: AlertasNegocioConfigViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val biseladoUi by biseladoVm.ui.collectAsState()
+    val alertasUi by alertasVm.ui.collectAsState()
     val fiscalUi by fiscalVm.uiState.collectAsState()
     val labUi by laboratorioVm.uiState.collectAsState()
     val businessHoursUi by businessHoursVm.uiState.collectAsState()
@@ -231,6 +235,11 @@ fun ConfiguracionScreen(
                 onOrigenChange = biseladoVm::cambiarOrigenDefault,
                 onCostoPropioChange = biseladoVm::cambiarCostoPropio,
                 onSave = biseladoVm::guardar,
+            )
+            AlertasNegocioConfigSection(
+                ui = alertasUi,
+                onUpdate = alertasVm::updateField,
+                onSave = alertasVm::guardar,
             )
 
             FiscalDataSection(

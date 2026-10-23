@@ -12,12 +12,6 @@ import javax.inject.Inject
 open class GenerarRecomendacionesUseCase @Inject constructor(
     private val configuracionFinancieraDao: ConfiguracionFinancieraDao,
 ) {
-    companion object {
-        private const val MARGEN_BAJO_PCT = 10.0
-        private const val MARGEN_ALTO_PCT = 35.0
-        private const val CONTRIBUCION_ALTA_PCT = 0.25
-    }
-
     suspend operator fun invoke(
         analisis: AnalisisMensual?,
         deudores: List<Deudor>,
@@ -43,7 +37,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 evaluarLiquidarStock(analisis.stockEstancado, config, supuestos),
                 evaluarVenderMasDe(analisis.margenPorCategoria, config, supuestos),
                 evaluarAlertaCaida(analisis, config, mesAnalisis),
-                evaluarReducirGasto(analisis, supuestos),
+                evaluarReducirGasto(analisis, config, supuestos),
             )
         }
 
@@ -103,7 +97,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
     ): Recomendacion? {
         val minVentas = config.minVentasParaRecomendar.toDouble()
         val target = categorias.firstOrNull { cat ->
-            (cat.margenPct ?: Double.MAX_VALUE) < MARGEN_BAJO_PCT &&
+            (cat.margenPct ?: Double.MAX_VALUE) < config.margenBajoAlertaPct &&
                 cat.ventas >= minVentas
         } ?: return null
 
@@ -182,8 +176,8 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
             val margenPct = cat.margenPct ?: return@firstOrNull false
             val margenBruto = cat.ventas - cat.costos
             val contribucion = margenBruto / gananciaTotal
-            margenPct > MARGEN_ALTO_PCT &&
-                contribucion > CONTRIBUCION_ALTA_PCT &&
+            margenPct > config.margenAltoAlertaPct &&
+                contribucion > config.contribucionAltaRatio &&
                 cat.ventas >= minVentas
         } ?: return null
 
@@ -284,9 +278,14 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
     private fun evaluarReducirGasto(
         analisis: AnalisisMensual,
+        config: ConfiguracionFinancieraEntity,
         supuestos: SupuestosImpacto,
     ): Recomendacion? {
-        val alerta = GastoFueraDeRango.evaluar(analisis.ventasMes, analisis.gastosMes) ?: return null
+        val alerta = GastoFueraDeRango.evaluar(
+            analisis.ventasMes,
+            analisis.gastosMes,
+            umbral = config.gastoFueraRangoRatio,
+        ) ?: return null
         val ratioPct = AnalisisPercentFormatter.format(alerta.ratioPct)
         val hallazgo = "Opex ${MoneyFormatter.format(analisis.gastosMes)} = $ratioPct% de ventas " +
             "${MoneyFormatter.format(analisis.ventasMes)}."

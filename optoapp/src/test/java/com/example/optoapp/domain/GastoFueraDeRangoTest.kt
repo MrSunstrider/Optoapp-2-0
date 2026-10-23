@@ -28,8 +28,10 @@ class GastoFueraDeRangoTest {
 
     @Test
     fun threshold_matchesRecommendationEngine() {
-        assertEquals(0.4, GastoFueraDeRango.RATIO_ALERTA, 0.0)
+        assertEquals(0.4, GastoFueraDeRango.RATIO_ALERTA_DEFAULT, 0.0)
         assertFalse(GastoFueraDeRango.estaFueraDeRango(ratio = 0.4))
         assertTrue(GastoFueraDeRango.estaFueraDeRango(ratio = 0.4001))
+        assertFalse(GastoFueraDeRango.estaFueraDeRango(ratio = 0.45, umbral = 0.5))
+        assertTrue(GastoFueraDeRango.estaFueraDeRango(ratio = 0.45, umbral = 0.4))
     }
 }

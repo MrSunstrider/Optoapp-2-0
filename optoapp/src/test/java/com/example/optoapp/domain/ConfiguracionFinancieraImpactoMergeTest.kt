@@ -16,6 +16,10 @@ class ConfiguracionFinancieraImpactoMergeTest {
             impactoUpsideVentasPct = 0.2,
             impactoCorteGastoPct = 0.15,
             impactoRecuperoCobranzaPct = 0.8,
+            margenBajoAlertaPct = 12.0,
+            margenAltoAlertaPct = 40.0,
+            contribucionAltaRatio = 0.3,
+            gastoFueraRangoRatio = 0.5,
         )
         val remoto = ConfiguracionFinancieraRemoto(
             opticaId = "optica1",
@@ -30,6 +34,10 @@ class ConfiguracionFinancieraImpactoMergeTest {
         assertEquals(0.2, merged.impactoUpsideVentasPct, 0.0)
         assertEquals(0.15, merged.impactoCorteGastoPct, 0.0)
         assertEquals(0.8, merged.impactoRecuperoCobranzaPct, 0.0)
+        assertEquals(12.0, merged.margenBajoAlertaPct, 0.0)
+        assertEquals(40.0, merged.margenAltoAlertaPct, 0.0)
+        assertEquals(0.3, merged.contribucionAltaRatio, 0.0)
+        assertEquals(0.5, merged.gastoFueraRangoRatio, 0.0)
     }
 
     @Test
@@ -42,5 +50,9 @@ class ConfiguracionFinancieraImpactoMergeTest {
         assertEquals(0.10, merged.impactoUpsideVentasPct, 0.0)
         assertEquals(0.10, merged.impactoCorteGastoPct, 0.0)
         assertEquals(1.0, merged.impactoRecuperoCobranzaPct, 0.0)
+        assertEquals(10.0, merged.margenBajoAlertaPct, 0.0)
+        assertEquals(35.0, merged.margenAltoAlertaPct, 0.0)
+        assertEquals(0.25, merged.contribucionAltaRatio, 0.0)
+        assertEquals(0.4, merged.gastoFueraRangoRatio, 0.0)
     }
 }
