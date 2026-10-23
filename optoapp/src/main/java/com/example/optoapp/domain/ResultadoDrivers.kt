@@ -41,16 +41,19 @@ object ResultadoDrivers {
         costoMesAnterior: Double,
     ): ResultadoDriversMom {
         val sinBase = cantidadVentasMesAnterior <= 0
+        if (sinBase) {
+            return ResultadoDriversMom(drivers = emptyList(), sinBaseMom = true)
+        }
         val t0 = ticketPromedioMesAnterior
         val t1 = ticketPromedio
-        val volumen = if (sinBase) null else (cantidadVentas - cantidadVentasMesAnterior) * t0
-        val ticket = if (sinBase) null else cantidadVentas * (t1 - t0)
+        val volumen = (cantidadVentas - cantidadVentasMesAnterior) * t0
+        val ticket = cantidadVentas * (t1 - t0)
         val costo = -(costoMes - costoMesAnterior)
-        val ranked = buildList {
-            volumen?.let { add(ResultadoDriver(DriverTipo.VOLUMEN, it)) }
-            ticket?.let { add(ResultadoDriver(DriverTipo.TICKET, it)) }
-            add(ResultadoDriver(DriverTipo.COSTO, costo))
-        }.sortedByDescending { kotlin.math.abs(it.soles) }
-        return ResultadoDriversMom(drivers = ranked, sinBaseMom = sinBase)
+        val ranked = listOf(
+            ResultadoDriver(DriverTipo.VOLUMEN, volumen),
+            ResultadoDriver(DriverTipo.TICKET, ticket),
+            ResultadoDriver(DriverTipo.COSTO, costo),
+        ).sortedByDescending { kotlin.math.abs(it.soles) }
+        return ResultadoDriversMom(drivers = ranked, sinBaseMom = false)
     }
 }

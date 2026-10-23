@@ -25,7 +25,7 @@ data class CxcAgingResumen(
 object CxcAging {
     fun from(
         deudores: List<Deudor>,
-        saldoPendiente: Double,
+        @Suppress("UNUSED_PARAMETER") saldoPendiente: Double,
         ventasMes: Double,
         mes: YearMonth,
     ): CxcAgingResumen {
@@ -56,8 +56,9 @@ object CxcAging {
             null
         }
         val diasMes = mes.lengthOfMonth().toDouble()
+        // DSO numerator must match bucket saldos (deudores), not a separate analisis.saldoPendiente.
         val dso = if (ventasMes > 0.0) {
-            saldoPendiente / (ventasMes / diasMes)
+            saldoTotal / (ventasMes / diasMes)
         } else {
             null
         }

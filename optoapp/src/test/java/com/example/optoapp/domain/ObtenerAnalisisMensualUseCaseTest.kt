@@ -186,6 +186,23 @@ class ObtenerAnalisisMensualUseCaseTest {
     }
 
     @Test
+    fun offline_momPriors_matchUnroundedDivision() = runTest {
+        // Values that ROUND(..., 2) would alter; offline Room must keep exact V0/Q0 and COGS sum.
+        val useCase = offlineUseCase(
+            listOf(
+                resumen("jun", "2026-06-15", ventas = 10_000.0, costo = 3_000.123, cantidad = 3),
+                resumen("jul", "2026-07-10", ventas = 12_000.0, costo = 4_000.0, cantidad = 4),
+            ),
+        )
+
+        val analisis = (useCase("optica1", julio) as Resource.Success).data!!
+
+        assertEquals(10_000.0 / 3.0, analisis.ticketPromedioMesAnterior, 0.000_000_1)
+        assertEquals(3_000.123, analisis.costoMesAnterior, 0.000_000_1)
+        assertFalse(kotlin.math.abs(analisis.ticketPromedioMesAnterior - 3_333.33) < 0.000_000_1)
+    }
+
+    @Test
     fun offline_computesMarginFactsFromResumenAndGastos() = runTest {
         val useCase = offlineUseCase(
             resumenes = listOf(

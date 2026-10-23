@@ -61,4 +61,23 @@ class CxcAgingTest {
         )
         assertNull(r.dsoIlustrativo)
     }
+
+    @Test
+    fun dso_usesDeudorSaldoSum_notMismatchedAnalisisSaldo() {
+        // Buckets sum to 650; analisis.saldoPendiente wrongly 0 would previously yield DSO 0.
+        val r = CxcAging.from(
+            listOf(
+                deudor(10, 100.0),
+                deudor(45, 200.0),
+                deudor(70, 50.0),
+                deudor(120, 300.0),
+            ),
+            saldoPendiente = 0.0,
+            ventasMes = 3100.0,
+            mes = YearMonth.of(2026, 7),
+        )
+        assertEquals(650.0, r.buckets.sumOf { it.saldo }, 0.001)
+        // DSO = 650 / (3100/31) = 6.5
+        assertEquals(6.5, r.dsoIlustrativo!!, 0.001)
+    }
 }

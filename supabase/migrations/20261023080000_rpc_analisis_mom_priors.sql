@@ -428,8 +428,8 @@ BEGIN
         'cantidad_ventas', v_cantidad_ventas,
         'ventas_mes_anterior', v_ventas_mes_anterior,
         'cantidad_ventas_mes_anterior', v_cantidad_ventas_mes_anterior,
-        'costo_mes_anterior', ROUND(v_costo_mes_anterior, 2),
-        'ticket_promedio_mes_anterior', ROUND(v_ticket_promedio_mes_anterior, 2),
+        'costo_mes_anterior', v_costo_mes_anterior,
+        'ticket_promedio_mes_anterior', v_ticket_promedio_mes_anterior,
         'variacion_ventas_pct', CASE WHEN v_ventas_mes_anterior > 0
             THEN ROUND(((v_ventas_mes - v_ventas_mes_anterior) / v_ventas_mes_anterior) * 100, 1)
             ELSE NULL END,

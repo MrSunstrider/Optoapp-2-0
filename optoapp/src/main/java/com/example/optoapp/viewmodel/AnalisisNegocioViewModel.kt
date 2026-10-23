@@ -226,12 +226,14 @@ class AnalisisNegocioViewModel @Inject constructor(
                         InterpretacionAnalista.fromAnalisis(it, recomendaciones.firstOrNull()?.titulo)
                     }
                     val driversMom = analisis?.let { ResultadoDrivers.fromAnalisis(it) }
-                    val cxcAging = CxcAging.from(
-                        deudores = deudores,
-                        saldoPendiente = analisis?.saldoPendiente ?: 0.0,
-                        ventasMes = analisis?.ventasMes ?: 0.0,
-                        mes = YearMonth.from(mes),
-                    )
+                    val cxcAging = analisis?.let {
+                        CxcAging.from(
+                            deudores = deudores,
+                            saldoPendiente = it.saldoPendiente,
+                            ventasMes = it.ventasMes,
+                            mes = YearMonth.from(mes),
+                        )
+                    }
                     val periodo = mes.format(PERIODO_FMT)
                     if (_uiState.value.mesSeleccionado != mes) return@launch
 

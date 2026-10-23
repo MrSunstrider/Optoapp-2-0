@@ -466,4 +466,21 @@ class AnalisisNegocioViewModelTest {
         assertNull(viewModel.uiState.first().supuestosError)
         assertEquals(false, viewModel.uiState.first().supuestosDialogVisible)
     }
+
+    @Test
+    fun load_whenAnalisisNull_leavesCxcAgingNullDespiteDeudores() = runTest(testDispatcher) {
+        primeUseCases(
+            analisis = Resource.Error("Error en analisis mensual"),
+            deudores = Resource.Success(createDeudores()),
+            recomendaciones = Resource.Success(createRecomendaciones()),
+        )
+
+        viewModel = createViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.first()
+        assertNull(state.analisis)
+        assertEquals(2, state.deudores.size)
+        assertNull(state.cxcAging)
+    }
 }

@@ -40,9 +40,32 @@ class ResultadoDriversTest {
         )
 
         assertTrue(mom.sinBaseMom)
-        assertEquals(1, mom.drivers.size)
-        assertEquals(DriverTipo.COSTO, mom.drivers.single().tipo)
-        assertEquals(-1_000.0, mom.drivers.single().soles, 0.001)
+        assertTrue(mom.drivers.isEmpty())
+    }
+
+    @Test
+    fun unroundedPriorTicket_keepsVolumeTicketIdentity() {
+        // T0 = V0/Q0 exact (no ROUND 2dp); rounded T0 would break Δventas identity.
+        val q0 = 3
+        val v0 = 10_000.0
+        val t0 = v0 / q0
+        val q1 = 4
+        val t1 = 3_000.0
+        val v1 = q1 * t1
+        val mom = ResultadoDrivers.compute(
+            cantidadVentas = q1,
+            ticketPromedio = t1,
+            costoMes = 4_000.0,
+            cantidadVentasMesAnterior = q0,
+            ticketPromedioMesAnterior = t0,
+            costoMesAnterior = 3_000.123,
+        )
+
+        assertFalse(mom.sinBaseMom)
+        val volumen = mom.drivers.first { it.tipo == DriverTipo.VOLUMEN }.soles
+        val ticket = mom.drivers.first { it.tipo == DriverTipo.TICKET }.soles
+        assertEquals(v1 - v0, volumen + ticket, 0.001)
+        assertEquals(-(4_000.0 - 3_000.123), mom.drivers.first { it.tipo == DriverTipo.COSTO }.soles, 0.001)
     }
 
     @Test

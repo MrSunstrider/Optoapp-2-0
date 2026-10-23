@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.optoapp.data.SessionManager
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
-import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,13 +67,27 @@ class AlertasNegocioConfigViewModel @Inject constructor(
                 contrib == null || contrib !in 0.0..1.0 ||
                 gastoRatio == null || gastoRatio !in 0.0..1.0
             ) {
-                _ui.update { it.copy(error = "Revisa los umbrales (ratios ≥ 0; ratios 0–1).") }
+                _ui.update { it.copy(error = "Revisa los umbrales (valores ≥ 0; ratios 0–1).") }
+                return@launch
+            }
+            if (margenBajo >= margenAlto) {
+                _ui.update {
+                    it.copy(error = "El margen bajo de alerta debe ser menor que el margen alto.")
+                }
                 return@launch
             }
             _ui.update { it.copy(guardando = true, error = null, mensaje = null) }
             val opticaId = sessionManager.opticaId.first()
             val actual = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)
-                ?: ConfiguracionFinancieraEntity(opticaId = opticaId)
+            if (actual == null) {
+                _ui.update {
+                    it.copy(
+                        guardando = false,
+                        error = "No hay configuración financiera para esta óptica.",
+                    )
+                }
+                return@launch
+            }
             configuracionFinancieraDao.upsert(
                 actual.copy(
                     caidaVentasAlertaPct = caida,
