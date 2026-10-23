@@ -86,4 +86,43 @@ class AnalisisDecisionLayoutTest {
         val caja = AnalisisDecisionLayout.from(analisis(proyeccion = null)).caja
         assertNull(caja.proyeccionSaldoNeto)
     }
+
+    @Test
+    fun from_usesFactsEvenWhenZero_andDerivesBrutoFromVentasMinusCogs() {
+        val analisis = AnalisisMensual(
+            ventasMes = 999.0,
+            cobrosMes = 0.0,
+            margenNetoPct = 50.0,
+            margenPorCategoria = emptyList(),
+            deudores = DeudoresResumen(0, 0.0),
+            proyeccionCaja = null,
+            stockEstancado = emptyList(),
+            valorInventario = 0.0,
+            ventasMesAnterior = 0.0,
+            variacionVentasPct = null,
+            gastosMes = 10.0,
+            saldoPendiente = 0.0,
+            ticketPromedio = 0.0,
+            cantidadVentas = 0,
+            costoMes = 888.0,
+            marginFacts = MarginFacts(
+                ventasMes = 0.0,
+                costoMes = 0.0,
+                margenBruto = 12_345.0,
+                margenNetoPct = 0.0,
+                cobertura = CoberturaCosto(lineasTotal = 10, lineasReales = 9, pctReal = 90.0),
+            ),
+        )
+
+        val layout = AnalisisDecisionLayout.from(analisis)
+        val wf = layout.waterfall
+
+        assertEquals(0.0, wf[0].monto, 0.001)
+        assertEquals(0.0, wf[1].monto, 0.001)
+        assertEquals(0.0, wf[2].monto, 0.001)
+        assertEquals(10.0, wf[3].monto, 0.001)
+        assertEquals(-10.0, wf[4].monto, 0.001)
+        assertEquals(0.0, layout.kpis.utilidadBruta, 0.001)
+        assertEquals(0.0, layout.kpis.resultadoOperativoPct, 0.001)
+    }
 }

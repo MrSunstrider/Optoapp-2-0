@@ -28,12 +28,12 @@ data class AnalisisDecisionLayout(
     companion object {
         fun from(analisis: AnalisisMensual): AnalisisDecisionLayout {
             val facts = analisis.marginFacts
-            val ventas = if (facts.ventasMes != 0.0) facts.ventasMes else analisis.ventasMes
-            val cogs = if (facts.costoMes != 0.0) facts.costoMes else analisis.costoMes
-            val bruto = if (facts.margenBruto != 0.0) facts.margenBruto else (ventas - cogs)
+            val ventas = facts.ventasMes
+            val cogs = facts.costoMes
+            val bruto = ventas - cogs
             val opex = analisis.gastosMes
-            val resultado = ventas - cogs - opex
-            val roPct = if (facts.margenNetoPct != 0.0) facts.margenNetoPct else analisis.margenNetoPct
+            val resultado = bruto - opex
+            val roPct = facts.margenNetoPct
 
             return AnalisisDecisionLayout(
                 waterfall = listOf(
