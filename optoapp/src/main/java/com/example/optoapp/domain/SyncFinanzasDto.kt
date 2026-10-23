@@ -452,28 +452,31 @@ data class ConfiguracionFinancieraRemoto(
     @SerialName("origen_biselado_default") val origenBiseladoDefault: String = "Tercero",
     @SerialName("costo_biselado_propio") val costoBiseladoPropio: Double = 0.0,
 ) {
-    fun toEntity() = ConfiguracionFinancieraEntity(
-        opticaId = opticaId,
-        margenNetoObjetivo = margenNetoObjetivo,
-        ticketPromedioObjetivo = ticketPromedioObjetivo,
-        caidaVentasAlertaPct = caidaVentasAlertaPct,
-        deudaViejaAlertaDias = deudaViejaAlertaDias,
-        deudaTotalAlertaMonto = deudaTotalAlertaMonto,
-        stockEstancadoAlertaDias = stockEstancadoAlertaDias,
-        stockBajoAlertaUnidades = stockBajoAlertaUnidades,
-        minVentasParaRecomendar = minVentasParaRecomendar,
-        frecuenciaRecalculoDias = frecuenciaRecalculoDias,
-        origenBiseladoDefault = OrigenBiselado.normalize(origenBiseladoDefault),
-        costoBiseladoPropio = costoBiseladoPropio.coerceAtLeast(0.0),
-    )
-
+    // Sole upsert entry so download cannot wipe local impacto assumptions.
     fun toEntityPreservingLocalImpacto(local: ConfiguracionFinancieraEntity?): ConfiguracionFinancieraEntity =
-        toEntity().copy(
-            impactoMargenObjetivoPct = local?.impactoMargenObjetivoPct ?: 25.0,
-            impactoRecuperoStockPct = local?.impactoRecuperoStockPct ?: 0.70,
-            impactoUpsideVentasPct = local?.impactoUpsideVentasPct ?: 0.10,
-            impactoCorteGastoPct = local?.impactoCorteGastoPct ?: 0.10,
-            impactoRecuperoCobranzaPct = local?.impactoRecuperoCobranzaPct ?: 1.0,
+        ConfiguracionFinancieraEntity(
+            opticaId = opticaId,
+            margenNetoObjetivo = margenNetoObjetivo,
+            ticketPromedioObjetivo = ticketPromedioObjetivo,
+            caidaVentasAlertaPct = caidaVentasAlertaPct,
+            deudaViejaAlertaDias = deudaViejaAlertaDias,
+            deudaTotalAlertaMonto = deudaTotalAlertaMonto,
+            stockEstancadoAlertaDias = stockEstancadoAlertaDias,
+            stockBajoAlertaUnidades = stockBajoAlertaUnidades,
+            minVentasParaRecomendar = minVentasParaRecomendar,
+            frecuenciaRecalculoDias = frecuenciaRecalculoDias,
+            origenBiseladoDefault = OrigenBiselado.normalize(origenBiseladoDefault),
+            costoBiseladoPropio = costoBiseladoPropio.coerceAtLeast(0.0),
+            impactoMargenObjetivoPct = local?.impactoMargenObjetivoPct
+                ?: SupuestosImpacto.DEFAULT_MARGEN_OBJETIVO_PCT,
+            impactoRecuperoStockPct = local?.impactoRecuperoStockPct
+                ?: SupuestosImpacto.DEFAULT_RECUPERO_STOCK_PCT,
+            impactoUpsideVentasPct = local?.impactoUpsideVentasPct
+                ?: SupuestosImpacto.DEFAULT_UPSIDE_VENTAS_PCT,
+            impactoCorteGastoPct = local?.impactoCorteGastoPct
+                ?: SupuestosImpacto.DEFAULT_CORTE_GASTO_PCT,
+            impactoRecuperoCobranzaPct = local?.impactoRecuperoCobranzaPct
+                ?: SupuestosImpacto.DEFAULT_RECUPERO_COBRANZA_PCT,
         )
 }
 

@@ -24,8 +24,13 @@ class ConfiguracionFinancieraToRemotoTest {
         assertEquals(18.0, remoto.margenNetoObjetivo, 0.0)
         assertEquals(OrigenBiselado.PROPIO, remoto.origenBiseladoDefault)
         assertEquals(12.5, remoto.costoBiseladoPropio, 0.0)
-        assertEquals(entity.origenBiseladoDefault, remoto.toEntity().origenBiseladoDefault)
-        assertEquals(entity.costoBiseladoPropio, remoto.toEntity().costoBiseladoPropio, 0.0)
+        val restored = remoto.toEntityPreservingLocalImpacto(null)
+        assertEquals(entity.origenBiseladoDefault, restored.origenBiseladoDefault)
+        assertEquals(entity.costoBiseladoPropio, restored.costoBiseladoPropio, 0.0)
+        assertEquals(SupuestosImpacto.DEFAULT_MARGEN_OBJETIVO_PCT, restored.impactoMargenObjetivoPct, 0.0)
+        val encoded = json.encodeToString(ConfiguracionFinancieraRemoto.serializer(), remoto)
+        val decoded = json.decodeFromString(ConfiguracionFinancieraRemoto.serializer(), encoded)
+        assertEquals(remoto, decoded)
     }
 
     @Test
