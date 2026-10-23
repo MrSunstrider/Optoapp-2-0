@@ -40,4 +40,4 @@ L2. Implemented T1–T4 on `feat/analisis-financiero-fase3`. Utilidad neta skipp
 
 L3. Work-unit commits: `1363cfc6` sync seguimiento LWW; `173594fd` mix driver + cumplimiento. Slice PRs still need approved GitHub issue when stacking to main.
 
-L4. Judgment Day round-1 correction (JD-C1/C2, JD-W1/W2/W3): seguimiento pending mark + upload remote `updated_at` gate + keepPendingLocalEdit download; offline MIX category aggregation from Room dispensaciones; blank-periodo orphan DELETE migration; LWW regression tests. Commits: `38378cd8` (sync LWW), plus follow-up offline MIX + orphan cleanup.
+L4. Judgment Day round-1 correction (JD-C1/C2, JD-W1/W2/W3): seguimiento pending mark + upload remote `updated_at` gate + keepPendingLocalEdit download; offline MIX category aggregation from Room dispensaciones; blank-periodo orphan DELETE migration; LWW regression tests. Commits: `38378cd8` (sync LWW), `93e831a4` (offline MIX + orphan cleanup).
