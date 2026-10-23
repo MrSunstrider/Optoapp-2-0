@@ -61,13 +61,30 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
         val gastos = gastoOperativoDao.getByOpticaBetween(opticaId, inicioSerie.atDay(1), mesActual.atEndOfMonth())
             .filter { it.origenDispensacionItemId == null }
         val rows = resumenes.filter { mesDe(it.fecha) == mesActual }
+        val mesAnterior = mesActual.minusMonths(1)
+        val rowsAnterior = resumenes.filter { mesDe(it.fecha) == mesAnterior }
         val gastosDelMes = gastos.filter { YearMonth.from(it.fecha) == mesActual }
         val gastosMes = gastosDelMes.sumOf { it.monto }.toDouble()
 
         val ventasMes = rows.sumOf { it.ventasMontoTotal }
         val costoMes = rows.sumOf { it.ventasCostoTotal }
         val cobrosMes = rows.sumOf { it.cobrosMontoTotal }
+        val cantidadVentas = rows.sumOf { it.ventasCantidad }.toInt()
+        val ticketPromedio = if (cantidadVentas > 0) ventasMes / cantidadVentas else 0.0
+        val ventasMesAnterior = rowsAnterior.sumOf { it.ventasMontoTotal }
+        val cantidadVentasMesAnterior = rowsAnterior.sumOf { it.ventasCantidad }.toInt()
+        val costoMesAnterior = rowsAnterior.sumOf { it.ventasCostoTotal }
+        val ticketPromedioMesAnterior =
+            if (cantidadVentasMesAnterior > 0) ventasMesAnterior / cantidadVentasMesAnterior else 0.0
+        val variacionVentasPct = if (ventasMesAnterior > 0.0) {
+            BigDecimal.valueOf((ventasMes - ventasMesAnterior) / ventasMesAnterior * 100)
+                .setScale(1, RoundingMode.HALF_UP)
+                .toDouble()
+        } else {
+            null
+        }
         val valorInventario = rows.lastOrNull()?.inventarioValor ?: 0.0
+        val saldoPendiente = rows.lastOrNull()?.saldoPendienteTotal ?: 0.0
         val margenBruto = ventasMes - costoMes
         // Keep offline % identical to rpc so the owner never sees two “truths” for one month.
         val margenBrutoPct = porcentajeDeVentas(margenBruto, ventasMes, decimales = 1)
@@ -86,9 +103,15 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
                 proyeccionCaja = null,
                 stockEstancado = emptyList(),
                 valorInventario = valorInventario,
-                ventasMesAnterior = 0.0,
-                variacionVentasPct = null,
+                ventasMesAnterior = ventasMesAnterior,
+                variacionVentasPct = variacionVentasPct,
                 gastosMes = gastosMes,
+                saldoPendiente = saldoPendiente,
+                ticketPromedio = ticketPromedio,
+                cantidadVentas = cantidadVentas,
+                cantidadVentasMesAnterior = cantidadVentasMesAnterior,
+                costoMesAnterior = costoMesAnterior,
+                ticketPromedioMesAnterior = ticketPromedioMesAnterior,
                 esOffline = true,
                 costoMes = costoMes,
                 marginFacts = MarginFacts(

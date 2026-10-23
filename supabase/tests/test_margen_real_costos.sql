@@ -92,7 +92,8 @@ BEGIN
     SELECT string_agg(k, ', ') INTO v_missing
     FROM unnest(ARRAY[
         'ventas_mes', 'cobros_mes', 'costo_mes', 'gastos_mes', 'saldo_pendiente', 'margen_neto_pct',
-        'ticket_promedio', 'cantidad_ventas', 'ventas_mes_anterior', 'variacion_ventas_pct',
+        'ticket_promedio', 'cantidad_ventas', 'ventas_mes_anterior', 'cantidad_ventas_mes_anterior',
+        'costo_mes_anterior', 'ticket_promedio_mes_anterior', 'variacion_ventas_pct',
         'meses_historicos', 'margen_por_categoria', 'deudores', 'proyeccion_caja', 'stock_estancado',
         'valor_inventario',
         'margen_bruto', 'margen_bruto_pct', 'costos_por_linea', 'margen_servicios', 'cobertura'

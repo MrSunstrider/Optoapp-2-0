@@ -68,13 +68,26 @@ class ObtenerAnalisisMensualUseCaseTest {
         putJsonArray("stock_estancado") {}
         put("valor_inventario", 45000.0)
         put("ventas_mes_anterior", 12000.0)
+        put("cantidad_ventas", 10)
+        put("ticket_promedio", 1500.0)
+        put("cantidad_ventas_mes_anterior", 8)
+        put("costo_mes_anterior", 5000.0)
+        put("ticket_promedio_mes_anterior", 1500.0)
         put("variacion_ventas_pct", 25.0)
     }
 
-    private fun resumen(id: String, fecha: String, ventas: Double, costo: Double, cobros: Double = 0.0, inventario: Double = 0.0) =
+    private fun resumen(
+        id: String,
+        fecha: String,
+        ventas: Double,
+        costo: Double,
+        cobros: Double = 0.0,
+        inventario: Double = 0.0,
+        cantidad: Int = 1,
+    ) =
         ResumenDiarioEntity(
             id = id, opticaId = "optica1", fecha = fecha,
-            ventasCantidad = 1, ventasMontoTotal = ventas, ventasCostoTotal = costo,
+            ventasCantidad = cantidad, ventasMontoTotal = ventas, ventasCostoTotal = costo,
             cobrosCantidad = 1, cobrosMontoTotal = cobros,
             saldoPendienteTotal = 0.0, saldoPendienteCantidad = 0,
             inventarioValor = inventario,
@@ -119,6 +132,10 @@ class ObtenerAnalisisMensualUseCaseTest {
         assertEquals(5, analisis.deudores.cantidad)
         assertEquals(5000.0, analisis.proyeccionCaja!!.ingresosEsperados, 0.001)
         assertEquals(false, analisis.esOffline)
+        assertEquals(10, analisis.cantidadVentas)
+        assertEquals(8, analisis.cantidadVentasMesAnterior)
+        assertEquals(5000.0, analisis.costoMesAnterior, 0.001)
+        assertEquals(1500.0, analisis.ticketPromedioMesAnterior, 0.001)
     }
 
     @Test
@@ -144,6 +161,28 @@ class ObtenerAnalisisMensualUseCaseTest {
         assertEquals(35000.0, analisis.valorInventario, 0.001)
         assertEquals(0.0, analisis.ventasMesAnterior, 0.001)
         assertNull(analisis.variacionVentasPct)
+        assertEquals(2, analisis.cantidadVentas)
+        assertEquals(0, analisis.cantidadVentasMesAnterior)
+    }
+
+    @Test
+    fun offline_computesMomPriorsFromPriorMonth() = runTest {
+        val useCase = offlineUseCase(
+            listOf(
+                resumen("jun", "2026-06-15", ventas = 8000.0, costo = 3000.0, cantidad = 4),
+                resumen("jul", "2026-07-10", ventas = 10000.0, costo = 4000.0, cantidad = 5),
+            ),
+        )
+
+        val analisis = (useCase("optica1", julio) as Resource.Success).data!!
+
+        assertEquals(8000.0, analisis.ventasMesAnterior, 0.001)
+        assertEquals(4, analisis.cantidadVentasMesAnterior)
+        assertEquals(3000.0, analisis.costoMesAnterior, 0.001)
+        assertEquals(2000.0, analisis.ticketPromedioMesAnterior, 0.001)
+        assertEquals(5, analisis.cantidadVentas)
+        assertEquals(2000.0, analisis.ticketPromedio, 0.001)
+        assertEquals(25.0, analisis.variacionVentasPct!!, 0.001)
     }
 
     @Test

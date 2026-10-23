@@ -87,7 +87,8 @@ DECLARE
     v_expected_keys TEXT[] := ARRAY[
         'ventas_mes', 'cobros_mes', 'costo_mes', 'gastos_mes',
         'saldo_pendiente', 'margen_neto_pct', 'ticket_promedio', 'cantidad_ventas',
-        'ventas_mes_anterior', 'variacion_ventas_pct', 'meses_historicos',
+        'ventas_mes_anterior', 'cantidad_ventas_mes_anterior', 'costo_mes_anterior',
+        'ticket_promedio_mes_anterior', 'variacion_ventas_pct', 'meses_historicos',
         'margen_por_categoria', 'deudores', 'proyeccion_caja',
         'stock_estancado', 'valor_inventario',
         'margen_bruto', 'margen_bruto_pct', 'costos_por_linea', 'margen_servicios',
@@ -108,14 +109,14 @@ BEGIN
             END IF;
         END LOOP;
 
-        ASSERT array_length(v_keys, 1) = 30,
-            'T1.2 FAIL: rpc_analisis_mensual returned ' || COALESCE(array_length(v_keys, 1)::TEXT, '0') || ' keys (expected 30)';
+        ASSERT array_length(v_keys, 1) = 33,
+            'T1.2 FAIL: rpc_analisis_mensual returned ' || COALESCE(array_length(v_keys, 1)::TEXT, '0') || ' keys (expected 33)';
 
-        RAISE NOTICE 'T1.2 PASS: rpc_analisis_mensual returns all 30 keys';
+        RAISE NOTICE 'T1.2 PASS: rpc_analisis_mensual returns all 33 keys';
 
     EXCEPTION WHEN OTHERS THEN
         RAISE WARNING 'T1.2 NOTE: rpc_analisis_mensual failed: %', SQLERRM;
-        RAISE EXCEPTION 'T1.2 RED: rpc_analisis_mensual must succeed and return 30 keys';
+        RAISE EXCEPTION 'T1.2 RED: rpc_analisis_mensual must succeed and return 33 keys';
     END;
 END;
 $$;
