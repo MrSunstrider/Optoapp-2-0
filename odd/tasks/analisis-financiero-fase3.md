@@ -27,13 +27,15 @@ S8. Mix driver (authorized): prior-month `margen_por_categoria` from RPC; mix ef
 
 ## Tasks
 
-- [x] T1 S1 S7 — Remote schema + RLS for feedback seguimiento — route: inline — commit: (with T2)
-- [x] T2 S1 S7 — DTO + SyncFinanzas upload/download LWW — route: inline — commit: pending SHA
-- [x] T3 S2 S5 S8 — RPC prior categories + MIX driver + home UI — route: inline — commit: pending SHA
-- [x] T4 S3 — Plan cumplimiento hechas vs abiertas on coach — route: inline — commit: pending SHA
+- [x] T1 S1 S7 — Remote schema + RLS for feedback seguimiento — route: inline — commit: 1363cfc6
+- [x] T2 S1 S7 — DTO + SyncFinanzas upload/download LWW — route: inline — commit: 1363cfc6
+- [x] T3 S2 S5 S8 — RPC prior categories + MIX driver + home UI — route: inline — commit: 173594fd
+- [x] T4 S3 — Plan cumplimiento hechas vs abiertas on coach — route: inline — commit: 173594fd
 
 ## Log
 
 L1. User (verbatim package): Fase 3 — Multi-dispositivo y profundidad; Sync remoto de seguimiento; Mix como cuarto driver; Cumplimiento del plan (hechas vs abiertas) y utilidades neta solo si política fiscal; fuente resumen_diario / rpc_analisis_mensual.
 
 L2. Implemented T1–T4 on `feat/analisis-financiero-fase3`. Utilidad neta skipped (blocked). GGA required moving `uploadConfiguracionFinanciera` from `DownloadSyncCoordinator` to `UploadSyncCoordinator`. Full `testDebugUnitTest` green before commits.
+
+L3. Work-unit commits: `1363cfc6` sync seguimiento LWW; `173594fd` mix driver + cumplimiento. Slice PRs still need approved GitHub issue when stacking to main.
