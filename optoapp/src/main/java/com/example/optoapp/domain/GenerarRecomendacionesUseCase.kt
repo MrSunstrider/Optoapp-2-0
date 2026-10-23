@@ -3,6 +3,7 @@ package com.example.optoapp.domain
 import com.example.optoapp.data.Resource
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraDao
 import com.example.optoapp.data.configuracionfinanciera.ConfiguracionFinancieraEntity
+import com.example.optoapp.util.AnalisisPercentFormatter
 import com.example.optoapp.util.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
@@ -99,7 +100,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 cat.ventas >= minVentas
         } ?: return null
 
-        val margenPctStr = String.format("%.1f", target.margenPct ?: 0.0)
+        val margenPctStr = AnalisisPercentFormatter.format(target.margenPct ?: 0.0)
         val titulo = "Mejorar precio de ${target.categoria}"
         val impacto = ImpactoRecomendacion.mejorarPrecio(target.ventas, target.margenPct)
         return Recomendacion(
@@ -165,7 +166,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
                 cat.ventas >= minVentas
         } ?: return null
 
-        val margenPctStr = String.format("%.0f", target.margenPct ?: 0.0)
+        val margenPctStr = AnalisisPercentFormatter.format(target.margenPct ?: 0.0)
         val titulo = "Vender mas de ${target.categoria}"
         val impacto = ImpactoRecomendacion.venderMasDe(target.ventas, target.margenPct)
         return Recomendacion(
@@ -189,7 +190,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         mesAnalisis: LocalDate,
     ): Recomendacion? {
         val mes = YearMonth.from(mesAnalisis)
-        // Seasonal mute is about the analyzed month, not wall-clock "today".
+        // Jan/Feb YoY comps are mostly calendar seasonality noise for optical retail.
         if (mes.monthValue in 1..2) return null
 
         val hoy = LocalDate.now()
@@ -226,7 +227,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
 
         if (variacion >= -config.caidaVentasAlertaPct) return null
 
-        val pctStr = String.format("%.0f", kotlin.math.abs(variacion))
+        val pctStr = AnalisisPercentFormatter.format(kotlin.math.abs(variacion))
         val titulo = "Caida en ventas detectada"
         val detalleBase = if (esProporcional) {
             "Las ventas cayeron un $pctStr% respecto al mismo periodo del mes pasado " +
@@ -258,7 +259,7 @@ open class GenerarRecomendacionesUseCase @Inject constructor(
         val ratio = analisis.gastosMes / analisis.ventasMes
         if (ratio <= GASTOS_VENTAS_RATIO_ALERTA) return null
 
-        val ratioPct = String.format("%.1f", ratio * 100)
+        val ratioPct = AnalisisPercentFormatter.format(ratio * 100)
         val titulo = "Reducir gastos operativos"
         val impacto = ImpactoRecomendacion.reducirGasto(analisis.gastosMes)
         return Recomendacion(

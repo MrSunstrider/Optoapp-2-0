@@ -20,10 +20,14 @@ class InterpretacionAnalistaTest {
 
         val out = InterpretacionAnalista.from(facts, topRecTitulo = "Cobra deudas vencidas")
 
+        assertTrue(out.titular.contains("resultado operativo", ignoreCase = true))
+        assertFalse(out.titular.contains("margen neto", ignoreCase = true))
+        assertTrue(out.titular.contains("8.0%") || out.titular.contains("8.0"))
         assertTrue(out.titular.contains("debajo", ignoreCase = true) || out.titular.contains("bajo", ignoreCase = true))
         assertTrue(out.puntos.any { it.contains("7") || it.contains("objetivo") })
         assertEquals(ConfianzaInterpretacion.ALTA, out.confianza)
         assertEquals("Cobra deudas vencidas", out.proximaAccion)
+        assertTrue(out.disclaimerIgv.contains("IGV", ignoreCase = true) || out.disclaimerIgv.contains("igv", ignoreCase = true))
     }
 
     @Test
@@ -37,7 +41,7 @@ class InterpretacionAnalistaTest {
 
         val out = InterpretacionAnalista.from(facts, topRecTitulo = null)
 
-        assertTrue(out.titular.contains("objetivo", ignoreCase = true) || out.titular.contains("bien", ignoreCase = true))
+        assertTrue(out.titular.contains("objetivo", ignoreCase = true) || out.titular.contains("Buen", ignoreCase = true))
         assertEquals(null, out.proximaAccion)
     }
 
@@ -70,6 +74,8 @@ class InterpretacionAnalistaTest {
         val out = InterpretacionAnalista.from(facts, topRecTitulo = null)
 
         assertTrue(out.puntos.any { it.contains("tendencia", ignoreCase = true) || it.contains("cayó", ignoreCase = true) || it.contains("bajó", ignoreCase = true) })
+        assertTrue(out.puntos.any { it.contains("resultado operativo", ignoreCase = true) })
+        assertFalse(out.puntos.any { it.contains("margen neto", ignoreCase = true) })
     }
 
     @Test

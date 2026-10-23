@@ -217,7 +217,7 @@ class GenerarRecomendacionesUseCaseTest {
         val vender = lista.find { it.tipo == RecomendacionTipo.VENDER_MAS_DE }
         assertNotNull("VENDER_MAS_DE should fire", vender)
         assertEquals(Prioridad.MEDIA, vender!!.prioridad)
-        assertTrue(vender.detalle.contains("45%"))
+        assertTrue(vender.detalle.contains("45.0%"))
         assertTrue(vender.detalle.contains("Lentes Progresivos"))
     }
 
@@ -259,7 +259,7 @@ class GenerarRecomendacionesUseCaseTest {
         val alerta = lista.find { it.tipo == RecomendacionTipo.ALERTA_CAIDA }
         assertNotNull("ALERTA_CAIDA should fire", alerta)
         assertEquals(Prioridad.ALTA, alerta!!.prioridad)
-        assertTrue(alerta.detalle.contains("15%"))
+        assertTrue(alerta.detalle.contains("15.0%"))
     }
 
     @Test

@@ -396,7 +396,8 @@
     <string name="analisis_guardar">Guardar</string>
     <string name="analisis_resumen_mes">Resumen del mes</string>
     <string name="analisis_contexto_breve">Contexto del mes</string>
-    <string name="analisis_contexto_margen_vs_objetivo">Margen neto %1$d%% · objetivo %2$d%%</string>
+    <string name="analisis_contexto_margen_vs_objetivo">Resultado operativo %1$s%% · objetivo %2$s%%</string>
+    <string name="analisis_disclaimer_igv">Sin desglose de IGV; cifras según ventas y costos registrados.</string>
     <string name="analisis_contexto_pe_alcanzado">Punto de equilibrio alcanzado</string>
     <string name="analisis_contexto_pe_falta">Faltan %1$s para el punto de equilibrio</string>
     <string name="analisis_metricas_detalle">Métricas detalladas</string>
@@ -407,8 +408,9 @@
     <string name="analisis_vendiste">Vendiste</string>
     <string name="analisis_cobraste">Cobraste</string>
     <string name="analisis_saldo_pendiente">Saldo pendiente</string>
-    <string name="analisis_margen_neto">Margen neto</string>
-    <string name="analisis_margen_neto_explicacion">De cada S/ 100 que vendes, te quedan S/ %1$d (margen neto)</string>
+    <string name="analisis_margen_neto">Resultado operativo</string>
+    <string name="analisis_margen_neto_explicacion">De cada S/ 100 que vendes, te quedan S/ %1$s (resultado operativo)</string>
+    <string name="analisis_objetivo_resultado_operativo">Objetivo de resultado operativo</string>
     <string name="analisis_ticket_promedio">Ticket prom.</string>
     <string name="analisis_ventas">Ventas</string>
     <string name="analisis_recomendacion_accion">→ %1$s</string>

@@ -57,7 +57,7 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
             inicioSerie.atDay(1).toString(),
             mesActual.atEndOfMonth().toString(),
         )
-        // Linked OT bevel gastos already sit in costoMes; exclude them from neto gastos.
+        // Otherwise linked OT bevel rows double-count COGS already rolled into costoMes.
         val gastos = gastoOperativoDao.getByOpticaBetween(opticaId, inicioSerie.atDay(1), mesActual.atEndOfMonth())
             .filter { it.origenDispensacionItemId == null }
         val rows = resumenes.filter { mesDe(it.fecha) == mesActual }
@@ -69,8 +69,8 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
         val cobrosMes = rows.sumOf { it.cobrosMontoTotal }
         val valorInventario = rows.lastOrNull()?.inventarioValor ?: 0.0
         val margenBruto = ventasMes - costoMes
-        // Same rounding as rpc_analisis_mensual so a month reads identically online and offline.
-        val margenBrutoPct = porcentajeDeVentas(margenBruto, ventasMes, decimales = 2)
+        // Keep offline % identical to rpc so the owner never sees two “truths” for one month.
+        val margenBrutoPct = porcentajeDeVentas(margenBruto, ventasMes, decimales = 1)
         val margenNetoPct = porcentajeDeVentas(margenBruto - gastosMes, ventasMes, decimales = 1)
         val gastosFacts = gastosFacts(gastosDelMes, ventasMes, costoMes)
         val objetivo = configuracionFinancieraDao.getByOpticaIdOnce(opticaId)?.margenNetoObjetivo
@@ -170,7 +170,7 @@ open class ObtenerAnalisisMensualUseCase @Inject constructor(
             costo = redondear(costo),
             gastos = redondear(gastosMes),
             margen = redondear(margen),
-            margenNetoPct = porcentajeDeVentas(margen, ventas, decimales = 2),
+            margenNetoPct = porcentajeDeVentas(margen, ventas, decimales = 1),
         )
     }
 

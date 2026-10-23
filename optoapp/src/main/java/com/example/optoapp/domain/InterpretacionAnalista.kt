@@ -1,5 +1,6 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.util.AnalisisPercentFormatter
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -14,7 +15,14 @@ data class InterpretacionMes(
     val puntos: List<String>,
     val confianza: ConfianzaInterpretacion,
     val proximaAccion: String?,
-)
+    /** Explicit fiscal assumption: no IGV breakdown in registered sales/costs. */
+    val disclaimerIgv: String = DISCLAIMER_IGV,
+) {
+    companion object {
+        const val DISCLAIMER_IGV =
+            "Sin desglose de IGV; cifras según ventas y costos registrados."
+    }
+}
 
 /**
  * Builds a short coach-style reading of [MarginFacts] for the Análisis home screen.
@@ -37,9 +45,10 @@ object InterpretacionAnalista {
 
         return InterpretacionMes(
             titular = titular,
-            puntos = puntos.ifEmpty { listOf("Revisá el detalle del mes para ver ventas, costos y gastos.") },
+            puntos = puntos.ifEmpty { listOf("Revisa el detalle del mes para ver ventas, costos y gastos.") },
             confianza = confianza,
             proximaAccion = topRecTitulo?.takeIf { it.isNotBlank() },
+            disclaimerIgv = InterpretacionMes.DISCLAIMER_IGV,
         )
     }
 
@@ -67,15 +76,15 @@ object InterpretacionAnalista {
     }
 
     private fun titularDe(facts: MarginFacts): String {
-        val pct = facts.margenNetoPct.roundToInt()
-        val objetivo = facts.margenNetoObjetivo.roundToInt()
+        val pct = AnalisisPercentFormatter.formatWithSymbol(facts.margenNetoPct)
+        val objetivo = AnalisisPercentFormatter.formatWithSymbol(facts.margenNetoObjetivo)
         return when {
             facts.brechaMargenNetoPp < -0.5 ->
-                "El margen neto del mes ($pct%) está debajo del objetivo ($objetivo%)."
+                "El resultado operativo del mes ($pct) está debajo del objetivo ($objetivo)."
             facts.brechaMargenNetoPp > 0.5 ->
-                "El margen neto del mes ($pct%) está por encima del objetivo ($objetivo%). Vas bien."
+                "El resultado operativo del mes ($pct) está por encima del objetivo ($objetivo). Buen mes."
             else ->
-                "El margen neto del mes ($pct%) está cerca del objetivo ($objetivo%)."
+                "El resultado operativo del mes ($pct) está cerca del objetivo ($objetivo)."
         }
     }
 
@@ -84,9 +93,9 @@ object InterpretacionAnalista {
         if (abs(brecha) < 0.5) return
         val pp = abs(brecha).roundToInt()
         if (brecha < 0) {
-            add("Te faltan alrededor de $pp puntos porcentuales para llegar al objetivo de margen.")
+            add("Te faltan alrededor de $pp puntos porcentuales para llegar al objetivo de resultado operativo.")
         } else {
-            add("Estás $pp puntos porcentuales por encima del objetivo de margen.")
+            add("Hay $pp puntos porcentuales por encima del objetivo de resultado operativo.")
         }
     }
 
@@ -97,7 +106,7 @@ object InterpretacionAnalista {
         }
         if (cobertura.pctReal < COBERTURA_ALTA) {
             val pct = cobertura.pctReal.roundToInt()
-            add("La cobertura de costos reales es del $pct%; completá costos faltantes para confiar más en el análisis.")
+            add("La cobertura de costos reales es del $pct%; completa costos faltantes para confiar más en el análisis.")
         }
     }
 
@@ -106,7 +115,7 @@ object InterpretacionAnalista {
         if (pe <= 0.0 || facts.ventasMes <= 0.0) return
         if (facts.ventasMes < pe) {
             val falta = (pe - facts.ventasMes).roundToInt()
-            add("Aún no llegás al punto de equilibrio; faltan cerca de S/ $falta en ventas.")
+            add("Aún no se alcanza el punto de equilibrio; faltan cerca de S/ $falta en ventas.")
         }
     }
 
@@ -116,11 +125,11 @@ object InterpretacionAnalista {
         val curr = serie.last().margenNetoPct
         val delta = curr - prev
         if (abs(delta) < 0.5) return
-        val pp = abs(delta).roundToInt().coerceAtLeast(1)
+        val pp = AnalisisPercentFormatter.format(abs(delta).coerceAtLeast(0.1))
         if (delta < 0) {
-            add("La tendencia del margen neto bajó unos $pp puntos vs el mes anterior.")
+            add("La tendencia del resultado operativo bajó unos $pp puntos vs el mes anterior.")
         } else {
-            add("La tendencia del margen neto subió unos $pp puntos vs el mes anterior.")
+            add("La tendencia del resultado operativo subió unos $pp puntos vs el mes anterior.")
         }
     }
 }

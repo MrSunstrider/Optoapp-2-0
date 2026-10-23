@@ -41,9 +41,9 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
+import com.example.optoapp.util.AnalisisPercentFormatter
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
-import java.util.Locale
 
 @Suppress("DEPRECATION")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -387,4 +387,4 @@ internal fun rutaEdicionDeudor(ventaId: String, pacienteId: String): String? {
     }
 }
 // WHY: a device-locale format would print "25,0%" next to amounts that MoneyFormatter always prints with '.'.
-private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value)
+private fun formatPercent(value: Double): String = AnalisisPercentFormatter.formatWithSymbol(value)

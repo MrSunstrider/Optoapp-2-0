@@ -41,6 +41,7 @@ import com.example.optoapp.ui.navigation.Route
 import com.example.optoapp.ui.theme.alertRed
 import com.example.optoapp.ui.theme.positiveGreen
 import com.example.optoapp.ui.theme.warningAmber
+import com.example.optoapp.util.AnalisisPercentFormatter
 import com.example.optoapp.util.MoneyFormatter
 import com.example.optoapp.viewmodel.AnalisisNegocioViewModel
 import com.example.optoapp.viewmodel.AuthViewModel
@@ -513,6 +514,11 @@ private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
                 style = MaterialTheme.typography.labelSmall,
                 color = confianzaColor,
             )
+            Text(
+                stringResource(R.string.analisis_disclaimer_igv),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             interpretacion.puntos.forEach { punto ->
                 Text(
                     stringResource(R.string.analisis_interpretacion_punto, punto),
@@ -535,8 +541,10 @@ private fun InterpretacionCoachCard(interpretacion: InterpretacionMes) {
 @Composable
 private fun ContextoBreveCard(analisis: AnalisisMensual) {
     val facts = analisis.marginFacts
-    val margenPct = Math.round(if (facts.margenNetoPct != 0.0) facts.margenNetoPct else analisis.margenNetoPct)
-    val objetivoPct = Math.round(facts.margenNetoObjetivo)
+    val margenPct = AnalisisPercentFormatter.format(
+        if (facts.margenNetoPct != 0.0) facts.margenNetoPct else analisis.margenNetoPct,
+    )
+    val objetivoPct = AnalisisPercentFormatter.format(facts.margenNetoObjetivo)
     val pe = facts.puntoEquilibrio
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -622,7 +630,10 @@ private fun ResumenCard(analisis: AnalisisMensual) {
                     Text(stringResource(R.string.analisis_margen_neto), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        stringResource(R.string.analisis_margen_neto_explicacion, Math.round(analisis.margenNetoPct)),
+                        stringResource(
+                            R.string.analisis_margen_neto_explicacion,
+                            AnalisisPercentFormatter.format(analisis.margenNetoPct),
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = if (analisis.margenNetoPct >= 25) MaterialTheme.colorScheme.positiveGreen else MaterialTheme.colorScheme.warningAmber,
