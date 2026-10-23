@@ -1,5 +1,6 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionEntity
 import io.mockk.coVerify
@@ -15,11 +16,12 @@ import org.junit.Test
 class FeedbackRecomendacionUseCaseTest {
 
     private val dao: FeedbackRecomendacionDao = mockk(relaxed = true)
+    private val syncStateTracker: SyncStateTracker = mockk(relaxed = true)
     private lateinit var useCase: FeedbackRecomendacionUseCase
 
     @Before
     fun setUp() {
-        useCase = FeedbackRecomendacionUseCase(dao)
+        useCase = FeedbackRecomendacionUseCase(dao, syncStateTracker)
     }
 
     @Test
@@ -35,6 +37,17 @@ class FeedbackRecomendacionUseCaseTest {
         assertTrue(entitySlot.captured.fueUtil)
         assertEquals(SeguimientoEstado.HECHO.name, entitySlot.captured.estado)
         assertTrue(entitySlot.captured.id.isNotBlank())
+    }
+
+    @Test
+    fun marcarSeguimiento_marksLocallyModifiedForSync() = runTest {
+        val stableId = FeedbackRecomendacionUseCase.stableId("optica1", "2026-10", "rec-abc")
+
+        useCase.marcarSeguimiento("rec-abc", "optica1", "2026-10", SeguimientoEstado.HECHO)
+
+        coVerify {
+            syncStateTracker.markLocallyModified("optica1", "feedback_recomendacion", stableId)
+        }
     }
 
     @Test
@@ -56,5 +69,12 @@ class FeedbackRecomendacionUseCaseTest {
         useCase.marcarSeguimiento("rec-abc", "optica1", "2026-10", SeguimientoEstado.HECHO)
 
         coVerify(exactly = 2) { dao.upsert(any()) }
+        coVerify(exactly = 2) {
+            syncStateTracker.markLocallyModified(
+                "optica1",
+                "feedback_recomendacion",
+                FeedbackRecomendacionUseCase.stableId("optica1", "2026-10", "rec-abc"),
+            )
+        }
     }
 }

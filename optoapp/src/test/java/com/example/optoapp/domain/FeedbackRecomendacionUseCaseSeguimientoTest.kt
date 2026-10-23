@@ -1,5 +1,6 @@
 package com.example.optoapp.domain
 
+import com.example.optoapp.data.SyncStateTracker
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionDao
 import com.example.optoapp.data.feedbackrecomendacion.FeedbackRecomendacionEntity
 import io.mockk.coEvery
@@ -15,11 +16,12 @@ import org.junit.Test
 class FeedbackRecomendacionUseCaseSeguimientoTest {
 
     private val dao: FeedbackRecomendacionDao = mockk(relaxed = true)
+    private val syncStateTracker: SyncStateTracker = mockk(relaxed = true)
     private lateinit var useCase: FeedbackRecomendacionUseCase
 
     @Before
     fun setUp() {
-        useCase = FeedbackRecomendacionUseCase(dao)
+        useCase = FeedbackRecomendacionUseCase(dao, syncStateTracker)
     }
 
     @Test
