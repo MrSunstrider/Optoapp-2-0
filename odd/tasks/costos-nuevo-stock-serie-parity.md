@@ -19,9 +19,9 @@ Assumptions (documented): Distancia stays out of the matrix key (OT lookup never
 
 ## Tasks
 
-- [x] T1 S1–S2 — Form: Stock|Fabricación selector; remove Distancia; serie required when stock — route: inline — commit: pending
-- [x] T2 S3 — saveCosto upserts open lookupVigente row via MatrizVigenciaUseCase — route: inline — commit: pending
-- [x] T3 S4 — Catalog parity: Fabricación block unfiltered by material; tipos/familias aligned with LensProductCatalog (excl. LC) — route: inline — commit: pending
+- [x] T1 S1–S2 — Form: Stock|Fabricación selector; remove Distancia; serie required when stock — route: inline — commit: 2c7eab45
+- [x] T2 S3 — saveCosto upserts open lookupVigente row via MatrizVigenciaUseCase — route: inline — commit: 2c7eab45
+- [x] T3 S4 — Catalog parity: Fabricación block unfiltered by material; tipos/familias aligned with LensProductCatalog (excl. LC) — route: inline — commit: 2c7eab45
 
 ## Log
 
