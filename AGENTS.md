@@ -119,3 +119,11 @@ Never commit credentials. `sdk.dir` is auto-added by Android Studio. Use `JAVA_H
 | `domain/SyncFinanzasUseCase.kt` | Orchestrates upload → download order |
 | `domain/sync/SyncOrchestrator.kt` | Runs all 8 sync modules sequentially |
 | `di/SupabaseModule.kt` | Supabase client config (Auth, PostgREST, Realtime) |
+
+## Cursor Cloud specific instructions
+
+- OpenJDK 21 is already on the image (`JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64`). The module still compiles to Java 17. CI uses Temurin 17. Do not set `org.gradle.java.home`.
+- Android SDK 36 lives at `/opt/android-sdk` (`platforms;android-36`, `build-tools;36.0.0`, `platform-tools`). Login shells export `ANDROID_HOME`. `adb` is `/usr/local/bin/adb`.
+- Boot creates gitignored `local.properties` when it is missing: `sdk.dir=/opt/android-sdk`, the public Supabase URL, and `supabase.anon.key` from `SUPABASE_ANON_KEY` or the placeholder `cloud-agent-dev-placeholder`. `./gradlew :optoapp:testDebugUnitTest` and `./gradlew :optoapp:assembleDebug` pass with that placeholder. A signed-in device run needs real `SUPABASE_URL` / `SUPABASE_ANON_KEY`. Instrumented tests need `SUPABASE_TEST_URL`, `SUPABASE_TEST_ANON_KEY`, and `SUPABASE_TEST_SERVICE_KEY`.
+- This environment does not start an emulator or a local Supabase stack. Debug APK output is `optoapp/build/outputs/apk/debug/optoapp-debug.apk`.
+- The wrapper is Gradle 9.3.1. `gradle.properties` gives the daemon 6g; leave that value as committed.
