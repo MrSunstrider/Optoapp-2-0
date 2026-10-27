@@ -14,7 +14,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +34,7 @@ import com.example.optoapp.domain.costo.LensProductCatalog
 import com.example.optoapp.domain.costo.LensTreatments
 import com.example.optoapp.ui.components.OptoDropdownMenuField
 import com.example.optoapp.ui.components.OptoTextField
+import com.example.optoapp.viewmodel.MODALIDADES_COSTO_LENTE
 
 private val DISCROMATOPSIA_TIPOS = listOf(
     "", "550 Rojo", "550 Rojo-Violeta", "550 Rojo-Marrón", "585 nm", "600 Rojo",
@@ -45,13 +45,13 @@ private val DISCROMATOPSIA_TIPOS = listOf(
 )
 
 private val CURVAS_SOLAR = listOf("", "4", "6", "8")
+// WHY: OT lookup keys use the same IR labels dispensación writes on the item.
 private val INDICES_IR = listOf("", "1.6", "1.7", "1.7 rose", "1.8")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CostoLenteCatalogForm(
     tipoLente: String,
-    distancia: String,
     subtipoBifocal: String,
     material: String,
     tratamientos: List<String>,
@@ -62,60 +62,72 @@ fun CostoLenteCatalogForm(
     costoUnitario: String,
     stockOFabricacion: String,
     onTipoLenteChange: (String) -> Unit,
-    onDistanciaChange: (String) -> Unit,
     onSubtipoBifocalChange: (String) -> Unit,
     onMaterialChange: (String) -> Unit,
     onToggleTratamiento: (String) -> Unit,
     onDiscromatopsiaTipoChange: (String) -> Unit,
     onCurvaBaseChange: (String) -> Unit,
     onIndiceRefraccionChange: (String) -> Unit,
+    onStockOFabricacionChange: (String) -> Unit,
     onSerieChange: (String) -> Unit,
     onCostoUnitarioChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val familias = remember(tipoLente, distancia, subtipoBifocal) {
+    // WHY: Distancia is not a lookup key; null keeps foto families available for matrix pricing.
+    val familias = remember(tipoLente, subtipoBifocal) {
         if (tipoLente.isBlank()) {
             emptyList()
         } else {
             LensCatalogRules.familias(
                 tipoLente,
-                distancia.takeIf { it.isNotBlank() },
-                subtipoBifocal.takeIf { it.isNotBlank() },
+                distancia = null,
+                subTipoBifocal = subtipoBifocal.takeIf { it.isNotBlank() },
             )
         }
     }
-    val tratamientosPermitidos = remember(tipoLente, material, distancia, subtipoBifocal) {
+    val tratamientosPermitidos = remember(tipoLente, material, subtipoBifocal) {
         if (tipoLente.isBlank() || material.isBlank()) {
             emptyList()
         } else {
             LensCatalogRules.tratamientosPermitidos(
                 tipoLente,
                 material,
-                distancia.takeIf { it.isNotBlank() },
-                subtipoBifocal.takeIf { it.isNotBlank() },
+                distancia = null,
+                subTipoBifocal = subtipoBifocal.takeIf { it.isNotBlank() },
             )
         }
     }
-    val preview = remember(tipoLente, distancia, subtipoBifocal, material, tratamientos, discromatopsiaTipo, curvaBase, indiceRefraccion) {
+    val catalogSelection = remember(
+        tipoLente, subtipoBifocal, material, tratamientos, discromatopsiaTipo, curvaBase, indiceRefraccion,
+    ) {
         if (tipoLente.isBlank() || material.isBlank()) {
             null
         } else {
-            LensCatalogRules.resolve(
-                LensCatalogSelection(
-                    tipoLente = tipoLente,
-                    distancia = distancia.takeIf { it.isNotBlank() },
-                    subTipoBifocal = subtipoBifocal.takeIf { it.isNotBlank() },
-                    familia = material,
-                    tratamientos = tratamientos,
-                    discromatopsiaTipo = discromatopsiaTipo.takeIf { it.isNotBlank() },
-                    curvaBase = curvaBase.takeIf { it.isNotBlank() },
-                    indiceRefraccion = indiceRefraccion.takeIf { it.isNotBlank() },
-                    forzarStockIgnorandoAstigmatismo = false,
-                ),
-                null,
+            LensCatalogSelection(
+                tipoLente = tipoLente,
+                distancia = null,
+                subTipoBifocal = subtipoBifocal.takeIf { it.isNotBlank() },
+                familia = material,
+                tratamientos = tratamientos,
+                discromatopsiaTipo = discromatopsiaTipo.takeIf { it.isNotBlank() },
+                curvaBase = curvaBase.takeIf { it.isNotBlank() },
+                indiceRefraccion = indiceRefraccion.takeIf { it.isNotBlank() },
+                forzarStockIgnorandoAstigmatismo = false,
             )
         }
     }
+    val preview = remember(catalogSelection) {
+        catalogSelection?.let { LensCatalogRules.resolve(it, null) }
+    }
+    val forcesFabricacion = remember(catalogSelection) {
+        catalogSelection?.let { LensCatalogRules.forcesFabricacionIndependentOfRx(it) } == true
+    }
+    val modalidadOptions = if (forcesFabricacion) {
+        listOf(LensCatalogRules.FABRICACION)
+    } else {
+        MODALIDADES_COSTO_LENTE
+    }
+    val esStock = stockOFabricacion == LensCatalogRules.STOCK && !forcesFabricacion
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         OptoDropdownMenuField(
@@ -124,12 +136,18 @@ fun CostoLenteCatalogForm(
             options = LensProductCatalog.TIPOS.filter { it != LensProductCatalog.TIPO_LC },
         ) { onTipoLenteChange(it) }
 
-        if (tipoLente == LensProductCatalog.TIPO_MONOFOCAL) {
-            OptoDropdownMenuField(
-                label = stringResource(R.string.costos_distancia_requerida),
-                selected = distancia,
-                options = LensProductCatalog.DISTANCIAS_MONOFOCAL,
-            ) { onDistanciaChange(it) }
+        OptoDropdownMenuField(
+            label = stringResource(R.string.costos_stock_fabricacion_requerido),
+            selected = if (forcesFabricacion) LensCatalogRules.FABRICACION else stockOFabricacion,
+            options = modalidadOptions,
+            enabled = !forcesFabricacion,
+        ) { onStockOFabricacionChange(it) }
+        if (forcesFabricacion) {
+            Text(
+                stringResource(R.string.costos_modalidad_forzada_fabricacion),
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (tipoLente == LensProductCatalog.TIPO_BIFOCAL) {
@@ -227,19 +245,14 @@ fun CostoLenteCatalogForm(
             }
         }
 
-        OptoTextField(
-            value = stockOFabricacion,
-            onValueChange = {},
-            label = stringResource(R.string.costos_stock_fabricacion),
-            enabled = false,
-        )
-
-        OptoTextField(
-            value = serie,
-            onValueChange = onSerieChange,
-            label = stringResource(R.string.costos_serie_opcional),
-            keyboardType = KeyboardType.Number,
-        )
+        if (esStock) {
+            OptoTextField(
+                value = serie,
+                onValueChange = onSerieChange,
+                label = stringResource(R.string.costos_serie_requerida),
+                keyboardType = KeyboardType.Number,
+            )
+        }
         OptoTextField(
             value = costoUnitario,
             onValueChange = onCostoUnitarioChange,

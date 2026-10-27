@@ -134,6 +134,37 @@ object LensCatalogRules {
         }
     }
 
+    /**
+     * True when the catalog selection always prices as fabricación regardless of RX.
+     * Does not include monofocal/bifocal stock windows that need a prescription to decide —
+     * matrix entry may still choose stock·serie for those families when no FORCE extras apply.
+     */
+    fun forcesFabricacionIndependentOfRx(selection: LensCatalogSelection): Boolean {
+        val selectedExtras = selection.tratamientos.filter { it.isNotBlank() }
+        if (extrasForceFabricacion(selectedExtras)) return true
+
+        val family = LensProductCatalog.findFamily(
+            selection.tipoLente,
+            selection.familia,
+            selection.distancia,
+            selection.subTipoBifocal,
+        ) ?: return false
+
+        return when (family.stockPolicy) {
+            StockPolicy.ALWAYS_FABRICACION -> true
+            StockPolicy.CRISTAL_ALTO_INDICE_1_7_STOCK -> !isCristalAltoIndiceStockIr(selection.indiceRefraccion)
+            else -> false
+        }
+    }
+
+    private fun extrasForceFabricacion(selectedExtras: List<String>): Boolean =
+        selectedExtras.any { it != LensTreatments.UV_400 && it in LensTreatments.FORCE_FABRICACION }
+
+    private fun isCristalAltoIndiceStockIr(indiceRefraccion: String?): Boolean {
+        val ir = indiceRefraccion?.trim().orEmpty()
+        return ir == "1.7" || ir == "1.70"
+    }
+
     private fun deriveStockSerie(
         family: ProductFamily,
         receta: LensRecetaInput?,
@@ -141,8 +172,7 @@ object LensCatalogRules {
         indiceRefraccion: String?,
         forzarStock: Boolean,
     ): Pair<String, Int?> {
-        val extrasForceFab = selectedExtras.any { it != LensTreatments.UV_400 && it in LensTreatments.FORCE_FABRICACION }
-        if (extrasForceFab) return FABRICACION to null
+        if (extrasForceFabricacion(selectedExtras)) return FABRICACION to null
 
         return when (family.stockPolicy) {
             StockPolicy.ALWAYS_FABRICACION -> FABRICACION to null
@@ -150,8 +180,7 @@ object LensCatalogRules {
             StockPolicy.MONOFOCAL_CIL_SERIES -> monofocalStockSerie(receta)
 
             StockPolicy.CRISTAL_ALTO_INDICE_1_7_STOCK -> {
-                val ir = indiceRefraccion?.trim().orEmpty()
-                if (ir == "1.7" || ir == "1.70") {
+                if (isCristalAltoIndiceStockIr(indiceRefraccion)) {
                     monofocalStockSerie(receta)
                 } else {
                     FABRICACION to null

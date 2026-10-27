@@ -2,6 +2,7 @@ package com.example.optoapp.viewmodel
 
 import com.example.optoapp.data.costoproducto.CostoProductoEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CostBlockFilterTest {
@@ -35,21 +36,29 @@ class CostBlockFilterTest {
     }
 
     @Test
-    fun blockFilter_fabricacionResinaMatchesMaterialSubstring() {
-        val filter = blockFilter("Fabricación Resina")
+    fun blockFilter_fabricacionKeepsAllMaterialsIncludingPolicarbonato() {
+        val filter = blockFilter("Fabricación")
         assertEquals("fabricacion", filter.stockOFabricacion)
-        assertEquals("Resina", filter.materialContains)
+        assertNull(filter.materialContains)
         val rows = listOf(
             row("1", "Monofocal", "Resina antireflejo", "fabricacion"),
             row("2", "Monofocal", "Cristal", "fabricacion"),
-            row("3", "Monofocal", "Resina Blue", "fabricacion"),
+            row("3", "Monofocal", "Policarbonato", "fabricacion"),
         )
-        assertEquals(listOf("1", "3"), aplicarFiltroBloque(rows, filter).map { it.id })
+        assertEquals(listOf("1", "2", "3"), aplicarFiltroBloque(rows, filter).map { it.id })
     }
 
     @Test
     fun blockToFilter_stillReturnsStockOrFabricacionKey() {
         assertEquals("stock", blockToFilter("Stock Bifocal"))
-        assertEquals("fabricacion", blockToFilter("Fabricación Cristal"))
+        assertEquals("fabricacion", blockToFilter("Fabricación"))
+        assertEquals("fabricacion", blockToFilter("Fabricación Resina"))
+    }
+
+    @Test
+    fun blockForCosto_routesStockByTipoAndFabToFabricacion() {
+        assertEquals("Stock Monofocal", blockForCosto("stock", "Monofocal"))
+        assertEquals("Fabricación", blockForCosto("fabricacion", "Monofocal"))
+        assertEquals("Fabricación", blockForCosto("stock", "Ocupacional"))
     }
 }
